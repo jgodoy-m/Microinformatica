@@ -577,13 +577,39 @@ function pintarPanel() {
 }
 
 // ---------- Bandeja ----------
+// Desplegables de la bandeja: uno por tipo de componente.
+const GRUPOS = {
+  board: 'Placa base',
+  cpu: 'Procesador',
+  ram: 'Memoria RAM',
+  gpu: 'Tarjeta gráfica',
+  nvme: 'Almacenamiento',
+  psu: 'Fuente de alimentación',
+  cable: 'Cables de alimentación'
+};
+const abiertos = {};
+
 function pintarBandeja() {
-  bandeja.querySelectorAll('.ficha').forEach((el) => el.remove());
+  bandeja.querySelectorAll('.grupo').forEach((el) => el.remove());
   const items = [
-    ...PIEZAS.filter((p) => !placed(p.id)).map((p) => ({ id: p.id, tipo: 'parte', corto: p.corto, color: p.color, foto: !p.sinFoto })),
-    ...CABLES.filter((c) => !plugged(c.id)).map((c) => ({ id: c.id, tipo: 'cable', corto: c.corto, color: c.color, foto: !c.sinFoto }))
+    ...PIEZAS.filter((p) => !placed(p.id)).map((p) => ({ id: p.id, kind: p.kind, tipo: 'parte', corto: p.corto, color: p.color, foto: !p.sinFoto })),
+    ...CABLES.filter((c) => !plugged(c.id)).map((c) => ({ id: c.id, kind: 'cable', tipo: 'cable', corto: c.corto, color: c.color, foto: !c.sinFoto }))
   ];
-  for (const it of items) {
+  const porGrupo = {};
+  for (const it of items) (porGrupo[it.kind] ??= []).push(it);
+  for (const [kind, lista] of Object.entries(porGrupo)) {
+    const grupo = document.createElement('details');
+    grupo.className = 'grupo';
+    grupo.open = abiertos[kind] ?? true;
+    grupo.addEventListener('toggle', () => { abiertos[kind] = grupo.open; });
+    grupo.innerHTML = `<summary>${GRUPOS[kind]} <span class="cuenta">${lista.length}</span></summary><div class="grupo-fichas"></div>`;
+    bandeja.appendChild(grupo);
+    for (const it of lista) pintarFicha(it, grupo.querySelector('.grupo-fichas'));
+  }
+}
+
+function pintarFicha(it, contenedorFichas) {
+  {
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'ficha';
@@ -599,7 +625,7 @@ function pintarBandeja() {
       miniatura.querySelector('img').remove();
     }, { once: true });
     if (it.tipo === 'cable' && performance.now() < destelloHasta) el.classList.add('destacar');
-    bandeja.appendChild(el);
+    contenedorFichas.appendChild(el);
   }
 }
 

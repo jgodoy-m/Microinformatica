@@ -113,6 +113,41 @@
       padding: 10px;
     }
     .bandeja h2 { grid-column: 1 / -1; margin: 0; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .grupo {
+      grid-column: 1 / -1;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-2);
+    }
+    .grupo summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 44px;
+      padding: 8px 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      list-style: none;
+    }
+    .grupo summary::-webkit-details-marker { display: none; }
+    .grupo summary::after {
+      content: "▾";
+      margin-left: 8px;
+      transition: transform .15s;
+    }
+    .grupo:not([open]) summary::after { transform: rotate(-90deg); }
+    .grupo .cuenta {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .grupo-fichas {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+      gap: 8px;
+      padding: 0 10px 10px;
+    }
     .ficha {
       display: flex;
       align-items: center;
