@@ -240,4 +240,66 @@ window.BANCO = [
   { fuente: 'S13', pregunta: '¿Cuál es la primera de las cinco comprobaciones del conexionado?',
     opciones: ['Polaridad', 'Forma', 'Tensión', 'Manual'], correcta: 1,
     explica: 'La regla de las 5 comprobaciones empieza por la forma del conector.' },
+
+  /* Preguntas añadidas: S07 */
+  { fuente: 'S07', pregunta: '¿Qué conector alimenta la tarjeta gráfica de alto consumo?',
+    opciones: ['SATA de 15 pines', 'PCIe de 6+2 pines', 'Molex de 4 pines', 'EPS de 4+4 pines'], correcta: 1,
+    explica: 'La gráfica necesita su propio conector PCIe de 6+2 pines. El EPS es para la CPU y el SATA para discos.' },
+  { fuente: 'S07', pregunta: '¿En qué rango de carga trabaja mejor una fuente de alimentación?',
+    opciones: ['Entre el 5 % y el 10 %', 'Entre el 50 % y el 80 %', 'Siempre al 100 %', 'Solo cuando el equipo está apagado'], correcta: 1,
+    explica: 'Las fuentes son más eficientes en torno al 50–80 % de su potencia nominal. Muy poca carga o al límite las hace trabajar peor.' },
+  { fuente: 'S07', pregunta: '¿Qué indica el sello 80 Plus en una fuente?',
+    opciones: ['Que la fuente es modular', 'Que la fuente tiene una eficiencia energética mínima', 'Que la fuente incluye ventilador RGB', 'Que la fuente tiene garantía de 5 años'], correcta: 1,
+    explica: 'El sello 80 Plus certifica una eficiencia mínima en distintos niveles de carga (Bronze, Gold, Platinum, Titanium).' },
+
+  /* Preguntas añadidas: S08 */
+  { fuente: 'S08', pregunta: '¿Qué formatos de placa admite una caja Micro-ATX?',
+    opciones: ['Solo ATX', 'Solo Mini-ITX', 'Micro-ATX y Mini-ITX', 'ATX, Micro-ATX y Mini-ITX'], correcta: 2,
+    explica: 'Una caja Micro-ATX admite placas Micro-ATX y Mini-ITX. Una placa ATX no cabe en ella.' },
+  { fuente: 'S08', pregunta: '¿Dónde se suele colocar la fuente de alimentación en una caja ATX?',
+    opciones: ['En la parte superior o inferior del chasis', 'Junto a la placa, en el lateral de la caja', 'Dentro de la tarjeta gráfica', 'En el panel frontal, detrás de los botones'], correcta: 0,
+    explica: 'La fuente va en el hueco de la parte superior o inferior, con su ventilador orientado hacia fuera para expulsar el aire caliente.' },
+
+  /* Preguntas añadidas: S09 */
+  { fuente: 'S09', pregunta: '¿Qué diferencia hay entre un equipo OEM y uno RETAIL?',
+    opciones: ['El OEM va sin caja ni garantía propia de la marca del componente', 'El OEM siempre es más caro', 'El RETAIL no tiene garantía', 'El OEM incluye siempre el software original'], correcta: 0,
+    explica: 'Un componente OEM se vende sin caja de venta al público y con la garantía del montador. Un RETAIL trae caja, accesorios y garantía del fabricante.' },
+  { fuente: 'S09', pregunta: '¿Qué interfaz usa una tarjeta de expansión moderna?',
+    opciones: ['PCI Express', 'IDE', 'PS/2', 'Puerto serie RS-232'], correcta: 0,
+    explica: 'Las tarjetas de expansión modernas se conectan por PCI Express. IDE, PS/2 y RS-232 son interfaces antiguas.' },
+
+  /* Preguntas añadidas: S10 */
+  { fuente: 'S10', pregunta: 'La gráfica muestra artefactos en pantalla al jugar. ¿Qué se revisa primero?',
+    opciones: ['La temperatura y el funcionamiento del ventilador de la gráfica', 'El teclado del equipo', 'La impresora conectada', 'El cable SATA del disco de arranque'], correcta: 0,
+    explica: 'Los artefactos suelen venir de sobrecalentamiento o de un ventilador parado. Se comprueba la temperatura antes de cambiar piezas.' },
+  { fuente: 'S10', pregunta: 'No sale sonido por los altavoces, aunque el sistema está encendido. ¿Qué se comprueba primero?',
+    opciones: ['Que la salida de audio seleccionada en el sistema sea la correcta', 'Que el teclado funcione', 'Que la impresora esté lista', 'Que el monitor tenga resolución 4K'], correcta: 0,
+    explica: 'Lo más habitual es que la salida seleccionada no sea la de los altavoces. Antes de cambiar la tarjeta de sonido, se revisa la configuración.' },
+
+  /* Preguntas añadidas: S11 */
+  { fuente: 'S11', pregunta: 'Al ampliar la memoria de un equipo, ¿qué módulo conviene instalar?',
+    opciones: ['Del mismo tipo y misma velocidad que los que ya tiene', 'Cualquiera, aunque sea de otro tipo', 'Solo DDR3, aunque la placa sea más nueva', 'De otro tipo, para que el sistema vaya más rápido'], correcta: 0,
+    explica: 'Los módulos deben ser del mismo tipo (DDR4, DDR5) y, en lo posible, de la misma velocidad, para que funcionen juntos.' },
+  { fuente: 'S11', pregunta: '¿Qué pasa si se intenta instalar un módulo DDR5 en una placa con ranuras DDR4?',
+    opciones: ['No encaja: las ranuras y la muesca son distintas', 'Funciona a doble velocidad', 'Solo se usa la mitad de la memoria', 'Se queman los dos módulos'], correcta: 0,
+    explica: 'Las ranuras DDR4 y DDR5 tienen la muesca en distinta posición, así que el módulo no encaja.' },
+
+  /* Preguntas añadidas: S12 */
+  { fuente: 'S12', pregunta: 'Antes de cambiar piezas en un diagnóstico, ¿qué conviene hacer primero?',
+    opciones: ['Reemplazar la placa base', 'Preguntar los síntomas y comprobar lo básico: cables, alimentación y memoria', 'Formatear el disco duro', 'Actualizar la BIOS sin motivo'], correcta: 1,
+    explica: 'El diagnóstico empieza por lo más sencillo y barato: síntomas, cables, alimentación y memoria. Cambiar piezas al azar no es un método.' },
+  { fuente: 'S12', pregunta: '¿Qué prueba ayuda a localizar un módulo de memoria averiado?',
+    opciones: ['Probar un módulo cada vez en la misma ranura', 'Cambiar la tarjeta gráfica', 'Desconectar el monitor', 'Quitar la fuente de alimentación'], correcta: 0,
+    explica: 'Con un módulo cada vez se ve cuál falla. Así se evita cambiar memoria que está bien.' },
+
+  /* Preguntas añadidas: S13 */
+  { fuente: 'S13', pregunta: '¿Qué cable conecta los botones y los LED del panel frontal de la caja a la placa?',
+    opciones: ['El cable de cabecera del panel frontal (Front Panel)', 'El ATX de 24 pines', 'El SATA de datos', 'El PCIe de la gráfica'], correcta: 0,
+    explica: 'El panel frontal usa un cabezal de cabecera en la placa, con pares de pines para encendido, reinicio y LED.' },
+  { fuente: 'S13', pregunta: '¿Qué conector interno lleva los puertos USB 3.0 frontales de la caja?',
+    opciones: ['Cabezal USB 3.0 de 19 pines', 'SATA de 15 pines', 'Molex de 4 pines', 'Conector DisplayPort'], correcta: 0,
+    explica: 'Los USB 3.0 frontales se conectan a un cabezal interno de 19 pines. Los USB 2.0 usan uno de 9 pines.' },
+  { fuente: 'S13', pregunta: '¿Qué cable es el más adecuado para un monitor 4K a 144 Hz desde la gráfica?',
+    opciones: ['DisplayPort', 'VGA', 'Puerto serie RS-232', 'Cable de vídeo compuesto (RCA)'], correcta: 0,
+    explica: 'DisplayPort admite alta resolución y frecuencia de refresco. VGA y el compuesto no dan calidad suficiente para ese monitor.' }
 ];
