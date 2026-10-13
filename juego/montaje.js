@@ -316,13 +316,7 @@ function disipador(w, h, d, vertical) {
 
 // ---------- Modelos 3D de las piezas (modelos/*.glb, generados con Blender) ----------
 const MODELOS = {
-  // Modelos hechos a partir de las fotos (generar_modelos_foto.py), por id de pieza.
-  gpu: 'modelos/gpu.glb',
-  'gpu-blanca': 'modelos/gpu-blanca.glb',
-  'gpu-negra': 'modelos/gpu-negra.glb',
-  cpu: 'modelos/cpu.glb',
-  'cpu-intel': 'modelos/cpu-intel.glb',
-  // Modelos geométricos por tipo (generar_modelos.py).
+  // Modelos geométricos por tipo (generar_modelos.py). GPU y CPU se dibujan en código.
   'ram-ddr4': 'modelos/ram-ddr4.glb',
   'ram-ddr5': 'modelos/ram-ddr5.glb',
   nvme: 'modelos/nvme.glb',
