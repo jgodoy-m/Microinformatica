@@ -111,6 +111,16 @@ export const DIAGNOSTICOS = [
     falla: { tipo: 'cable-sin-conectar', cable: 'c-eps' }
   },
   {
+    id: 'diag-atx',
+    sintoma: '«No arranca nada: ni ventiladores ni luces. El enchufe tiene corriente.»',
+    falla: { tipo: 'cable-sin-conectar', cable: 'c-atx' }
+  },
+  {
+    id: 'diag-pcie',
+    sintoma: '«Arranca, pero la pantalla se queda en negro y los ventiladores de la gráfica sí giran.»',
+    falla: { tipo: 'cable-sin-conectar', cable: 'c-pcie' }
+  },
+  {
     id: 'diag-fuente',
     sintoma: '«Se apaga de golpe cuando juego, sobre todo con la gráfica al máximo.»',
     falla: { tipo: 'fuente-insuficiente', pieza: 'psu-x' }

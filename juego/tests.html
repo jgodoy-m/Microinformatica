@@ -15,7 +15,7 @@
   <p id="resumen">Ejecutando…</p>
   <ul id="lista"></ul>
   <script type="module">
-    import { potenciaNecesaria, comprobarColocacion, longitudPuntos } from './reglas.js';
+    import { potenciaNecesaria, comprobarColocacion, longitudPuntos, puntuacionDiagnostico } from './reglas.js';
     import { PIEZAS, CABLES, PEDIDOS, PLATAFORMAS, PSUS, GPUS, DIAGNOSTICOS } from './catalogo.js';
     import { SLOTS, PORTS, NECESITA, SALIDA_CABLE } from './geometria.js';
 
@@ -70,6 +70,11 @@
     // Nombres: toda pieza tiene nombre comercial (en modo difícil) y todo cable su nombre completo
     comprobar('todas las piezas tienen nombre comercial', PIEZAS.every((p) => typeof p.comercial === 'string' && p.comercial.length > 0));
     comprobar('todos los cables tienen nombre', CABLES.every((c) => typeof c.nombre === 'string' && c.nombre.length > 0));
+
+    // Puntuación del diagnóstico
+    comprobar('diagnóstico perfecto en 2 minutos = 100', puntuacionDiagnostico(0, 0, 120) === 100);
+    comprobar('3 errores, 2 pruebas y 200 s = 44', puntuacionDiagnostico(3, 2, 200) === 44);
+    comprobar('la puntuación nunca baja de 0', puntuacionDiagnostico(20, 20, 2000) === 0);
 
     // Diagnóstico: cada avería apunta a un cable o pieza que existe y tiene síntoma
     comprobar('hay al menos dos averías de diagnóstico', DIAGNOSTICOS.length >= 2);

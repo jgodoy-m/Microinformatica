@@ -47,3 +47,10 @@ export function comprobarColocacion(ctx) {
   }
   return { ok: true };
 }
+
+// Puntuación de un diagnóstico resuelto: 100 puntos, menos 10 por error, 5 por cada prueba
+// (comprobar o retirar) y 2 por cada 10 s pasados de los 2 minutos.
+export function puntuacionDiagnostico(errores, pruebas, segundos) {
+  const tiempo = Math.floor(Math.max(0, segundos - 120) / 10) * 2;
+  return Math.max(0, 100 - 10 * errores - 5 * pruebas - tiempo);
+}

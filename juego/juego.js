@@ -1,6 +1,6 @@
 // Reglas de partida: colocar, conectar, pasos, encender, pedidos y panel.
 import { CABLES, PEDIDOS, PEDIDOS_FIJOS, DIAGNOSTICOS } from './catalogo.js';
-import { comprobarColocacion } from './reglas.js';
+import { comprobarColocacion, puntuacionDiagnostico } from './reglas.js';
 import { SLOTS, PORTS, EXPLICA, SALIDA_CABLE } from './geometria.js';
 import { hooks, TDP_GPU, cable, cpuActual, enPedido, esFacil, estado, occupied, pedido, pieza, piezaPlacada, placed, plugged, pluggedPort, potenciaNecesaria, tabla } from './estado.js';
 import { $, bandeja, clienteEl, especEl, logEl, objEl, progEl } from './dom.js';
@@ -95,6 +95,11 @@ export function encender() {
   }
   estado.S.final = true;
   log('ok', `El equipo arranca y la BIOS muestra la pantalla POST. Errores durante el montaje: ${estado.S.errores}.`);
+  if (estado.S.diag) {
+    const segundos = (performance.now() - estado.S.inicio) / 1000;
+    const puntos = puntuacionDiagnostico(estado.S.errores, estado.S.pruebas, segundos);
+    log('ok', `Avería resuelta en ${Math.round(segundos)} s con ${estado.S.pruebas} pruebas. Puntuación: ${puntos} / 100.`);
+  }
   pintarPanel();
   hooks.pintarEscena();
 }
@@ -121,7 +126,7 @@ export function reiniciar() {
 export function cargarDiagnostico() {
   const d = DIAGNOSTICOS[Math.floor(Math.random() * DIAGNOSTICOS.length)];
   const base = PEDIDOS_FIJOS[0].piezas;
-  estado.S = { pedido: PEDIDOS_FIJOS[0].id, diag: d.id, placed: {}, plugged: {}, errores: 0, final: false };
+  estado.S = { pedido: PEDIDOS_FIJOS[0].id, diag: d.id, placed: {}, plugged: {}, errores: 0, final: false, pruebas: 0, inicio: performance.now() };
   estado.entradas = [];
   estado.S.placed[base.caja] = 'caja';
   estado.S.placed[base.board] = 'board';
@@ -142,17 +147,24 @@ export function cargarDiagnostico() {
 }
 
 // Herramientas de diagnóstico (solo en modo diagnóstico).
+function contarPrueba() {
+  if (estado.S.diag) estado.S.pruebas++;
+}
+
 export function comprobarConexiones() {
+  contarPrueba();
   for (const c of CABLES) log('info', `${c.nombre}: ${plugged(c.id) ? 'conectado' : 'NO conectado'}.`);
 }
 
 export function comprobarFuente() {
+  contarPrueba();
   const psu = piezaPlacada('psu');
   if (!psu) return log('info', 'No hay fuente instalada.');
   log('info', `La fuente da ${psu.watts} W. Este equipo necesita al menos ${potenciaNecesaria()} W.`);
 }
 
 export function retirarPieza(id) {
+  contarPrueba();
   delete estado.S.placed[id];
   hooks.pintarEscena();
   log('info', `${pieza(id).nombre} retirada del equipo.`);
