@@ -545,22 +545,24 @@
     var credito = cr ? '<p class="credit">Foto: <a href="' + cr.autorUrl + '">' + escapar(cr.autor) + '</a>, Wikimedia Commons, licencia <a href="' + cr.licenciaUrl + '">' + escapar(cr.licencia) + '</a>. ' + escapar(cr.nota) + '</p>' : '';
 
     raiz.innerHTML =
-      '<div class="card">' +
-        '<div class="modes">' +
-          '<button type="button" class="mE" aria-pressed="true">Explorar</button>' +
-          '<button type="button" class="mQ" aria-pressed="false">Quiz</button>' +
-          '<span class="qScore val"></span>' +
-        '</div>' +
+      '<div class="card mapa-card">' +
         '<figure class="map"><svg class="mapa" viewBox="0 0 ' + F.ancho + ' ' + F.alto + '" role="group" aria-label="' + escapar(F.alt) + '">' +
           '<image href="' + F.src + '" x="0" y="0" width="' + F.ancho + '" height="' + F.alto + '" preserveAspectRatio="xMidYMid meet"/>' +
           '<g class="zonas"></g>' +
         '</svg></figure>' +
-        '<div class="legend">' +
-          '<span><i class="sw sw-hover"></i>Cursor o foco</span>' +
-          '<span><i class="sw sw-hit"></i>Acierto</span>' +
-          '<span><i class="sw sw-miss"></i>Fallo</span>' +
+        '<div class="mapa-panel">' +
+          '<div class="modes">' +
+            '<button type="button" class="mE" aria-pressed="true">Explorar</button>' +
+            '<button type="button" class="mQ" aria-pressed="false">Quiz</button>' +
+            '<span class="qScore val"></span>' +
+          '</div>' +
+          '<div class="legend">' +
+            '<span><i class="sw sw-hover"></i>Cursor o foco</span>' +
+            '<span><i class="sw sw-hit"></i>Acierto</span>' +
+            '<span><i class="sw sw-miss"></i>Fallo</span>' +
+          '</div>' +
+          '<div class="log info" aria-live="polite"></div>' +
         '</div>' +
-        '<div class="log info" aria-live="polite"></div>' +
       '</div>' + credito;
 
     var zonasG = q('.zonas');
@@ -667,7 +669,7 @@
   function iniciar(root, temas) {
     if (!temas || !temas.length) { root.textContent = 'No hay temas registrados.'; return; }
     /* Vista a la que lleva cada elemento de navegación. «caso» muestra la vista de inicio y se desplaza al caso. */
-    var DESTINO = { inicio: 'inicio', caso: 'inicio', mapa: 'mapa', recursos: 'recursos', ayuda: 'ayuda', ajustes: 'ajustes' };
+    var DESTINO = { inicio: 'inicio', caso: 'inicio', mapa: 'mapa', ayuda: 'ayuda', ajustes: 'ajustes' };
     var sim = null;
 
     /* Tema: si el usuario eligió uno antes, se aplica; si no, el predeterminado es el oscuro (ver :root en averias.html). */
@@ -690,7 +692,6 @@
               '<button type="button" class="nav-item" data-v="inicio">Inicio</button>' +
               '<button type="button" class="nav-item" data-v="caso">Caso actual</button>' +
               '<button type="button" class="nav-item" data-v="mapa">Mapa del quiz</button>' +
-              '<button type="button" class="nav-item" data-v="recursos">Recursos</button>' +
               '<button type="button" class="nav-item" data-v="ayuda">Ayuda</button>' +
             '</nav>' +
             '<div class="side-pie">' +
@@ -710,15 +711,6 @@
               '<div class="sim-raiz"></div>' +
             '</section>' +
             '<section class="vista" data-v="mapa" hidden><div class="mapa-raiz"></div></section>' +
-            '<section class="vista" data-v="recursos" hidden>' +
-              '<h1>Recursos</h1>' +
-              '<ul class="enlaces">' +
-                '<li><a href="apuntes/ver-s12.html">Apuntes S12: diagnóstico guiado</a></li>' +
-                '<li><a href="apuntes/ver-s07.html">Apuntes S07: fuente de alimentación</a></li>' +
-                '<li><a href="examen.html">Examen de práctica</a></li>' +
-                '<li><a href="index.html">Inicio del temario</a></li>' +
-              '</ul>' +
-            '</section>' +
             '<section class="vista" data-v="ayuda" hidden>' +
               '<h1>Ayuda</h1>' +
               '<ol class="pasos-ayuda">' +
