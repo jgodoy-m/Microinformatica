@@ -628,7 +628,9 @@ function actualizarGuias(hover) {
     const s = SLOTS[id];
     const relevante = id === 'board' ? !hayPlaca : (hayPlaca || id === 'psu') && !occupied(id);
     m.visible = relevante;
-    m.material.opacity = hover === id ? 0.8 : 0.4;
+    // La placa ocupa casi todo el chasis: su guía solo se marca de forma sutil.
+    const base = id === 'board' ? 0.1 : 0.4;
+    m.material.opacity = hover === id ? (id === 'board' ? 0.25 : 0.8) : base;
     m.position.set(s.x, s.y, 0.06);
   }
   for (const [pid, m] of Object.entries(guiaPort)) {
