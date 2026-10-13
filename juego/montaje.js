@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/RoomEnvironment.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { PIEZAS, CABLES, PEDIDOS } from './catalogo.js';
 
 const $ = (id) => document.getElementById(id);
@@ -313,6 +314,29 @@ function disipador(w, h, d, vertical) {
   return g;
 }
 
+// ---------- Modelos 3D de las piezas (modelos/*.glb, generados con Blender) ----------
+const MODELOS = {
+  cpu: 'modelos/cpu.glb',
+  'ram-ddr4': 'modelos/ram-ddr4.glb',
+  'ram-ddr5': 'modelos/ram-ddr5.glb',
+  gpu: 'modelos/gpu.glb',
+  nvme: 'modelos/nvme.glb',
+  psu: 'modelos/psu.glb'
+};
+const plantillas = {};
+// Clave del modelo de una pieza, o null si no tiene modelo 3D.
+const claveModelo = (p) => {
+  if (p.kind === 'ram') return p.gen === 'DDR5' ? 'ram-ddr5' : 'ram-ddr4';
+  return MODELOS[p.kind] ? p.kind : null;
+};
+const cargadorGlb = new GLTFLoader();
+Promise.all(Object.entries(MODELOS).map(([clave, url]) => new Promise((resolver) => {
+  cargadorGlb.load(url, (gltf) => {
+    plantillas[clave] = gltf.scene;
+    resolver();
+  }, undefined, () => resolver());
+}))).then(() => pintarEscena());
+
 // ---------- Construcción de la escena fija ----------
 // Chasis según la caja elegida: lateral de cristal o metálico, y tiras RGB si la caja las tiene.
 function construirCaso(modelo) {
@@ -369,6 +393,8 @@ function construirPieza(p, pos) {
   const g = new THREE.Group();
   g.position.set(pos.x, pos.y, pos.z);
   g.userData.id = p.id;
+  const clave = claveModelo(p);
+  if (clave && plantillas[clave]) return construirPiezaGlb(p, g, clave);
 
   if (p.kind === 'cpu') {
     // Sustrato verde-negro bajo la tapa metálica con la etiqueta del modelo.
@@ -436,6 +462,49 @@ function construirPieza(p, pos) {
     g.add(ventiladorPsu);
   }
 
+  return g;
+}
+
+// Pieza con su modelo 3D. Los ventiladores (nodo 'Fan') giran; el aro y la tira RGB dependen de la caja.
+function construirPiezaGlb(p, g, clave) {
+  const modelo = plantillas[clave].clone(true);
+  modelo.traverse((o) => {
+    if (!o.isMesh) return;
+    o.castShadow = true;
+    o.receiveShadow = true;
+    o.material = o.material.clone();
+    if (o.material.name === 'Aro') {
+      o.material.color.set(rgbActivo ? '#88C0D0' : '#4C566A');
+      o.material.emissive.set(rgbActivo ? '#88C0D0' : '#000000');
+      if (rgbActivo) ledMats.push(o.material);
+    }
+    if (o.material.name === 'LED') {
+      o.visible = rgbActivo;
+      if (rgbActivo) ledMats.push(o.material);
+    }
+  });
+  modelo.traverse((o) => { if (o.name === 'Fan') fans.push(o); });
+  g.add(modelo);
+
+  // Etiquetas y conectores que dependen de la pieza concreta (texto y posiciones del juego).
+  if (p.kind === 'cpu') {
+    const etiqueta = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 3.0), new THREE.MeshStandardMaterial({ map: texturaTexto(p.socket, 256, 256, '#A9B3C2', '#2E3440'), metalness: 0.4, roughness: 0.4 }));
+    etiqueta.position.set(0, 0, 0.305);
+    g.add(etiqueta);
+  }
+  if (p.kind === 'nvme') {
+    const etiqueta = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1.6), new THREE.MeshStandardMaterial({ map: texturaTexto('NVMe M.2', 512, 220, '#E5E9F0', '#2E3440'), roughness: 0.6 }));
+    etiqueta.position.set(1.4, 0, 0.14);
+    g.add(etiqueta);
+  }
+  if (p.kind === 'psu') {
+    for (const cid of Object.keys(SALIDA_CABLE)) {
+      g.add(en(caja(1.4, 0.8, 1.2, matNegro), SALIDA_CABLE[cid][0], 3.65, 0));
+    }
+    const etiqueta = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.6), new THREE.MeshStandardMaterial({ map: texturaTexto(`${p.watts} W`, 512, 180), roughness: 0.6 }));
+    etiqueta.position.set(-4.2, 1.6, 3.52);
+    g.add(etiqueta);
+  }
   return g;
 }
 

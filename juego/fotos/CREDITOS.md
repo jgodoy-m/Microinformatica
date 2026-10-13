@@ -14,3 +14,7 @@ Todas las imágenes son recortes (fondo quitado, solo el componente) de fotos de
 - gpu.png — Sergei Starostin (Pexels: https://www.pexels.com/@sejio402/) — https://www.pexels.com/photo/close-up-of-computer-part-6704947/ — Licencia de Pexels
 - nvme.png — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/high-performance-nvme-ssd-on-gray-surface-28666524/ — Licencia de Pexels
 - psu.png — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/black-power-supply-unit-on-white-background-33173003/ — Licencia de Pexels
+
+## Modelos 3D (juego/modelos/)
+
+Modelos de CPU, RAM, GPU, SSD y fuente generados por el equipo con Blender a partir de medidas aproximadas (script generar_modelos.py). No usan fuentes externas. La biblioteca GLTFLoader de three.js (juego/vendor/three/loaders/) es MIT, como el resto de three.js.
