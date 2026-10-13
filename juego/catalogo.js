@@ -15,8 +15,8 @@
 export const PIEZAS = [
   // Cajas: definen el aspecto del chasis y si lleva iluminación RGB.
   { id: 'caja-cristal-rgb', kind: 'caja', nombre: 'Torre de cristal con RGB', corto: 'Caja cristal RGB', cristal: true, rgb: true, color: '#2E3440', sinFoto: true, comercial: 'Caja Aurora' },
-  { id: 'caja-cristal', kind: 'caja', nombre: 'Torre de cristal sin RGB', corto: 'Caja cristal', cristal: true, rgb: false, color: '#3B4252', sinFoto: true, comercial: 'Caja Basalto' },
-  { id: 'caja-metal', kind: 'caja', nombre: 'Torre metálica sin RGB', corto: 'Caja metal', cristal: false, rgb: false, color: '#4C566A', sinFoto: true, comercial: 'Caja Cobalto' },
+  { id: 'caja-cristal', kind: 'caja', nombre: 'Torre de cristal sin RGB', corto: 'Caja cristal', cristal: true, rgb: false, color: '#3B4252', comercial: 'Caja Basalto' },
+  { id: 'caja-metal', kind: 'caja', nombre: 'Torre metálica sin RGB', corto: 'Caja metal', cristal: false, rgb: false, color: '#4C566A', comercial: 'Caja Cobalto' },
   { id: 'caja-metal-rgb', kind: 'caja', nombre: 'Torre metálica con RGB', corto: 'Caja metal RGB', cristal: false, rgb: true, color: '#4C566A', sinFoto: true, comercial: 'Caja Ónix' },
 
   // Placas base: definen socket y tipo de memoria.
@@ -29,7 +29,7 @@ export const PIEZAS = [
 
   // Procesadores: el socket debe coincidir con el de la placa.
   { id: 'cpu-am4', kind: 'cpu', nombre: 'Procesador AM4 (105 W)', corto: 'CPU AM4', socket: 'AM4', tdp: 105, color: '#C9D1DC', comercial: 'AMD Ryzen 3 3100' },
-  { id: 'cpu-am4-b', kind: 'cpu', nombre: 'Procesador AM4 de 6 núcleos (65 W)', corto: 'CPU AM4 6n', socket: 'AM4', tdp: 65, color: '#C9D1DC', sinFoto: true, comercial: 'Procesador Vega 6' },
+  { id: 'cpu-am4-b', kind: 'cpu', nombre: 'Procesador AM4 (65 W)', corto: 'CPU AM4', socket: 'AM4', tdp: 65, color: '#C9D1DC', comercial: 'AMD Ryzen 5' },
   { id: 'cpu-am5', kind: 'cpu', nombre: 'Procesador AM5 (105 W)', corto: 'CPU AM5', socket: 'AM5', tdp: 105, color: '#C9D1DC', sinFoto: true, comercial: 'AMD Ryzen 7 9700X' },
   { id: 'cpu-am5-b', kind: 'cpu', nombre: 'Procesador AM5 de alto rendimiento (120 W)', corto: 'CPU AM5 HP', socket: 'AM5', tdp: 120, color: '#C9D1DC', sinFoto: true, comercial: 'Procesador Titan 12' },
   { id: 'cpu-intel', kind: 'cpu', nombre: 'Procesador Intel Core i7 LGA1700 (125 W)', corto: 'CPU Intel i7', socket: 'LGA1700', tdp: 125, color: '#C9D1DC', comercial: 'Intel Core i7-14700' },

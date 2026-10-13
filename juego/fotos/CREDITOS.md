@@ -18,3 +18,9 @@ Todas las imágenes son recortes (fondo quitado, solo el componente) de fotos de
 ## Modelos 3D (juego/modelos/)
 
 Modelos de CPU, RAM, GPU, SSD y fuente generados por el equipo con Blender a partir de medidas aproximadas (script generar_modelos.py). No usan fuentes externas. La biblioteca GLTFLoader de three.js (juego/vendor/three/loaders/) es MIT, como el resto de three.js.
+
+## Fotos añadidas (cajas y procesador de respaldo)
+
+- caja-cristal.png — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/modern-transparent-pc-case-on-wooden-surface-33444592/ — Licencia de Pexels
+- caja-metal.png — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/lian-li-black-pc-case-on-wooden-desk-33693783/ — Licencia de Pexels
+- cpu-am4-b.png — Alexandre P. Junior (Pexels: https://www.pexels.com/@alexandrep-junior/) — https://www.pexels.com/photo/close-up-of-a-ryzen-cpu-on-motherboard-33798628/ — Licencia de Pexels
