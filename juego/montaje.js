@@ -825,14 +825,14 @@ function requisitoPieza(p) {
 }
 
 function explicarColocacion(p) {
-  const titulo = esFacil() ? p.nombre : NOMBRE_GENERICO[p.kind];
+  const titulo = p.nombre;
   if (S.explicadas[p.kind]) return `Pieza colocada: ${titulo}.`;
   S.explicadas[p.kind] = true;
   return `Pieza colocada: ${titulo}. ${FUNCION_PIEZA[p.kind]} ${requisitoPieza(p)}`;
 }
 
 function explicarConexion(c, pid, largo) {
-  const titulo = esFacil() ? c.nombre : 'Cable de alimentación';
+  const titulo = c.nombre;
   if (S.explicadas[c.id]) return `${titulo} conectado.`;
   S.explicadas[c.id] = true;
   const medida = esFacil() ? ` Recorrido: ${Math.round(largo)} cm de ${c.longitudMax} cm.` : '';
@@ -874,7 +874,6 @@ const textoCables = () => `los ${NUMEROS_TEXTO[CABLES.length]} cables`;
 function pasos() {
   const p = pedido().piezas;
   return [
-    { txt: `Coloca la caja: ${pieza(p.caja).nombre}.`, hecho: () => placed(p.caja) },
     { txt: `Fija la ${pieza(p.board).nombre} en el chasis.`, hecho: () => placed(p.board) },
     { txt: `Coloca el procesador ${pieza(p.cpu).socket} en su socket.`, hecho: () => placed(p.cpu) },
     { txt: `Instala ${textoModulos(p.ram.length)} de RAM ${pieza(p.ram[0]).gen}.`, hecho: () => p.ram.every(placed) },
@@ -955,11 +954,10 @@ function resumenFinal() {
 }
 
 // Nombres de las comprobaciones, en el mismo orden que pasos().
-const ETIQUETAS_PASOS = ['caja', 'placa base', 'procesador', 'memoria', 'gráfica', 'SSD', 'fuente', 'cables de alimentación', 'encendido'];
+const ETIQUETAS_PASOS = ['placa base', 'procesador', 'memoria', 'gráfica', 'SSD', 'fuente', 'cables de alimentación', 'encendido'];
 
 // Pistas: ayudan a razonar qué comprobar sin decir qué pieza concreta elegir.
 const PISTAS = [
-  'Mira en el pedido si el cliente pide luces RGB o un lateral de cristal: eso decide la caja.',
   'La placa base define el socket del procesador y el tipo de memoria. Ambos deben encajar con el resto del pedido.',
   'Compara el socket del procesador con el de la placa base.',
   'La memoria debe ser de la misma generación que la placa (DDR4 o DDR5).',
@@ -995,6 +993,8 @@ function cargarPedido(id, partidaPrevia = null) {
   cancelarArrastreEnCurso();
   const c = partidaPrevia ?? { pistas: 0, errores: 0, fallos: [], retiradas: 0 };
   S = { pedido: id, placed: {}, plugged: {}, pistaPaso: null, final: false, explicadas: {}, ...c, fallos: [...c.fallos] };
+  // La caja del pedido ya está en el chasis: no se elige ni se coloca a mano.
+  S.placed[pedido().piezas.caja] = 'caja';
   if (!partidaPrevia) entradas = [];
   seleccion = null;
   destino = null;
@@ -1015,7 +1015,7 @@ function cargarPedido(id, partidaPrevia = null) {
     log('info', `Cambio a dificultad ${esFacil() ? 'fácil' : 'difícil'}: el montaje empieza de nuevo. Se conservan las pistas, los errores y las retiradas de esta partida.`);
   } else {
     log('info', esFacil()
-      ? `Montaje nuevo: ${pedido().titulo}. Empieza eligiendo la caja y arrastrándola al chasis.`
+      ? `Montaje nuevo: ${pedido().titulo}. La caja ya está en el chasis: empieza por la placa base.`
       : 'Montaje nuevo. Lee lo que pide el cliente y monta el equipo.');
   }
 }
@@ -1025,18 +1025,6 @@ function reiniciar() {
   cargarPedido(PEDIDOS[Math.floor(Math.random() * PEDIDOS.length)].id);
 }
 
-// Pasos sin nombres de piezas para el modo difícil.
-const pasosGenericos = () => [
-  'Elige la caja del pedido.',
-  'Fija la placa base en el chasis.',
-  'Asienta el procesador en su socket.',
-  `Instala ${textoModulos(pedido().piezas.ram.length)} de memoria.`,
-  'Coloca la tarjeta gráfica en su ranura.',
-  'Instala el almacenamiento M.2.',
-  'Coloca la fuente de alimentación.',
-  `Conecta ${textoCables()} de alimentación.`,
-  'Pulsa «Encender equipo» para comprobar el montaje.'
-];
 
 const componentesListos = () => {
   const p = pedido().piezas;
@@ -1055,10 +1043,9 @@ function pintarPanel() {
     ? (S.final ? `Equipo montado · Errores: ${S.errores}` : `Paso ${i < 0 ? lista.length : i + 1} de ${lista.length} · Errores: ${S.errores}`)
     : `Errores: ${S.errores}`;
 
-  const genericos = pasosGenericos();
   pasosEl.innerHTML = lista.map((p, n) => {
     const estado = p.hecho() ? 'hecho' : n === i ? 'actual' : 'pendiente';
-    const texto = esFacil() ? p.txt : genericos[n];
+    const texto = p.txt;
     const etiqueta = { hecho: 'Hecho', actual: 'Siguiente', pendiente: 'Pendiente' }[estado];
     const actual = estado === 'actual' ? ' aria-current="step"' : '';
     return `<li data-estado="${estado}"${actual}><span class="num">${estado === 'hecho' ? '✓' : n + 1}</span><span>${texto}</span><span class="etiqueta-paso">${etiqueta}</span></li>`;
@@ -1087,7 +1074,7 @@ function pintarPanel() {
   if (S.final) texto = `<strong>Montaje completado.</strong> El equipo arranca. Errores durante el montaje: ${S.errores}.`;
   else if (seleccion) texto = '<strong>Pieza seleccionada.</strong> Elige un destino de la lista y confirma.';
   else if (c1 && c2) texto = '<strong>Todo conectado.</strong> Pulsa «Encender equipo» para comprobar el montaje.';
-  else texto = `<strong>Siguiente paso.</strong> ${esFacil() ? lista[i].txt : genericos[i]}`;
+  else texto = `<strong>Siguiente paso.</strong> ${lista[i].txt}`;
   if (ultimoAviso && !S.final) texto += ` <span class="aviso">${ultimoAviso}</span>`;
   mensajeEl.innerHTML = texto;
 
@@ -1128,11 +1115,9 @@ function specDe(p) {
 
 // ---------- Bandeja ----------
 // Desplegables de la bandeja: uno por tipo de componente.
-// Nombres sin datos técnicos, para el modo difícil.
-const NOMBRE_GENERICO = { caja: 'Caja', board: 'Placa base', cpu: 'Procesador', ram: 'Memoria RAM', gpu: 'Tarjeta gráfica', nvme: 'SSD', psu: 'Fuente de alimentación', cable: 'Cable de alimentación' };
 
 const GRUPOS_BANDEJA = [
-  ['caja', 'Cajas'], ['board', 'Placas base'], ['cpu', 'Procesadores'], ['ram', 'Memoria RAM'],
+  ['board', 'Placas base'], ['cpu', 'Procesadores'], ['ram', 'Memoria RAM'],
   ['gpu', 'Tarjetas gráficas'], ['nvme', 'SSD'], ['psu', 'Fuentes de alimentación'], ['cable', 'Cables de alimentación']
 ];
 
@@ -1141,7 +1126,7 @@ function pintarBandeja() {
   const items = [
     ...PIEZAS.map((p) => ({ id: p.id, kind: p.kind, tipo: 'parte', nombre: p.nombre, corto: p.corto, spec: specDe(p), color: p.color, foto: !p.sinFoto, instalado: placed(p.id) })),
     ...CABLES.map((c) => ({ id: c.id, kind: 'cable', tipo: 'cable', nombre: c.nombre, corto: c.corto, spec: `Conector ${PORTS[c.port].etiqueta}`, color: c.color, foto: !c.sinFoto, instalado: plugged(c.id) }))
-  ].filter((it) => filtro === 'todos' || (filtro === 'cables' ? it.tipo === 'cable' : it.tipo === 'parte'));
+  ].filter((it) => it.kind !== 'caja' && (filtro === 'todos' || (filtro === 'cables' ? it.tipo === 'cable' : it.tipo === 'parte')));
   // Un desplegable por tipo: se abre con un clic. Con un filtro activo se muestran abiertos.
   for (const [tipo, titulo] of GRUPOS_BANDEJA) {
     const del = items.filter((it) => it.kind === tipo);
@@ -1203,7 +1188,7 @@ function pintarFicha(it, contenedorFichas) {
   const foto = `<img src="${imagen}" alt="" loading="lazy" class="${it.foto ? 'foto' : 'icono'}">`;
   const dato = esFacil() && it.spec ? `<small>${it.spec}</small>` : '';
   // En fácil, la ficha usa el mismo nombre que las instrucciones y el pedido (así el alumno los reconoce).
-  const nombre = esFacil() ? it.nombre : NOMBRE_GENERICO[it.kind];
+  const nombre = it.nombre;
   const marca = elegida ? '<em class="marca">Seleccionada</em>' : '';
   const estado = it.instalado ? (it.tipo === 'cable' ? 'Conectado' : 'Instalado') : 'Disponible';
   el.innerHTML = `<span class="miniatura">${foto}</span><span class="texto">${nombre}${dato}${marca}</span><span class="estado">${estado}</span>`;
@@ -1243,31 +1228,9 @@ function construirGuias() {
 
 // Las guías solo aparecen cuando el alumno tiene una pieza seleccionada o arrastrada:
 // muestran los huecos (o conectores) que admiten esa pieza. El destino en el que está el cursor se resalta.
-function actualizarGuias(hover, valido = false) {
-  const color = (id) => (hover !== id ? '#81A1C1' : valido ? '#A3BE8C' : '#BF616A');
-  const objetivo = seleccion ?? arrastre;
-  const item = objetivo ? (objetivo.tipo === 'cable' ? cable(objetivo.id) : pieza(objetivo.id)) : null;
-  const esCable = objetivo?.tipo === 'cable';
-  for (const [id, m] of Object.entries(guiaSlot)) {
-    const s = SLOTS[id];
-    const visible = !!item && esFacil() && !esCable && s.accepts.includes(item.kind) && !occupied(id);
-    m.visible = visible;
-    if (!visible) continue;
-    m.material.opacity = hover === id ? 1 : 0.6;
-    m.material.color.set(color(id));
-    m.scale.set(s.w + 0.6, s.h + 0.6, 1);
-    m.position.set(s.x, s.y, 0.06);
-  }
-  for (const [pid, m] of Object.entries(guiaPort)) {
-    const visible = !!item && esFacil() && esCable && item.port === pid && puertoVisible(pid) && !pluggedPort(pid);
-    m.visible = visible;
-    if (!visible) continue;
-    const r = puertoRect(pid);
-    m.position.set(r.x, r.y, r.z + 0.06);
-    m.scale.set(r.w + 0.8, r.h + 0.8, 1);
-    m.material.opacity = hover === pid ? 1 : 0.6;
-    m.material.color.set(color(pid));
-  }
+// Sin guías: no se marcan los huecos que admiten la pieza. El error aparece solo al confirmar.
+function actualizarGuias() {
+  for (const m of [...Object.values(guiaSlot), ...Object.values(guiaPort)]) m.visible = false;
 }
 
 // ---------- Cables ----------
@@ -1512,22 +1475,16 @@ function pintarSeleccion() {
     return;
   }
   const item = seleccion.tipo === 'cable' ? cable(seleccion.id) : pieza(seleccion.id);
-  const clave = seleccion.tipo === 'cable' ? 'cable' : item.kind;
-  const nombre = esFacil() ? item.corto : NOMBRE_GENERICO[clave];
+  const nombre = esFacil() ? item.corto : item.nombre;
   const verbo = seleccion.tipo === 'cable' ? 'Conectar' : 'Colocar';
   $('seleccion-titulo').textContent = `${verbo}: ${nombre}`;
   $('confirmar').textContent = seleccion.tipo === 'cable' ? 'Confirmar conexión' : 'Confirmar colocación';
   const lista = destinosDe(item, seleccion.tipo);
-  $('destinos').innerHTML = lista.map((d) => {
-    const estado = d.motivo ? 'no válido' : 'válido';
-    const marca = destino === d.id ? ' · elegido' : '';
-    return `<li><button type="button" class="boton destino" data-dest="${d.id}" aria-pressed="${destino === d.id}">${d.etiqueta}: ${estado}${marca}</button></li>`;
-  }).join('');
+  $('destinos').innerHTML = lista.map((d) => `<li><button type="button" class="boton destino" data-dest="${d.id}" aria-pressed="${destino === d.id}">${d.etiqueta}</button></li>`).join('');
+  // Sin pistas de compatibilidad: si el destino no vale, el error aparece al confirmar.
   const elegido = lista.find((d) => d.id === destino);
-  $('seleccion-motivo').textContent = elegido?.motivo
-    ? (esFacil() ? elegido.motivo.msg : elegido.motivo.corto)
-    : (elegido ? 'Destino válido: confirma para colocarla.' : 'Elige un destino de la lista.');
-  $('confirmar').disabled = !(elegido && !elegido.motivo);
+  $('seleccion-motivo').textContent = elegido ? 'Confirma para intentar colocarla.' : 'Elige un destino de la lista.';
+  $('confirmar').disabled = !elegido;
   panel.hidden = false;
 }
 
@@ -1542,7 +1499,8 @@ function confirmarSeleccion() {
   if (!seleccion || !destino) return;
   const { id, tipo } = seleccion;
   const hecho = tipo === 'cable' ? conectarEn(cable(id), destino, [SALIDA_CABLE[id]]) : colocarEn(pieza(id), destino);
-  if (!hecho) { pintarSeleccion(); return; }
+  // Si no encaja, el error aparece en «Siguiente paso» y la selección sigue abierta para elegir otro destino.
+  if (!hecho) { pintarSeleccion(); pintarPanel(); return; }
   seleccion = null;
   destino = null;
   pintarEscena();
@@ -1652,7 +1610,9 @@ reiniciar();
 
 $('encender').addEventListener('click', encender);
 // ---------- Cambio de dificultad: con progreso, confirmación; la dificultad activa no hace nada ----------
-const hayProgreso = () => Object.keys(S.placed).length > 0 || Object.keys(S.plugged).length > 0;
+// La caja va sola al chasis: no cuenta como progreso del alumno.
+const piezasMontadas = () => Object.keys(S.placed).filter((id) => id !== pedido().piezas.caja);
+const hayProgreso = () => piezasMontadas().length > 0 || Object.keys(S.plugged).length > 0;
 
 function aplicarModo(nuevo) {
   modo = nuevo;
@@ -1663,7 +1623,7 @@ function aplicarModo(nuevo) {
 
 function pedirCambioModo(nuevo) {
   modoPendiente = nuevo;
-  const piezas = Object.keys(S.placed).length;
+  const piezas = piezasMontadas().length;
   const cables = Object.keys(S.plugged).length;
   const cuenta = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
   $('confirmar-modo-texto').textContent = `Cambiar a dificultad ${nuevo === 'facil' ? 'fácil' : 'difícil'} empezará de nuevo el montaje de este pedido. Se perderán ${cuenta(piezas, 'pieza', 'piezas')} y ${cuenta(cables, 'cable', 'cables')} colocados. Se conservan las pistas, los errores y las retiradas de esta partida.`;
@@ -1728,9 +1688,9 @@ function requisitosDe(id) {
 
 // Nombre de una pieza o cable. Las dos memorias se distinguen por su ranura (si no, salen iguales).
 function nombreElemento(id) {
-  if (cable(id)) return esFacil() ? cable(id).corto : 'Cable de alimentación';
+  if (cable(id)) return esFacil() ? cable(id).corto : cable(id).nombre;
   const p = pieza(id);
-  const base = esFacil() ? p.corto : NOMBRE_GENERICO[p.kind];
+  const base = esFacil() ? p.corto : p.nombre;
   const sid = S.placed[id];
   return p.kind === 'ram' && sid ? `${base}, ranura ${sid.slice(-1)}` : base;
 }

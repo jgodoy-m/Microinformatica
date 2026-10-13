@@ -121,7 +121,7 @@
     }
 
     /* Inventario */
-    .inventario { grid-column: 1; grid-row: 1 / span 3; display: grid; gap: 12px; align-content: start; min-width: 0; }
+    .inventario { grid-column: 1; grid-row: 1 / span 2; display: grid; gap: 12px; align-content: start; min-width: 0; }
     .tarjeta {
       background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px; min-width: 0;
       box-shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 8px 24px rgba(0, 0, 0, .18);
@@ -254,7 +254,7 @@
     .etapas .etiqueta { font-weight: 600; }
     .etapas .estado-etapa { font-size: 12px; color: var(--muted); }
     .etapas .explica { font-size: 12px; color: var(--muted); line-height: 1.4; }
-    .acciones-montaje { min-width: 0; display: grid; gap: 12px; }
+    .acciones-montaje { grid-column: 1; grid-row: 3; min-width: 0; display: grid; gap: 12px; align-content: start; }
     .mensaje { font-size: 14px; min-height: 2.8em; }
     .mensaje strong { display: block; margin-bottom: 4px; font-size: 17px; font-weight: 700; }
     .acciones-montaje { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
@@ -279,11 +279,12 @@
     @media (max-width: 1100px) {
       .pagina { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
       .escena-wrap, .centro, .acciones-montaje, .lateral, .inventario { grid-column: 1; grid-row: auto; }
+      .acciones-montaje { order: 3; }
       .escena-wrap { order: 1; }
       /* Las piezas se eligen mientras se mira el chasis: el inventario va justo debajo de la escena. */
       .inventario { order: 2; max-height: 60vh; overflow-y: auto; }
-      .centro { order: 3; }
-      .lateral { order: 4; }
+      .centro { order: 4; }
+      .lateral { order: 5; }
     }
     @media (max-width: 480px) {
       .pagina { padding: 12px; gap: 12px; }
@@ -318,6 +319,15 @@
       </div>
       <div id="bandeja" class="bandeja"></div>
     </aside>
+
+
+    <section class="acciones-montaje tarjeta" aria-label="Mensaje y acciones">
+      <p id="mensaje" class="mensaje" aria-live="polite" tabindex="-1"></p>
+      <div class="botones">
+        <button id="reiniciar" class="boton" type="button">Reiniciar</button>
+        <button id="encender" class="boton primario" type="button">Encender equipo</button>
+      </div>
+    </section>
 
     <section class="escena-wrap" aria-label="Escena de montaje">
       <p class="ayuda-escena">Arrastra los componentes o selecciónalos con el teclado.</p>
@@ -390,13 +400,6 @@
         </div>
       </section>
 
-        <section class="acciones-montaje tarjeta" aria-label="Mensaje y acciones">
-          <p id="mensaje" class="mensaje" aria-live="polite" tabindex="-1"></p>
-          <div class="botones">
-            <button id="reiniciar" class="boton" type="button">Reiniciar</button>
-            <button id="encender" class="boton primario" type="button">Encender equipo</button>
-          </div>
-        </section>
       </div>
 
     <div class="centro">
@@ -404,11 +407,11 @@
         <h2 id="estado-titulo">Estado del montaje</h2>
         <ol id="etapas" class="etapas"></ol>
       </section>
-      <details class="tarjeta montadas" open>
+      <details class="tarjeta montadas" hidden>
         <summary>Piezas montadas</summary>
         <ul id="lista-montadas" class="montadas-lista"></ul>
       </details>
-      <details class="tarjeta registro" open>
+      <details class="tarjeta registro" hidden>
         <summary>Registro de la partida</summary>
         <ul id="log" class="log" aria-live="polite"></ul>
       </details>
