@@ -39,7 +39,15 @@
     eps: 'M9 3v5 M15 3v5 M7 8h10v4a5 5 0 0 1-10 0z M12 17v4',
     sata: 'M4 6h16v12H4z M8 10h8 M8 14h8',
     tmp: 'M10 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z',
-    cam: 'M4 12a8 8 0 0 1 14-5 M20 12a8 8 0 0 1-14 5 M18 3v4h-4 M6 21v-4h4'
+    cam: 'M4 12a8 8 0 0 1 14-5 M20 12a8 8 0 0 1-14 5 M18 3v4h-4 M6 21v-4h4',
+    carga: 'M3 17l5-5 4 4 8-8 M15 8h5v5',
+    banco: 'M3 7h18v10H3z M7 11h4v3H7z M14 11h3',
+    panel: 'M12 3v8 M7 6.5a7 7 0 1 0 10 0',
+    fan: 'M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0 M12 10c0-4 1-7 4-7s2 5-2 7 M14 12c4 0 7 1 7 4s-5 2-7-2 M12 14c0 4-1 7-4 7s-2-5 2-7 M10 12c-4 0-7-1-7-4s5-2 7 2',
+    bios: 'M5 3h10l4 4v14H5z M9 12h6 M9 16h6',
+    pila: 'M12 12m-8 0a8 8 0 1 0 16 0a8 8 0 1 0-16 0 M12 8v8 M8 12h8',
+    gpu: 'M2 7h20v10H2z M7 12m-2.5 0a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0 M15 10h4 M15 14h4 M5 17v3',
+    smart: 'M4 4h16v16H4z M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0-8 0 M12 12l3-2'
   };
   function icono(id) {
     return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="' + (ICONO_PRUEBA[id] || 'M5 12h14') + '"/></svg>';
@@ -50,12 +58,33 @@
     var q = function (s) { return raiz.querySelector(s); };
     var qa = function (s) { return raiz.querySelectorAll(s); };
     var S;
-    /* Ronda: número de veces que se pulsa «Repetir». Alterna la variante de los casos que tienen escenarios (sin aleatoriedad). */
-    var ronda = 0;
+    /* Casos por partida: «porRonda» del tema, sacados al azar de la bolsa de casos. */
+    var POR_RONDA = Math.min(C.porRonda || C.casos.length, C.casos.length);
+    /* Bolsa de casos sin jugar: al repetir no salen casos ya vistos hasta haber pasado por todos. */
+    var bolsa = [];
 
-    /* Caso i con la variante v aplicada. Las variantes solo sustituyen res, fallos, luz, explicación, reparaciones, verificaciones y «exige». */
+    function barajar(a) {
+      for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = a[i]; a[i] = a[j]; a[j] = t;
+      }
+      return a;
+    }
+
+    function sacarCasos() {
+      var elegidos = [];
+      while (elegidos.length < POR_RONDA) {
+        if (!bolsa.length) bolsa = barajar(C.casos.map(function (c, i) { return i; }));
+        var k = bolsa.pop();
+        if (elegidos.indexOf(k) < 0) elegidos.push(k);
+      }
+      return elegidos;
+    }
+
+    /* Caso i de la partida (posición en S.orden) con la variante v aplicada.
+       Las variantes solo sustituyen res, fallos, luz, explicación, reparaciones, verificaciones y «exige». */
     function casoEn(i, v) {
-      var base = C.casos[i];
+      var base = C.casos[S.orden[i]];
       var over = base.variantes && base.variantes[v];
       if (!over) return base;
       var c = Object.assign({}, base, over);
@@ -66,7 +95,7 @@
     function caso() { return casoEn(S.i, S.variante); }
 
     function nuevo() {
-      S = { i: 0, pts: [], desglose: [], varHist: [], repAceptada: null };
+      S = { i: 0, orden: sacarCasos(), pts: [], desglose: [], varHist: [], repAceptada: null };
       reiniciarCaso();
     }
 
@@ -75,7 +104,8 @@
       S.used = new Set(); S.medido = false; S.luz = {}; S.volt = null;
       S.pistas = 0; S.pistaTxt = ''; S.dxFallos = 0; S.camPrematura = false;
       S.diagOK = false; S.reparada = false; S.repErr = 0; S.verificada = false; S.hallazgo = {}; S.repAceptada = null;
-      S.variante = ronda % 2 ? 'mal' : 'defectuoso';
+      /* Los casos con escenarios (variantes) eligen uno al azar. */
+      S.variante = Math.random() < 0.5 ? 'mal' : 'defectuoso';
     }
 
     /* Un diagnóstico correcto solo se confirma si las pruebas discriminantes del caso están hechas. */
@@ -141,7 +171,7 @@
       var c = caso();
       qa('.lamp').forEach(function (l) {
         var id = l.dataset.c;
-        var st = id === 'placa' ? (S.verificada ? 'ok' : undefined) : S.luz[id];
+        var st = id === 'placa' && S.verificada ? 'ok' : S.luz[id];
         l.classList.remove('ok', 'bad');
         if (st) l.classList.add(st);
         var txt = st === 'ok' ? 'correcto' : st === 'bad' ? 'fallo' : 'sin comprobar';
@@ -221,7 +251,7 @@
 
     function render() {
       var c = caso();
-      q('.caso-n').textContent = 'Caso ' + (S.i + 1) + ' de ' + C.casos.length;
+      q('.caso-n').textContent = 'Caso ' + (S.i + 1) + ' de ' + S.orden.length;
       q('.caso-t').textContent = 'Caso ' + (S.i + 1) + ': ' + c.t;
       q('.caso-s').textContent = c.s;
       pintarPasos();
@@ -393,7 +423,7 @@
       actualizarEstado();
       var n = q('.next');
       n.hidden = false;
-      n.textContent = S.i + 1 < C.casos.length ? 'Siguiente caso →' : 'Ver resultado';
+      n.textContent = S.i + 1 < S.orden.length ? 'Siguiente caso →' : 'Ver resultado';
       n.focus();
     }
 
@@ -405,7 +435,7 @@
       q('.caso-wrap').hidden = true;
       var f = q('.fin');
       f.hidden = false;
-      var repaso = C.casos.map(function (base, i) {
+      var repaso = S.orden.map(function (k, i) {
         var c = casoEn(i, S.varHist[i] || 'defectuoso');
         var leccion = c.explicacion[c.explicacion.length - 1][1];
         var desglose = (S.desglose[i] || []).map(function (p) {
@@ -418,7 +448,6 @@
         '<h3 class="label">Repaso de las averías</h3><ol class="repaso">' + repaso + '</ol>' +
         '<button class="btn-prim repetir" type="button">Repetir</button>';
       f.querySelector('.repetir').onclick = function () {
-        ronda++;
         nuevo();
         q('.caso-wrap').hidden = false;
         f.hidden = true;
@@ -427,7 +456,7 @@
     }
 
     raiz.innerHTML =
-      '<ol class="pasos" aria-label="Progreso de los casos">' + C.casos.map(function (c, i) {
+      '<ol class="pasos" aria-label="Progreso de los casos">' + C.casos.slice(0, POR_RONDA).map(function (c, i) {
         return '<li class="paso" data-i="' + i + '"><span class="paso-n">' + (i + 1) + '</span><span class="paso-t">' + (i === 0 ? 'Caso actual' : 'Caso ' + (i + 1)) + '</span></li>';
       }).join('') + '</ol>' +
       '<div class="caso-wrap">' +
@@ -513,7 +542,7 @@
     q('.next').onclick = function () {
       /* Solo se avanza con el caso verificado: el botón puede dispararse por código aunque esté oculto. */
       if (!S.verificada) return;
-      if (S.i + 1 < C.casos.length) {
+      if (S.i + 1 < S.orden.length) {
         S.i++; reiniciarCaso();
         render();
       } else {
@@ -523,7 +552,7 @@
 
     nuevo();
     render();
-    /* Reinicio desde Ajustes: vuelve al primer caso sin cambiar la alternancia de escenarios. */
+    /* Reinicio desde Ajustes: empieza una partida nueva con otros casos al azar. */
     return {
       reiniciar: function () {
         nuevo();
@@ -889,7 +918,7 @@
             '</section>' +
             '<section class="vista" data-v="ajustes" hidden>' +
               '<h1>Ajustes</h1>' +
-              '<div class="card"><p>Reinicia el simulador para empezar otra vez desde el caso 1. El progreso no se guarda en este navegador.</p>' +
+              '<div class="card"><p>Reinicia el simulador para empezar una partida nueva con otros casos al azar. El progreso no se guarda en este navegador.</p>' +
               '<button type="button" class="btn-sec" id="reiniciar-sim">Reiniciar simulación</button></div>' +
             '</section>' +
           '</div>' +
