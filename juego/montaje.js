@@ -8,6 +8,8 @@ const objEl = $('objetivo');
 const progEl = $('progreso');
 const clienteEl = $('cliente');
 const selectPedido = $('pedido');
+const especEl = $('especificaciones');
+const botonesModo = document.querySelectorAll('[data-modo]');
 const contenedor = $('escena');
 const bandeja = $('bandeja');
 const fantasma = $('fantasma');
@@ -54,6 +56,8 @@ let S;
 let entradas = [];
 let arrastre = null;
 let destelloHasta = 0;
+let modo = 'facil';
+const esFacil = () => modo === 'facil';
 let vistaPrevia = null;
 let tableroId = null;
 
@@ -477,7 +481,10 @@ function log(tipo, msg) {
   entradas = entradas.slice(0, 40);
   logEl.innerHTML = entradas.map((e) => `<li class="${e.tipo}">${e.msg}</li>`).join('');
 }
-function fallo(msg) { S.errores++; log('bad', msg); }
+function fallo(msg, corto) {
+  S.errores++;
+  log('bad', esFacil() ? msg : (corto ?? 'No encaja con el pedido.'));
+}
 function ok(msg) { log('ok', msg); }
 
 function intentarColocar(p, x, y) {
@@ -485,24 +492,24 @@ function intentarColocar(p, x, y) {
   if (!sid) return;
   const placa = tabla();
   if (p.kind !== 'board' && !placa) {
-    return fallo('Primero fija la placa base en el chasis: sin ella no hay dónde montar el resto.');
+    return fallo('Primero fija la placa base en el chasis: sin ella no hay dónde montar el resto.', 'Primero la placa base.');
   }
-  if (occupied(sid)) return fallo(`El ${SLOTS[sid].nombre} ya está ocupado.`);
+  if (occupied(sid)) return fallo(`El ${SLOTS[sid].nombre} ya está ocupado.`, 'Ese hueco ya está ocupado.');
   if (p.kind === 'cpu' && p.socket !== placa.socket) {
-    return fallo(`${p.nombre} no encaja: es para socket ${p.socket} y la placa tiene ${placa.socket}. Cada socket admite solo sus familias de procesador (apuntes S11).`);
+    return fallo(`${p.nombre} no encaja: es para socket ${p.socket} y la placa tiene ${placa.socket}. Cada socket admite solo sus familias de procesador (apuntes S11).`, 'Ese procesador no encaja en esta placa.');
   }
   if (p.kind === 'ram' && p.gen !== placa.gen) {
-    return fallo(`${p.nombre} no entra en una placa ${placa.gen}: las ranuras son distintas según la generación (apuntes S11).`);
+    return fallo(`${p.nombre} no entra en una placa ${placa.gen}: las ranuras son distintas según la generación (apuntes S11).`, 'Esa memoria no encaja en esta placa.');
   }
   if (p.kind === 'psu' && p.watts < potenciaNecesaria()) {
-    return fallo(`La fuente de ${p.watts} W se queda corta: el equipo necesita al menos ${potenciaNecesaria()} W, según (TDP CPU + TDP GPU + 100 W) × 1,3 (apuntes S11).`);
+    return fallo(`La fuente de ${p.watts} W se queda corta: el equipo necesita al menos ${potenciaNecesaria()} W, según (TDP CPU + TDP GPU + 100 W) × 1,3 (apuntes S11).`, 'Esa fuente no basta para este equipo.');
   }
   if (!enPedido(p.id)) {
-    return fallo(`${p.nombre} no es el componente que pide el cliente en este pedido. Mira el pedido y elige otra pieza.`);
+    return fallo(`${p.nombre} no es el componente que pide el cliente en este pedido. Mira el pedido y elige otra pieza.`, 'Esa pieza no es la que pide el cliente.');
   }
   S.placed[p.id] = sid;
   const mensajes = {
-    board: `${p.nombre} fijada en el chasis: los separadores evitan que toque la caja (apuntes S08).`,
+    board: esFacil() ? `${p.nombre} fijada en el chasis: los separadores evitan que toque la caja (apuntes S08).` : `${p.nombre} fijada en el chasis.`,
     cpu: `Procesador asentado en el socket ${p.socket}.`,
     ram: `${p.nombre} instalado en la ranura.`,
     gpu: 'Tarjeta gráfica en la ranura PCIe x16.',
@@ -516,10 +523,10 @@ function intentarConectar(c, x, y, ruta) {
   const pid = puertoEn(x, y);
   if (!pid) return log('info', `${c.nombre} vuelve a la bandeja: suéltalo sobre su conector.`);
   if (c.port !== pid) {
-    return fallo(`${c.nombre} no encaja en el conector ${PORTS[pid].etiqueta}: el número de pines y la forma son distintos (apuntes S07).`);
+    return fallo(`${c.nombre} no encaja en el conector ${PORTS[pid].etiqueta}: el número de pines y la forma son distintos (apuntes S07).`, 'Ese cable no encaja en ese conector.');
   }
-  if (!piezaPlacada('psu')) return fallo('Antes de conectar los cables, instala la fuente: de ella salen.');
-  if (pluggedPort(pid)) return fallo(`El conector ${PORTS[pid].etiqueta} ya tiene un cable.`);
+  if (!piezaPlacada('psu')) return fallo('Antes de conectar los cables, instala la fuente: de ella salen.', 'Primero la fuente.');
+  if (pluggedPort(pid)) return fallo(`El conector ${PORTS[pid].etiqueta} ya tiene un cable.`, 'Ese conector ya tiene cable.');
   S.plugged[c.id] = { port: pid, ruta };
   ok(`${c.nombre} conectado.`);
 }
@@ -544,9 +551,13 @@ function encender() {
   const pendientes = pasos().slice(0, -1).filter((p) => !p.hecho());
   if (pendientes.length) {
     S.errores++;
-    log('bad', `El equipo no arranca. Falta: ${pendientes[0].txt}`);
-    CABLES.filter((c) => !plugged(c.id)).forEach((c) => log('info', EXPLICA[c.id]));
-    destelloHasta = performance.now() + 4000;
+    if (esFacil()) {
+      log('bad', `El equipo no arranca. Falta: ${pendientes[0].txt}`);
+      CABLES.filter((c) => !plugged(c.id)).forEach((c) => log('info', EXPLICA[c.id]));
+      destelloHasta = performance.now() + 4000;
+    } else {
+      log('bad', 'El equipo no arranca.');
+    }
     pintarEscena();
     return;
   }
@@ -560,6 +571,7 @@ function cargarPedido(id) {
   S = { pedido: id, placed: {}, plugged: {}, errores: 0, final: false };
   entradas = [];
   clienteEl.textContent = pedido().cliente;
+  especEl.innerHTML = especificaciones().map((t) => `<li>${t}</li>`).join('');
   pintarEscena();
   log('info', `Montaje nuevo: ${pedido().titulo}. Empieza arrastrando la placa base al chasis.`);
 }
@@ -571,9 +583,41 @@ function reiniciar() {
 function pintarPanel() {
   const lista = pasos();
   const i = lista.findIndex((p) => !p.hecho());
+  if (!esFacil()) {
+    objEl.textContent = S.final ? 'Equipo montado' : 'Monta el equipo del pedido.';
+    progEl.textContent = `Errores: ${S.errores}`;
+    return;
+  }
   objEl.textContent = i < 0 ? 'Equipo montado' : lista[i].txt;
   const paso = i < 0 ? lista.length : i + 1;
   progEl.textContent = `Paso ${paso} de ${lista.length} · Errores: ${S.errores}`;
+}
+
+// Especificaciones que pide el cliente (lo único que se ve en modo difícil).
+function especificaciones() {
+  const pz = pedido().piezas;
+  const placa = pieza(pz.board);
+  const cpu = pieza(pz.cpu);
+  const rams = pz.ram.map(pieza);
+  return [
+    `Placa base ${placa.socket} con memoria ${placa.gen}`,
+    `Procesador ${cpu.socket} de ${cpu.tdp} W`,
+    `${rams.length} módulos de RAM ${rams[0].gen}`,
+    `Tarjeta gráfica de ${TDP_GPU} W`,
+    'SSD NVMe M.2',
+    `Fuente de al menos ${Math.ceil((cpu.tdp + TDP_GPU + 100) * 1.3)} W`
+  ];
+}
+
+// Dato técnico de cada pieza, solo en modo fácil.
+function specDe(p) {
+  if (p.kind === 'board') return `${p.socket} · ${p.gen}`;
+  if (p.kind === 'cpu') return `${p.socket} · ${p.tdp} W`;
+  if (p.kind === 'ram') return p.gen;
+  if (p.kind === 'gpu') return `${TDP_GPU} W`;
+  if (p.kind === 'nvme') return 'M.2';
+  if (p.kind === 'psu') return `${p.watts} W`;
+  return '';
 }
 
 // ---------- Bandeja ----------
@@ -592,8 +636,8 @@ const abiertos = {};
 function pintarBandeja() {
   bandeja.querySelectorAll('.grupo').forEach((el) => el.remove());
   const items = [
-    ...PIEZAS.filter((p) => !placed(p.id)).map((p) => ({ id: p.id, kind: p.kind, tipo: 'parte', corto: p.corto, color: p.color, foto: !p.sinFoto })),
-    ...CABLES.filter((c) => !plugged(c.id)).map((c) => ({ id: c.id, kind: 'cable', tipo: 'cable', corto: c.corto, color: c.color, foto: !c.sinFoto }))
+    ...PIEZAS.filter((p) => !placed(p.id)).map((p) => ({ id: p.id, kind: p.kind, tipo: 'parte', corto: p.corto, spec: specDe(p), color: p.color, foto: !p.sinFoto })),
+    ...CABLES.filter((c) => !plugged(c.id)).map((c) => ({ id: c.id, kind: 'cable', tipo: 'cable', corto: c.corto, spec: `Conector ${PORTS[c.port].etiqueta}`, color: c.color, foto: !c.sinFoto }))
   ];
   const porGrupo = {};
   for (const it of items) (porGrupo[it.kind] ??= []).push(it);
@@ -616,7 +660,8 @@ function pintarFicha(it, contenedorFichas) {
     el.dataset.id = it.id;
     el.dataset.tipo = it.tipo;
     const foto = it.foto ? `<img src="fotos/${it.id}.png" alt="" loading="lazy">` : '';
-    el.innerHTML = `<span class="miniatura">${foto}</span>${it.corto}`;
+    const dato = esFacil() && it.spec ? `<small>${it.spec}</small>` : '';
+    el.innerHTML = `<span class="miniatura">${foto}</span><span class="texto">${it.corto}${dato}</span>`;
     // Sin foto (o si falla la carga): la pieza se ve con su color.
     const miniatura = el.querySelector('.miniatura');
     if (!it.foto) miniatura.style.background = it.color;
@@ -624,7 +669,7 @@ function pintarFicha(it, contenedorFichas) {
       miniatura.style.background = it.color;
       miniatura.querySelector('img').remove();
     }, { once: true });
-    if (it.tipo === 'cable' && performance.now() < destelloHasta) el.classList.add('destacar');
+    if (esFacil() && it.tipo === 'cable' && performance.now() < destelloHasta) el.classList.add('destacar');
     contenedorFichas.appendChild(el);
   }
 }
@@ -649,6 +694,10 @@ function construirGuias() {
 }
 
 function actualizarGuias(hover) {
+  if (!esFacil()) {
+    for (const m of [...Object.values(guiaSlot), ...Object.values(guiaPort)]) m.visible = false;
+    return;
+  }
   const hayPlaca = !!tabla();
   for (const [id, m] of Object.entries(guiaSlot)) {
     const s = SLOTS[id];
@@ -846,6 +895,14 @@ selectPedido.addEventListener('change', reiniciar);
 reiniciar();
 
 $('encender').addEventListener('click', encender);
+for (const b of botonesModo) {
+  b.addEventListener('click', () => {
+    modo = b.dataset.modo;
+    for (const o of botonesModo) o.setAttribute('aria-pressed', String(o === b));
+    cargarPedido(selectPedido.value);
+  });
+}
+botonesModo.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.modo === modo)));
 $('reiniciar').addEventListener('click', reiniciar);
 $('tema').addEventListener('click', () => {
   const root = document.documentElement;

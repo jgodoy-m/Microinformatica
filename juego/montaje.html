@@ -79,20 +79,42 @@
     header a:hover { color: var(--accent); }
     .layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 300px;
+      grid-template-columns: 260px minmax(0, 1fr) 300px;
       gap: 16px;
       max-width: 1280px;
       margin: 0 auto;
       padding: 16px;
     }
+    .bandeja-col {
+      position: sticky;
+      top: 16px;
+      align-self: start;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      min-width: 0;
+    }
+    .modos { display: flex; gap: 8px; margin-bottom: 12px; }
+    .modos .boton { flex: 1; }
+    .modos .boton[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
+    .espec { margin: 0 0 14px; padding-left: 18px; font-size: 14px; color: var(--muted); }
+    .espec li { margin-bottom: 3px; }
+    .ficha small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .ficha .texto { display: flex; flex-direction: column; min-width: 0; }
+    /* Escritorio pequeño: la bandeja pasa debajo de la escena, como antes. */
+    @media (max-width: 1180px) {
+      .layout { grid-template-columns: minmax(0, 1fr) 300px; }
+      .bandeja-col { grid-column: 1 / -1; position: static; max-height: none; order: 2; }
+      .escena-wrap { order: 1; }
+    }
     @media (max-width: 900px) {
       .layout { grid-template-columns: minmax(0, 1fr); }
+      .panel { order: 3; }
     }
     .escena-wrap { display: grid; gap: 12px; min-width: 0; }
     #escena {
       position: relative;
       width: 100%;
-      aspect-ratio: 16 / 10;
+      aspect-ratio: 4 / 3;
       border: 1px solid var(--border);
       border-radius: 8px;
       overflow: hidden;
@@ -100,9 +122,6 @@
       touch-action: none;
     }
     #escena canvas { display: block; width: 100%; height: 100%; }
-    @media (max-width: 480px) {
-      #escena { aspect-ratio: 4 / 3; }
-    }
     .bandeja {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
@@ -144,7 +163,7 @@
     }
     .grupo-fichas {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+      grid-template-columns: minmax(0, 1fr);
       gap: 8px;
       padding: 0 10px 10px;
     }
@@ -253,18 +272,26 @@
   </header>
 
   <main class="layout">
-    <section class="escena-wrap" aria-label="Escena de montaje">
-      <div id="escena" role="img" aria-label="Chasis abierto con placa base y componentes en 3D"></div>
+    <aside class="bandeja-col" aria-label="Piezas y cables">
       <div id="bandeja" class="bandeja">
         <h2>Piezas y cables</h2>
       </div>
+    </aside>
+
+    <section class="escena-wrap" aria-label="Escena de montaje">
+      <div id="escena" role="img" aria-label="Chasis abierto con placa base y componentes en 3D"></div>
     </section>
 
     <aside class="panel">
       <label class="pedido-sel">Pedido
         <select id="pedido"></select>
       </label>
+      <div class="modos" role="group" aria-label="Dificultad">
+        <button type="button" class="boton" data-modo="facil" aria-pressed="true">Fácil</button>
+        <button type="button" class="boton" data-modo="dificil" aria-pressed="false">Difícil</button>
+      </div>
       <p class="cliente" id="cliente"></p>
+      <ul class="espec" id="especificaciones" aria-label="Especificaciones del cliente"></ul>
       <p class="obj" id="objetivo"></p>
       <p class="prog" id="progreso"></p>
       <div class="acciones">
