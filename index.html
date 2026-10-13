@@ -836,12 +836,112 @@
         transition-duration: 0.01ms !important;
       }
     }
-  </style>
+  
+    /* Composición de referencia (rediseño Nord). Variables Nord reutilizadas de :root. */
+    :root {
+      --nord7: #8FBCBB; --nord8: #88C0D0; --nord9: #81A1C1; --nord10: #5E81AC;
+      --nord14: #A3BE8C; --nord15: #B48EAD; --nord1: #3B4252; --nord2: #434C5E; --nord3: #4C566A;
+    }
+    :root { --content: 1392px; }
+    .header-inner { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 24px; }
+    .header-nav { justify-content: center; gap: 30px; font-size: 16px; }
+    .header-nav a { gap: 8px; min-height: 44px; position: relative; color: var(--muted); }
+    .header-nav a svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .header-nav a.is-active { color: var(--nord8); }
+    .header-nav a.is-active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -10px; height: 2px; background: var(--nord8); border-radius: 2px; }
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .btn-simulador { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 20px; border: 1px solid var(--nord8); border-radius: 10px; color: var(--nord8); text-decoration: none; font-weight: 600; }
+    .btn-simulador svg { width: 16px; height: 16px; fill: currentColor; }
+    .btn-simulador:hover { background: rgba(136, 192, 208, .12); }
+    .btn-simulador:focus-visible, .btn-primario:focus-visible, .btn-secundario:focus-visible, .enlace-seccion:focus-visible, .practice-card:focus-visible, .enlace-apuntes:focus-visible { outline: 3px solid var(--nord8); outline-offset: 3px; border-radius: 10px; }
+
+    .hero { padding: 56px 0 64px; background: linear-gradient(90deg, #2E3440 0%, rgba(46,52,64,.92) 40%, rgba(46,52,64,.35) 100%), var(--bg); }
+    .hero-inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 32px; align-items: center; }
+    .hero-copy { max-width: 560px; }
+    .eyebrow-line { display: flex; align-items: center; gap: 12px; margin: 0 0 22px; font: 500 13px/1 ui-monospace, "SFMono-Regular", Menlo, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--nord8); }
+    .eyebrow-line span { width: 36px; height: 2px; background: var(--nord14); display: inline-block; }
+    .hero h1 { font-size: clamp(44px, 5.4vw, 76px); line-height: 1.02; letter-spacing: -.02em; margin: 0 0 22px; color: var(--text); font-weight: 700; }
+    .hero h1 span { color: var(--nord8); }
+    .hero-description { font-size: 19px; line-height: 1.55; color: var(--muted); margin: 0 0 34px; max-width: 470px; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 16px; }
+    .btn-primario, .btn-secundario { display: inline-flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 26px; border-radius: 12px; font-size: 17px; font-weight: 600; text-decoration: none; }
+    .btn-primario { background: var(--nord8); color: var(--nord0-txt, #2E3440); }
+    .btn-primario svg, .btn-secundario svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .btn-primario svg:first-child { fill: currentColor; stroke: none; }
+    .btn-primario .flecha { margin-left: 10px; }
+    .btn-primario:hover { filter: brightness(1.06); }
+    .btn-secundario { border: 1px solid var(--nord8); color: var(--text); background: rgba(59, 66, 82, .5); }
+    .btn-secundario:hover { background: rgba(136, 192, 208, .12); }
+    .hero-image-wrap { position: relative; }
+    .hero-image { width: 100%; height: auto; border-radius: 16px; display: block; -webkit-mask-image: radial-gradient(ellipse at center, #000 58%, transparent 100%); mask-image: radial-gradient(ellipse at center, #000 58%, transparent 100%); }
+
+    .seccion-cabecera { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin: 0 0 24px; }
+    .seccion-cabecera h2 { font-size: 26px; font-weight: 700; margin: 0; color: var(--text); }
+    .enlace-seccion { color: var(--nord8); text-decoration: none; font-size: 15px; font-weight: 500; white-space: nowrap; min-height: 44px; display: inline-flex; align-items: center; }
+    .enlace-seccion:hover { text-decoration: underline; }
+
+    .practice { padding: 40px 0 16px; }
+    .practice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+    .practice-card { position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 12px; min-height: 252px; padding: 26px 26px 24px 30px; border-radius: 16px; border: 1px solid var(--acento); background: linear-gradient(180deg, color-mix(in srgb, var(--acento) 7%, var(--surface)), var(--surface)); color: var(--text); text-decoration: none; transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+    .practice-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--acento); }
+    .practice-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,.25); border-color: var(--acento); }
+    .practice-card.acento-cian { --acento: var(--nord8); }
+    .practice-card.acento-verde { --acento: var(--nord14); }
+    .practice-card.acento-violeta { --acento: var(--nord15); }
+    .etiqueta-practica { position: absolute; top: 18px; right: 18px; font: 600 12px/1 ui-monospace, "SFMono-Regular", Menlo, monospace; letter-spacing: .08em; color: var(--acento); border: 1px solid color-mix(in srgb, var(--acento) 50%, transparent); border-radius: 6px; padding: 5px 9px; text-transform: uppercase; }
+    .practice-icon { width: 56px; height: 56px; border-radius: 12px; display: grid; place-items: center; background: color-mix(in srgb, var(--acento) 18%, transparent); border: 1px solid color-mix(in srgb, var(--acento) 45%, transparent); }
+    .practice-icon svg { width: 28px; height: 28px; fill: none; stroke: var(--acento); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .practice-card h3 { margin: 6px 0 0; font-size: 22px; font-weight: 700; color: var(--text); }
+    .practice-card p { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.5; max-width: 300px; }
+    .practice-link { margin-top: auto; color: var(--acento); font-weight: 600; font-size: 16px; }
+    .practice-deco { position: absolute; right: 16px; bottom: 16px; width: 130px; height: auto; fill: none; stroke: var(--acento); stroke-width: 2; opacity: .18; pointer-events: none; }
+    .practice-card p { position: relative; }
+
+    .topics { padding: 48px 0 72px; }
+    .tabla-wrap { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--surface); }
+    .tabla-temario { width: 100%; border-collapse: collapse; font-size: 16px; }
+    .tabla-temario th { text-align: left; font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 16px 22px; border-bottom: 1px solid var(--border); background: rgba(46,52,64,.35); }
+    .tabla-temario td { padding: 0 22px; height: 64px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+    .tabla-temario tr:last-child td { border-bottom: 0; }
+    .tabla-temario tbody tr:hover { background: rgba(136,192,208,.06); }
+    .tabla-temario td:nth-child(1) { width: 110px; }
+    .tabla-temario td:nth-child(2) { font-weight: 600; width: 260px; }
+    .tabla-temario td:nth-child(3) { color: var(--muted); font-size: 15px; }
+    .tabla-temario td:nth-child(4) { width: 190px; text-align: right; }
+    .codigo-sesion { display: inline-block; min-width: 64px; text-align: center; padding: 7px 12px; border-radius: 999px; background: rgba(76,86,106,.55); color: var(--text); font: 600 14px/1 ui-monospace, "SFMono-Regular", Menlo, monospace; }
+    .enlace-apuntes { display: inline-flex; align-items: center; gap: 8px; color: var(--nord8); text-decoration: none; font-weight: 500; min-height: 44px; }
+    .enlace-apuntes svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+    .enlace-apuntes:hover { text-decoration: underline; }
+
+    @media (max-width: 1000px) {
+      .header-inner { grid-template-columns: auto 1fr auto; }
+      .header-nav { gap: 18px; font-size: 15px; }
+      .hero-inner { grid-template-columns: 1fr; }
+      .practice-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      .header-inner { grid-template-columns: 1fr auto; }
+      .header-nav { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; flex-wrap: nowrap; }
+      .btn-simulador { padding: 0 14px; font-size: 15px; }
+      .tabla-temario thead { display: none; }
+      .tabla-temario, .tabla-temario tbody, .tabla-temario tr, .tabla-temario td { display: block; width: 100% !important; }
+      .tabla-temario tr { padding: 14px 18px; border-bottom: 1px solid var(--border); }
+      .tabla-temario tr:last-child { border-bottom: 0; }
+      .tabla-temario td { height: auto; padding: 4px 0; border: 0; text-align: left !important; }
+      .tabla-temario td::before { content: attr(data-label); display: block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+      .tabla-temario td[data-label="Sesión"]::before { display: none; }
+      .hero { padding: 36px 0 44px; }
+    }
+    @media (max-width: 480px) {
+      .hero-description { font-size: 17px; }
+      .btn-primario, .btn-secundario { width: 100%; justify-content: center; }
+    }
+</style>
 </head>
 
 <body>
   <header class="header" id="inicio">
-    <div class="container header-inner">
+    <div class="header-inner">
       <a class="brand" href="index.html" aria-label="Microinformática, inicio">
         <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
           <rect x="7" y="7" width="18" height="18" rx="3"
@@ -854,14 +954,18 @@
       </a>
 
       <nav class="header-nav" aria-label="Principal">
-        <a href="#inicio">Inicio</a>
-        <a href="#temas">Temario</a>
-        <a href="#practicas">Prácticas</a>
+        <a href="#inicio" class="is-active">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 3l9 8M5 10v10h14V10"/></svg>Inicio</a>
+        <a href="#temas">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H2zM22 5h-7a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h8z"/></svg>Temario</a>
+        <a href="#practicas">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.4 2.4-2.4-.6-.6-2.4z"/></svg>Prácticas</a>
       </nav>
 
       <div class="header-actions">
-        <a class="header-link" href="averias.html">Simulador <span aria-hidden="true">→</span></a>
-
+        <a class="btn-simulador" href="averias.html">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z"/></svg>Simulador
+        </a>
         <button
           class="theme-toggle"
           id="theme-toggle"
@@ -885,67 +989,58 @@
     <section class="hero" aria-labelledby="hero-title">
       <div class="container hero-inner">
         <div class="hero-copy">
-          <h1 id="hero-title">
-            Aprende. Monta.
-            <span>Diagnostica.</span>
-          </h1>
-
-          <p class="hero-description">
-            Prácticas interactivas de hardware con apuntes del curso: monta un equipo,
-            diagnostica sus averías y comprueba lo que has aprendido.
-          </p>
-
+          <p class="eyebrow-line"><span aria-hidden="true"></span>FP · Microinformática</p>
+          <h1 id="hero-title">Aprende. Monta.<br><span>Diagnostica.</span></h1>
+          <p class="hero-description">Domina el hardware con prácticas interactivas, apuntes actualizados y un entorno de aprendizaje pensado para ti.</p>
           <div class="hero-actions">
-            <a class="primary-button" href="#practicas">Empezar a practicar</a>
-            <a class="secondary-link" href="#temas">Explorar el temario</a>
+            <a class="btn-primario" href="#practicas">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z"/></svg>Empezar a practicar
+              <svg class="flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+            <a class="btn-secundario" href="#temas">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H2zM22 5h-7a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h8z"/></svg>Explorar temario
+            </a>
           </div>
         </div>
-
         <div class="hero-image-wrap">
-          <img
-            class="hero-image"
-            src="hero-placa.webp"
-            alt="Placa base de ordenador con zócalo de CPU, ranuras de memoria azules y conectores traseros, vista en diagonal."
-            width="1500"
-            height="1000"
-          >
+          <img class="hero-image" src="hero-placa.webp" alt="Placa base de ordenador con zócalo de CPU, ranuras de memoria azules y conectores traseros." width="1500" height="1000">
         </div>
       </div>
     </section>
 
     <section class="practice" id="practicas" aria-labelledby="practice-title">
-      <div class="container practice-inner">
-        <div class="practice-intro">
-          <p class="eyebrow">Práctica</p>
-          <h2 id="practice-title">Prácticas</h2>
+      <div class="container">
+        <div class="seccion-cabecera">
+          <h2 id="practice-title">Tus prácticas</h2>
+          <a class="enlace-seccion" href="#practicas">Ver todas las prácticas <span aria-hidden="true">→</span></a>
         </div>
 
         <div class="practice-grid">
-          <a class="practice-card" href="averias.html">
-            <span class="practice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><circle cx="12" cy="10" r="2.5"/></svg></span>
-            <div>
-              <h3>Simulador de averías</h3>
-              <p>Investiga fallos, analiza síntomas y diagnostica el problema.</p>
-            </div>
-            <span class="practice-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          <a class="practice-card acento-cian" href="averias.html">
+            <span class="etiqueta-practica">Práctica 1</span>
+            <span class="practice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M6 10h3l1.5-2 2 4 1.5-2H18"/></svg></span>
+            <h3>Simulador de averías</h3>
+            <p>Investiga fallos, analiza síntomas y diagnostica el problema.</p>
+            <span class="practice-link">Acceder <span aria-hidden="true">→</span></span>
+            <svg class="practice-deco" viewBox="0 0 200 80" aria-hidden="true"><path d="M0 60h40l12-40 16 60 14-30 12 10h60"/></svg>
           </a>
 
-          <a class="practice-card" href="examen.html">
-            <span class="practice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16l2 2 3-3"/></svg></span>
-            <div>
-              <h3>Simulacro de examen</h3>
-              <p>Pon a prueba tus conocimientos con preguntas tipo test y de respuesta corta. <span id="total-preguntas"></span></p>
-            </div>
-            <span class="practice-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-          </a>
-
-          <a class="practice-card" href="juego/montaje.html">
+          <a class="practice-card acento-verde" href="juego/montaje.html">
+            <span class="etiqueta-practica">Práctica 2</span>
             <span class="practice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg></span>
-            <div>
-              <h3>Montaje de un equipo</h3>
-              <p>Instala componentes, conecta cables y enciende el equipo paso a paso.</p>
-            </div>
-            <span class="practice-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            <h3>Montaje de un equipo</h3>
+            <p>Instala componentes, conecta cables y enciende el equipo paso a paso.</p>
+            <span class="practice-link">Acceder <span aria-hidden="true">→</span></span>
+            <svg class="practice-deco" viewBox="0 0 120 160" aria-hidden="true"><rect x="10" y="8" width="100" height="144" rx="6"/><rect x="24" y="22" width="72" height="112" rx="3"/><circle cx="96" cy="60" r="4"/><circle cx="96" cy="78" r="4"/></svg>
+          </a>
+
+          <a class="practice-card acento-violeta" href="examen.html">
+            <span class="etiqueta-practica">Práctica 3</span>
+            <span class="practice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9zM8 11l1.5 1.5L12 10M8 16l1.5 1.5L12 15M14 11h2M14 16h2"/></svg></span>
+            <h3>Simulacro de examen</h3>
+            <p>Pon a prueba tus conocimientos con preguntas tipo test y de respuesta corta. <span id="total-preguntas"></span></p>
+            <span class="practice-link">Acceder <span aria-hidden="true">→</span></span>
+            <svg class="practice-deco" viewBox="0 0 120 160" aria-hidden="true"><rect x="12" y="10" width="96" height="140" rx="6"/><path d="M30 50h60M30 80h60M30 110h60"/></svg>
           </a>
         </div>
       </div>
@@ -953,103 +1048,28 @@
 
     <section class="topics" id="temas" aria-labelledby="topics-title">
       <div class="container">
-        <div class="section-heading">
+        <div class="seccion-cabecera">
           <h2 id="topics-title">Temario</h2>
-          <p>Cada bloque abre sus apuntes en PDF, para leerlos o descargarlos.</p>
+          <a class="enlace-seccion" href="#temas">Ver todo el temario <span aria-hidden="true">→</span></a>
         </div>
 
-        <ul class="topic-list">
-          <li class="topic available">
-            <div class="topic-main">
-              <span class="topic-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 10-13h-7z"/></svg></span>
-              <div>
-                <h3>La fuente de alimentación</h3>
-                <p>S07 · Voltajes, conectores, 80 Plus y señales de fallo.</p>
-              </div>
-            </div>
-            <div class="topic-end">
-              <a class="topic-action" href="apuntes/ver-s07.html">Abrir apuntes<span class="sr-only"> de La fuente de alimentación</span></a>
-            </div>
-          </li>
-
-          <li class="topic available">
-            <div class="topic-main">
-              <span class="topic-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h10v10H7z"/></svg></span>
-              <div>
-                <h3>El chasis</h3>
-                <p>S08 · Tipos de chasis, flujo de aire, instalación de la placa y cable management.</p>
-              </div>
-            </div>
-            <div class="topic-end">
-              <a class="topic-action" href="apuntes/ver-s08.html">Abrir apuntes<span class="sr-only"> de El chasis</span></a>
-            </div>
-          </li>
-
-          <li class="topic available">
-            <div class="topic-main">
-              <span class="topic-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M7 12h2M11 12h2M15 12h2"/></svg></span>
-              <div>
-                <h3>Tarjetas de expansión y OEM frente a RETAIL</h3>
-                <p>S09 · GPU, slots PCIe, otras tarjetas y formatos de compra.</p>
-              </div>
-            </div>
-            <div class="topic-end">
-              <a class="topic-action" href="apuntes/ver-s09.html">Abrir apuntes<span class="sr-only"> de Tarjetas de expansión y OEM frente a RETAIL</span></a>
-            </div>
-          </li>
-
-                    <li class="topic available">
-            <div class="topic-main">
-              <span class="topic-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h6"/></svg></span>
-              <div>
-                <h3>Averías en GPU y tarjeta de sonido</h3>
-                <p>S10 · Anatomía de la GPU, averías y descarte, y tarjeta de sonido.</p>
-              </div>
-            </div>
-            <div class="topic-end">
-              <a class="topic-action" href="apuntes/ver-s10.html">Abrir apuntes<span class="sr-only"> de Averías en GPU y tarjeta de sonido</span></a>
-            </div>
-          </li>
-
-<li class="topic available">
-            <div class="topic-main">
-              <span class="topic-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span>
-              <div>
-                <h3>Ampliaciones de equipo</h3>
-                <p>S11 · Memoria, almacenamiento y compatibilidad de CPU, GPU, fuente y refrigeración.</p>
-              </div>
-            </div>
-            <div class="topic-end">
-              <a class="topic-action" href="apuntes/ver-s11.html">Abrir apuntes<span class="sr-only"> de Ampliaciones de equipo</span></a>
-            </div>
-          </li>
-
-          <li class="topic available">
-            <div class="topic-main">
-              <span class="topic-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2M10 10h4v4h-4z"/></svg></span>
-              <div>
-                <h3>Diagnóstico guiado de averías</h3>
-                <p>S12 · Método en seis pasos y práctica en taller.</p>
-              </div>
-            </div>
-            <div class="topic-end">
-              <a class="topic-action" href="apuntes/ver-s12.html">Abrir apuntes<span class="sr-only"> de Diagnóstico guiado de averías</span></a>
-            </div>
-          </li>
-          <li class="topic available">
-            <div class="topic-main">
-              <span class="topic-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="2" y="9" width="6" height="6" rx="1"/><rect x="16" y="9" width="6" height="6" rx="1"/><path d="M8 12h8"/></svg></span>
-              <div>
-                <h3>Conexionado interno y externo</h3>
-                <p>S13 · Conectores internos, conectores externos y práctica de conexionado.</p>
-              </div>
-            </div>
-            <div class="topic-end">
-              <a class="topic-action" href="apuntes/ver-s13.html">Abrir apuntes<span class="sr-only"> de Conexionado interno y externo</span></a>
-            </div>
-          </li>
-
-        </ul>
+        <div class="tabla-wrap">
+          <table class="tabla-temario">
+            <caption class="sr-only">Temario: sesiones, temas, descripción y apuntes en PDF</caption>
+            <thead>
+              <tr><th scope="col">Sesión</th><th scope="col">Tema</th><th scope="col">Descripción</th><th scope="col">Apuntes</th></tr>
+            </thead>
+            <tbody>
+              <tr><td data-label="Sesión"><span class="codigo-sesion">S07</span></td><td data-label="Tema">Fuente de alimentación</td><td data-label="Descripción">Voltajes, conectores, 80 Plus y señales de fallo.</td><td data-label="Apuntes"><a class="enlace-apuntes" href="apuntes/ver-s07.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v15H6zM14 2v5h5"/></svg>Apuntes<span aria-hidden="true">→</span><span class="sr-only"> de Fuente de alimentación</span></a></td></tr>
+              <tr><td data-label="Sesión"><span class="codigo-sesion">S08</span></td><td data-label="Tema">El chasis</td><td data-label="Descripción">Tipos de chasis, flujo de aire, instalación de la placa y cable management.</td><td data-label="Apuntes"><a class="enlace-apuntes" href="apuntes/ver-s08.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v15H6zM14 2v5h5"/></svg>Apuntes<span aria-hidden="true">→</span><span class="sr-only"> de El chasis</span></a></td></tr>
+              <tr><td data-label="Sesión"><span class="codigo-sesion">S09</span></td><td data-label="Tema">Tarjetas de expansión</td><td data-label="Descripción">GPU, slots PCIe, otras tarjetas y formatos de compra.</td><td data-label="Apuntes"><a class="enlace-apuntes" href="apuntes/ver-s09.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v15H6zM14 2v5h5"/></svg>Apuntes<span aria-hidden="true">→</span><span class="sr-only"> de Tarjetas de expansión</span></a></td></tr>
+              <tr><td data-label="Sesión"><span class="codigo-sesion">S10</span></td><td data-label="Tema">GPU y sonido</td><td data-label="Descripción">Anatomía de la GPU, averías y descarte, y tarjeta de sonido.</td><td data-label="Apuntes"><a class="enlace-apuntes" href="apuntes/ver-s10.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v15H6zM14 2v5h5"/></svg>Apuntes<span aria-hidden="true">→</span><span class="sr-only"> de GPU y sonido</span></a></td></tr>
+              <tr><td data-label="Sesión"><span class="codigo-sesion">S11</span></td><td data-label="Tema">Ampliaciones</td><td data-label="Descripción">Memoria, almacenamiento y compatibilidad de CPU, GPU, fuente y refrigeración.</td><td data-label="Apuntes"><a class="enlace-apuntes" href="apuntes/ver-s11.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v15H6zM14 2v5h5"/></svg>Apuntes<span aria-hidden="true">→</span><span class="sr-only"> de Ampliaciones</span></a></td></tr>
+              <tr><td data-label="Sesión"><span class="codigo-sesion">S12</span></td><td data-label="Tema">Diagnóstico</td><td data-label="Descripción">Método en seis pasos y práctica en taller.</td><td data-label="Apuntes"><a class="enlace-apuntes" href="apuntes/ver-s12.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v15H6zM14 2v5h5"/></svg>Apuntes<span aria-hidden="true">→</span><span class="sr-only"> de Diagnóstico</span></a></td></tr>
+              <tr><td data-label="Sesión"><span class="codigo-sesion">S13</span></td><td data-label="Tema">Conexionado</td><td data-label="Descripción">Conectores internos, conectores externos y práctica de conexionado.</td><td data-label="Apuntes"><a class="enlace-apuntes" href="apuntes/ver-s13.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v15H6zM14 2v5h5"/></svg>Apuntes<span aria-hidden="true">→</span><span class="sr-only"> de Conexionado</span></a></td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   </main>
