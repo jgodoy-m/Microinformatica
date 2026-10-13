@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/RoomEnvironment.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { PIEZAS, CABLES, PEDIDOS } from './catalogo.js';
 
 const $ = (id) => document.getElementById(id);
@@ -18,6 +19,7 @@ const TDP_GPU = PIEZAS.find((p) => p.kind === 'gpu').tdp;
 
 // Coordenadas en unidades 3D. Centro de la placa = (0, 0). La placa mide 30 x 24.
 const SLOTS = {
+  caja:  { x: 0, y: 0, w: 34, h: 34, accepts: ['caja'], nombre: 'chasis' },
   board: { x: 0, y: 0, w: 30, h: 24, accepts: ['board'], nombre: 'anclaje de la placa base' },
   cpu:   { x: -2.0, y: 3.0, w: 4.0, h: 4.0, accepts: ['cpu'], nombre: 'socket del procesador' },
   ram1:  { x: 5.2, y: 4.3, w: 0.7, h: 13, accepts: ['ram'], nombre: 'ranura de memoria' },
@@ -60,6 +62,8 @@ let modo = 'facil';
 const esFacil = () => modo === 'facil';
 let vistaPrevia = null;
 let tableroId = null;
+let rgbActivo = false;
+let chasisId = null;
 
 const placed = (id) => id in S.placed;
 const plugged = (id) => id in S.plugged;
@@ -90,8 +94,8 @@ const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
 const camera = new THREE.PerspectiveCamera(32, 1.6, 0.1, 300);
-camera.position.set(6, 6, 70);
-camera.lookAt(0, -2, 0);
+camera.position.set(6, 6, 84);
+camera.lookAt(0, -3, 0);
 
 const luzPrincipal = new THREE.DirectionalLight('#ffffff', 1.3);
 luzPrincipal.position.set(12, 22, 40);
@@ -162,10 +166,10 @@ function ventilador(r, colorAro) {
   g.add(rotor);
   const aro = new THREE.Mesh(
     new THREE.TorusGeometry(r * 0.94, r * 0.06, 10, 48),
-    new THREE.MeshStandardMaterial({ color: colorAro, emissive: colorAro, emissiveIntensity: 0.9, roughness: 0.4 })
+    new THREE.MeshStandardMaterial({ color: rgbActivo ? colorAro : '#4C566A', emissive: rgbActivo ? colorAro : '#000000', emissiveIntensity: 0.9, roughness: 0.4 })
   );
   aro.position.z = 0.1;
-  ledMats.push(aro.material);
+  if (rgbActivo) ledMats.push(aro.material);
   g.add(aro);
   fans.push(rotor);
   return g;
@@ -313,21 +317,58 @@ function disipador(w, h, d, vertical) {
   return g;
 }
 
+// ---------- Modelos 3D de las piezas (modelos/*.glb, generados con Blender) ----------
+const MODELOS = {
+  // Modelos geométricos por tipo (generar_modelos.py). GPU y CPU se dibujan en código.
+  'ram-ddr4': 'modelos/ram-ddr4.glb',
+  'ram-ddr5': 'modelos/ram-ddr5.glb',
+  nvme: 'modelos/nvme.glb',
+  psu: 'modelos/psu.glb'
+};
+const plantillas = {};
+// Clave del modelo de una pieza, o null si no tiene modelo 3D.
+const claveModelo = (p) => {
+  if (MODELOS[p.id]) return p.id;
+  if (p.kind === 'ram') return p.gen === 'DDR5' ? 'ram-ddr5' : 'ram-ddr4';
+  return MODELOS[p.kind] ? p.kind : null;
+};
+const cargadorGlb = new GLTFLoader();
+Promise.all(Object.entries(MODELOS).map(([clave, url]) => new Promise((resolver) => {
+  cargadorGlb.load(url, (gltf) => {
+    plantillas[clave] = gltf.scene;
+    resolver();
+  }, undefined, () => resolver());
+}))).then(() => pintarEscena());
+
 // ---------- Construcción de la escena fija ----------
-function construirCaso() {
-  const oscuro = matPlastico('#2A303C', { roughness: 0.7 });
+// Chasis según la caja elegida: lateral de cristal o metálico, y tiras RGB si la caja las tiene.
+function construirCaso(modelo) {
+  grupoCaso.clear();
+  const carcasa = new THREE.MeshPhysicalMaterial({ color: modelo.color, roughness: 0.45, metalness: 0.2, clearcoat: 0.6, clearcoatRoughness: 0.3 });
   const interior = matPlastico('#262B35');
   grupoCaso.add(en(caja(34, 34, 0.5, interior), 0, -2, -0.9));
-  grupoCaso.add(en(caja(34, 0.6, 9, oscuro), 0, 15.3, 3.55));
-  grupoCaso.add(en(caja(34, 0.6, 9, oscuro), 0, -19.3, 3.55));
-  grupoCaso.add(en(caja(0.6, 34.6, 9, oscuro), -17.3, -2, 3.55));
-  const cristal = new THREE.Mesh(
-    new THREE.BoxGeometry(0.3, 34, 9),
-    new THREE.MeshPhysicalMaterial({ color: '#9FB3CC', transparent: true, opacity: 0.12, roughness: 0.05 })
-  );
-  cristal.position.set(17.3, -2, 3.55);
-  grupoCaso.add(cristal);
-  grupoCaso.add(en(caja(0.6, 34.6, 9, oscuro), 17.3, -2, 3.55));
+  grupoCaso.add(en(caja(34, 0.6, 9, carcasa), 0, 15.3, 3.55));
+  grupoCaso.add(en(caja(34, 0.6, 9, carcasa), 0, -19.3, 3.55));
+  grupoCaso.add(en(caja(0.6, 34.6, 9, carcasa), -17.3, -2, 3.55));
+  // Lateral derecho: cristal o panel metálico.
+  if (modelo.cristal) {
+    const cristal = new THREE.Mesh(
+      new THREE.BoxGeometry(0.3, 34, 9),
+      new THREE.MeshPhysicalMaterial({ color: '#9FB3CC', transparent: true, opacity: 0.14, roughness: 0.05, clearcoat: 1 })
+    );
+    cristal.position.set(17.3, -2, 3.55);
+    grupoCaso.add(cristal);
+  } else {
+    grupoCaso.add(en(caja(0.6, 34.6, 9, carcasa), 17.3, -2, 3.55));
+  }
+  // Tiras de luz RGB en el marco superior y en el interior del lateral.
+  if (modelo.rgb) {
+    const luzTira = matPlastico('#88C0D0', { emissive: '#88C0D0', emissiveIntensity: 1.2 });
+    ledMats.push(luzTira);
+    grupoCaso.add(en(caja(30, 0.25, 0.25, luzTira), 0, 14.8, -0.2));
+    grupoCaso.add(en(caja(0.25, 30, 0.25, luzTira), 16.9, -2, -0.2));
+  }
+  chasisId = modelo.id;
 }
 
 // La placa se reconstruye cuando cambia el modelo (color, zócalo y memoria).
@@ -355,6 +396,8 @@ function construirPieza(p, pos) {
   const g = new THREE.Group();
   g.position.set(pos.x, pos.y, pos.z);
   g.userData.id = p.id;
+  const clave = claveModelo(p);
+  if (clave && plantillas[clave]) return construirPiezaGlb(p, g, clave);
 
   if (p.kind === 'cpu') {
     // Sustrato verde-negro bajo la tapa metálica con la etiqueta del modelo.
@@ -373,7 +416,7 @@ function construirPieza(p, pos) {
     const disipadorRam = matPlastico(ddr5 ? '#1B1F27' : '#1E222A', { roughness: 0.4 });
     g.add(en(caja(0.5, 10.6, 0.5, disipadorRam), 0, 1.0, 0.45));
     g.add(en(caja(0.52, 1.6, 0.52, matPlastico(ddr5 ? '#2E3440' : '#8B2E2E', { roughness: 0.4 })), 0, 4.9, 0.45));
-    if (ddr5) {
+    if (ddr5 && rgbActivo) {
       const luz = matPlastico('#88C0D0', { emissive: '#88C0D0', emissiveIntensity: 1.5 });
       ledMats.push(luz);
       g.add(en(caja(0.1, 9.8, 0.1, luz), 0.26, 1.0, 0.72));
@@ -422,6 +465,44 @@ function construirPieza(p, pos) {
     g.add(ventiladorPsu);
   }
 
+  return g;
+}
+
+// Pieza con su modelo 3D. Los ventiladores (nodo 'Fan') giran; el aro y la tira RGB dependen de la caja.
+function construirPiezaGlb(p, g, clave) {
+  const modelo = plantillas[clave].clone(true);
+  modelo.traverse((o) => {
+    if (!o.isMesh) return;
+    o.castShadow = true;
+    o.receiveShadow = true;
+    o.material = o.material.clone();
+    if (o.material.name === 'Aro') {
+      o.material.color.set(rgbActivo ? '#88C0D0' : '#4C566A');
+      o.material.emissive.set(rgbActivo ? '#88C0D0' : '#000000');
+      if (rgbActivo) ledMats.push(o.material);
+    }
+    if (o.material.name === 'LED') {
+      o.visible = rgbActivo;
+      if (rgbActivo) ledMats.push(o.material);
+    }
+  });
+  modelo.traverse((o) => { if (o.name === 'Fan') fans.push(o); });
+  g.add(modelo);
+
+  // Etiquetas y conectores que dependen de la pieza concreta (texto y posiciones del juego).
+  if (p.kind === 'nvme') {
+    const etiqueta = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1.6), new THREE.MeshStandardMaterial({ map: texturaTexto('NVMe M.2', 512, 220, '#E5E9F0', '#2E3440'), roughness: 0.6 }));
+    etiqueta.position.set(1.4, 0, 0.14);
+    g.add(etiqueta);
+  }
+  if (p.kind === 'psu') {
+    for (const cid of Object.keys(SALIDA_CABLE)) {
+      g.add(en(caja(1.4, 0.8, 1.2, matNegro), SALIDA_CABLE[cid][0], 3.65, 0));
+    }
+    const etiqueta = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.6), new THREE.MeshStandardMaterial({ map: texturaTexto(`${p.watts} W`, 512, 180), roughness: 0.6 }));
+    etiqueta.position.set(-4.2, 1.6, 3.52);
+    g.add(etiqueta);
+  }
   return g;
 }
 
@@ -491,7 +572,10 @@ function intentarColocar(p, x, y) {
   const sid = huecoEn(x, y, p);
   if (!sid) return;
   const placa = tabla();
-  if (p.kind !== 'board' && !placa) {
+  if (p.kind !== 'caja' && !piezaPlacada('caja')) {
+    return fallo('Primero elige la caja: sin chasis no hay dónde montar el equipo.', 'Primero la caja.');
+  }
+  if (p.kind !== 'caja' && p.kind !== 'board' && !placa) {
     return fallo('Primero fija la placa base en el chasis: sin ella no hay dónde montar el resto.', 'Primero la placa base.');
   }
   if (occupied(sid)) return fallo(`El ${SLOTS[sid].nombre} ya está ocupado.`, 'Ese hueco ya está ocupado.');
@@ -509,6 +593,7 @@ function intentarColocar(p, x, y) {
   }
   S.placed[p.id] = sid;
   const mensajes = {
+    caja: `${p.nombre} colocada: ${p.rgb ? 'tiene iluminación RGB' : 'no lleva iluminación RGB'}.`,
     board: esFacil() ? `${p.nombre} fijada en el chasis: los separadores evitan que toque la caja (apuntes S08).` : `${p.nombre} fijada en el chasis.`,
     cpu: `Procesador asentado en el socket ${p.socket}.`,
     ram: `${p.nombre} instalado en la ranura.`,
@@ -527,14 +612,19 @@ function intentarConectar(c, x, y, ruta) {
   }
   if (!piezaPlacada('psu')) return fallo('Antes de conectar los cables, instala la fuente: de ella salen.', 'Primero la fuente.');
   if (pluggedPort(pid)) return fallo(`El conector ${PORTS[pid].etiqueta} ya tiene un cable.`, 'Ese conector ya tiene cable.');
+  const largo = longitudCable(ruta, puertoRect(pid));
+  if (largo > c.longitudMax) {
+    return fallo(`${c.nombre} mide ${Math.round(largo)} cm de recorrido y el máximo es ${c.longitudMax} cm. Trázalo más directo entre la fuente y el conector.`, 'Ese cable no llega al conector.');
+  }
   S.plugged[c.id] = { port: pid, ruta };
-  ok(`${c.nombre} conectado.`);
+  ok(`${c.nombre} conectado (${Math.round(largo)} cm de ${c.longitudMax} cm).`);
 }
 
 // Pasos del pedido en curso (el texto depende de las piezas que pide el cliente).
 function pasos() {
   const p = pedido().piezas;
   return [
+    { txt: `Coloca la caja: ${pieza(p.caja).nombre}.`, hecho: () => placed(p.caja) },
     { txt: `Fija la ${pieza(p.board).nombre} en el chasis.`, hecho: () => placed(p.board) },
     { txt: `Coloca el procesador ${pieza(p.cpu).socket} en su socket.`, hecho: () => placed(p.cpu) },
     { txt: `Instala los dos módulos de RAM ${pieza(p.ram[0]).gen}.`, hecho: () => p.ram.every(placed) },
@@ -556,7 +646,7 @@ function encender() {
       CABLES.filter((c) => !plugged(c.id)).forEach((c) => log('info', EXPLICA[c.id]));
       destelloHasta = performance.now() + 4000;
     } else {
-      log('bad', 'El equipo no arranca.');
+      log('bad', 'El equipo no arranca. Revisa el pedido y las conexiones.');
     }
     pintarEscena();
     return;
@@ -573,7 +663,7 @@ function cargarPedido(id) {
   clienteEl.textContent = pedido().cliente;
   especEl.innerHTML = especificaciones().map((t) => `<li>${t}</li>`).join('');
   pintarEscena();
-  log('info', `Montaje nuevo: ${pedido().titulo}. Empieza arrastrando la placa base al chasis.`);
+  log('info', `Montaje nuevo: ${pedido().titulo}. Empieza eligiendo la caja y arrastrándola al chasis.`);
 }
 
 function reiniciar() {
@@ -600,6 +690,7 @@ function especificaciones() {
   const cpu = pieza(pz.cpu);
   const rams = pz.ram.map(pieza);
   return [
+    `Caja: ${pieza(pz.caja).nombre}`,
     `Placa base ${placa.socket} con memoria ${placa.gen}`,
     `Procesador ${cpu.socket} de ${cpu.tdp} W`,
     `${rams.length} módulos de RAM ${rams[0].gen}`,
@@ -611,6 +702,7 @@ function especificaciones() {
 
 // Dato técnico de cada pieza, solo en modo fácil.
 function specDe(p) {
+  if (p.kind === 'caja') return p.rgb ? 'Con RGB' : 'Sin RGB';
   if (p.kind === 'board') return `${p.socket} · ${p.gen}`;
   if (p.kind === 'cpu') return `${p.socket} · ${p.tdp} W`;
   if (p.kind === 'ram') return p.gen;
@@ -623,6 +715,7 @@ function specDe(p) {
 // ---------- Bandeja ----------
 // Desplegables de la bandeja: uno por tipo de componente.
 const GRUPOS = {
+  caja: 'Caja',
   board: 'Placa base',
   cpu: 'Procesador',
   ram: 'Memoria RAM',
@@ -727,6 +820,14 @@ function puntosCable(ruta, r) {
   return [...ruta, [r.x, r.y, altura], [r.x, r.y, r.z + 1.2]];
 }
 
+// Largo del recorrido en cm (1 unidad de escena ≈ 1 cm).
+function longitudCable(ruta, r) {
+  const puntos = puntosCable(ruta, r);
+  let total = 0;
+  for (let i = 1; i < puntos.length; i++) total += Math.hypot(puntos[i][0] - puntos[i - 1][0], puntos[i][1] - puntos[i - 1][1], puntos[i][2] - puntos[i - 1][2]);
+  return total;
+}
+
 function tuboCable(puntos, color) {
   const vectores = puntos.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
   const curva = new THREE.CatmullRomCurve3(vectores, false, 'centripetal');
@@ -756,21 +857,31 @@ function conectorCable(color, r) {
 
 function dibujarPrevia(a, p) {
   if (vistaPrevia) grupoCables.remove(vistaPrevia);
-  vistaPrevia = tuboCable([...a.ruta, [p.x, p.y, ALTURA_CABLE]], cable(a.id).color);
+  const trazado = [...a.ruta, [p.x, p.y, ALTURA_CABLE]];
+  let largo = 0;
+  for (let i = 1; i < trazado.length; i++) largo += Math.hypot(trazado[i][0] - trazado[i - 1][0], trazado[i][1] - trazado[i - 1][1], trazado[i][2] - trazado[i - 1][2]);
+  const excede = largo > cable(a.id).longitudMax;
+  vistaPrevia = tuboCable(trazado, excede ? '#E0868E' : cable(a.id).color);
   grupoCables.add(vistaPrevia);
 }
 
 // ---------- Dibujo de piezas montadas ----------
 function pintarEscena() {
+  ledMats.length = 0;
+  fans.length = 0;
+  const cajaPuesta = piezaPlacada('caja');
+  rgbActivo = !!cajaPuesta?.rgb;
+  grupoCaso.clear();
+  grupoCaso.visible = !!cajaPuesta;
+  if (cajaPuesta) construirCaso(cajaPuesta);
+
   const placa = tabla();
   if (placa && tableroId !== placa.id) construirTablero(placa);
   grupoTablero.visible = !!placa;
 
   grupoPiezas.clear();
-  fans.length = 0;
-  ledMats.length = 0;
   for (const id of Object.keys(S.placed)) {
-    if (pieza(id).kind === 'board') continue;
+    if (pieza(id).kind === 'board' || pieza(id).kind === 'caja') continue;
     grupoPiezas.add(construirPieza(pieza(id), posicionDe(id)));
   }
   for (const mat of ledMats) mat.emissiveIntensity = S.final ? 2.2 : 0.9;
@@ -882,7 +993,6 @@ renderer.setAnimationLoop(() => {
 });
 
 // ---------- Inicio ----------
-construirCaso();
 construirGuias();
 ajustarTamano();
 for (const p of PEDIDOS) {
