@@ -96,11 +96,19 @@ export const abiertos = {};
 // Nombres sin datos técnicos, para el estado.modo difícil.
 export const NOMBRE_GENERICO = { caja: 'Caja', board: 'Placa base', cpu: 'Procesador', ram: 'Memoria RAM', gpu: 'Tarjeta gráfica', nvme: 'SSD', psu: 'Fuente de alimentación', cable: 'Cable de alimentación' };
 
+// Modo difícil: nombre comercial si lo tiene; si no, el tipo y una letra para distinguirlas.
+function nombreDificil(p) {
+  if (p.comercial) return p.comercial;
+  const hermanas = PIEZAS.filter((q) => q.kind === p.kind);
+  const letra = String.fromCharCode(65 + hermanas.findIndex((q) => q.id === p.id));
+  return `${NOMBRE_GENERICO[p.kind]} ${letra}`;
+}
+
 export function pintarBandeja() {
   bandeja.querySelectorAll('.grupo').forEach((el) => el.remove());
   const items = [
-    ...PIEZAS.filter((p) => !placed(p.id)).map((p) => ({ id: p.id, kind: p.kind, tipo: 'parte', corto: p.corto, spec: specDe(p), color: p.color, foto: !p.sinFoto })),
-    ...CABLES.filter((c) => !plugged(c.id)).map((c) => ({ id: c.id, kind: 'cable', tipo: 'cable', corto: c.corto, spec: `Conector ${PORTS[c.port].etiqueta}`, color: c.color, foto: !c.sinFoto }))
+    ...PIEZAS.filter((p) => !placed(p.id)).map((p) => ({ id: p.id, kind: p.kind, tipo: 'parte', corto: p.corto, nombreDificil: nombreDificil(p), spec: specDe(p), color: p.color, foto: !p.sinFoto })),
+    ...CABLES.filter((c) => !plugged(c.id)).map((c) => ({ id: c.id, kind: 'cable', tipo: 'cable', corto: c.corto, nombreDificil: c.nombre, spec: `Conector ${PORTS[c.port].etiqueta}`, color: c.color, foto: !c.sinFoto }))
   ];
   const porGrupo = {};
   for (const it of items) (porGrupo[it.kind] ??= []).push(it);
@@ -125,7 +133,7 @@ export function pintarFicha(it, contenedorFichas) {
     el.setAttribute('aria-pressed', String(!!estado.seleccion && estado.seleccion.id === it.id));
     const foto = it.foto ? `<img src="fotos/${it.id}.png" alt="" loading="lazy">` : '';
     const dato = esFacil() && it.spec ? `<small>${it.spec}</small>` : '';
-    const nombre = esFacil() ? it.corto : NOMBRE_GENERICO[it.kind];
+    const nombre = esFacil() ? it.corto : it.nombreDificil;
     el.innerHTML = `<span class="miniatura">${foto}</span><span class="texto">${nombre}${dato}</span>`;
     // Sin foto (o si falla la carga): la pieza se ve con su color.
     const miniatura = el.querySelector('.miniatura');

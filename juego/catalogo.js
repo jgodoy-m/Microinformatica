@@ -20,37 +20,37 @@ export const PIEZAS = [
   { id: 'caja-metal-rgb', kind: 'caja', nombre: 'Torre metálica con RGB', corto: 'Caja metal RGB', cristal: false, rgb: true, color: '#4C566A', sinFoto: true },
 
   // Placas base: definen socket y tipo de memoria.
-  { id: 'board-am4', kind: 'board', nombre: 'Placa base AM4 (DDR4)', corto: 'Placa AM4', socket: 'AM4', gen: 'DDR4', color: '#2F4F41', pcb: '#1C3228' },
-  { id: 'board-am4-b', kind: 'board', nombre: 'Placa base AM4 B550 (DDR4)', corto: 'Placa B550', socket: 'AM4', gen: 'DDR4', color: '#4C566A', pcb: '#2A2F38', sinFoto: true },
+  { id: 'board-am4', kind: 'board', nombre: 'Placa base AM4 (DDR4)', corto: 'Placa AM4', socket: 'AM4', gen: 'DDR4', color: '#2F4F41', pcb: '#1C3228', comercial: 'MSI B450M Pro-VDH Plus' },
+  { id: 'board-am4-b', kind: 'board', nombre: 'Placa base AM4 B550 (DDR4)', corto: 'Placa B550', socket: 'AM4', gen: 'DDR4', color: '#4C566A', pcb: '#2A2F38', sinFoto: true, comercial: 'ASRock B550M Steel Legend' },
   { id: 'board-am5', kind: 'board', nombre: 'Placa base AM5 (DDR5)', corto: 'Placa AM5', socket: 'AM5', gen: 'DDR5', color: '#23262D', pcb: '#262A33' },
   { id: 'board-am5-b', kind: 'board', nombre: 'Placa base AM5 B650 (DDR5)', corto: 'Placa B650', socket: 'AM5', gen: 'DDR5', color: '#3B4252', pcb: '#2E3440', sinFoto: true },
-  { id: 'board-intel', kind: 'board', nombre: 'Placa base Intel LGA1700 (DDR5)', corto: 'Placa Intel', socket: 'LGA1700', gen: 'DDR5', color: '#D8DEE9', pcb: '#2B3140' },
+  { id: 'board-intel', kind: 'board', nombre: 'Placa base Intel LGA1700 (DDR5)', corto: 'Placa Intel', socket: 'LGA1700', gen: 'DDR5', color: '#D8DEE9', pcb: '#2B3140', comercial: 'Gigabyte Z790 AORUS' },
   { id: 'board-intel-b', kind: 'board', nombre: 'Placa base Intel LGA1700 B760 (DDR5)', corto: 'Placa B760', socket: 'LGA1700', gen: 'DDR5', color: '#8FBCBB', pcb: '#2B3F3F', sinFoto: true },
 
   // Procesadores: el socket debe coincidir con el de la placa.
-  { id: 'cpu-am4', kind: 'cpu', nombre: 'Procesador AM4 (105 W)', corto: 'CPU AM4', socket: 'AM4', tdp: 105, color: '#C9D1DC' },
+  { id: 'cpu-am4', kind: 'cpu', nombre: 'Procesador AM4 (105 W)', corto: 'CPU AM4', socket: 'AM4', tdp: 105, color: '#C9D1DC', comercial: 'AMD Ryzen 3 3100' },
   { id: 'cpu-am4-b', kind: 'cpu', nombre: 'Procesador AM4 de 6 núcleos (65 W)', corto: 'CPU AM4 6n', socket: 'AM4', tdp: 65, color: '#C9D1DC', sinFoto: true },
-  { id: 'cpu-am5', kind: 'cpu', nombre: 'Procesador AM5 (105 W)', corto: 'CPU AM5', socket: 'AM5', tdp: 105, color: '#C9D1DC', sinFoto: true },
+  { id: 'cpu-am5', kind: 'cpu', nombre: 'Procesador AM5 (105 W)', corto: 'CPU AM5', socket: 'AM5', tdp: 105, color: '#C9D1DC', sinFoto: true, comercial: 'AMD Ryzen 7 9700X' },
   { id: 'cpu-am5-b', kind: 'cpu', nombre: 'Procesador AM5 de alto rendimiento (120 W)', corto: 'CPU AM5 HP', socket: 'AM5', tdp: 120, color: '#C9D1DC', sinFoto: true },
-  { id: 'cpu-intel', kind: 'cpu', nombre: 'Procesador Intel Core i7 LGA1700 (125 W)', corto: 'CPU Intel i7', socket: 'LGA1700', tdp: 125, color: '#C9D1DC' },
+  { id: 'cpu-intel', kind: 'cpu', nombre: 'Procesador Intel Core i7 LGA1700 (125 W)', corto: 'CPU Intel i7', socket: 'LGA1700', tdp: 125, color: '#C9D1DC', comercial: 'Intel Core i7-14700' },
   { id: 'cpu-intel-b', kind: 'cpu', nombre: 'Procesador Intel Core i5 LGA1700 (65 W)', corto: 'CPU Intel i5', socket: 'LGA1700', tdp: 65, color: '#C9D1DC', sinFoto: true },
 
   // Memoria: la generación debe coincidir con la de la placa.
-  { id: 'ram-a', kind: 'ram', nombre: 'Módulo RAM DDR4', corto: 'RAM DDR4', gen: 'DDR4', color: '#1E222A' },
-  { id: 'ram-b', kind: 'ram', nombre: 'Módulo RAM DDR4', corto: 'RAM DDR4', gen: 'DDR4', color: '#1E222A' },
-  { id: 'ram-x', kind: 'ram', nombre: 'Módulo RAM DDR5', corto: 'RAM DDR5', gen: 'DDR5', color: '#1E222A' },
-  { id: 'ram-x2', kind: 'ram', nombre: 'Módulo RAM DDR5', corto: 'RAM DDR5', gen: 'DDR5', color: '#1E222A' },
+  { id: 'ram-a', kind: 'ram', nombre: 'Módulo RAM DDR4', corto: 'RAM DDR4', gen: 'DDR4', color: '#1E222A', comercial: 'HyperX Fury' },
+  { id: 'ram-b', kind: 'ram', nombre: 'Módulo RAM DDR4', corto: 'RAM DDR4', gen: 'DDR4', color: '#1E222A', comercial: 'HyperX Fury' },
+  { id: 'ram-x', kind: 'ram', nombre: 'Módulo RAM DDR5', corto: 'RAM DDR5', gen: 'DDR5', color: '#1E222A', comercial: 'XPG' },
+  { id: 'ram-x2', kind: 'ram', nombre: 'Módulo RAM DDR5', corto: 'RAM DDR5', gen: 'DDR5', color: '#1E222A', comercial: 'XPG' },
 
   // Tarjetas gráficas.
   { id: 'gpu', kind: 'gpu', nombre: 'Tarjeta gráfica (150 W)', corto: 'GPU', tdp: 150, color: '#1C2029' },
-  { id: 'gpu-blanca', kind: 'gpu', nombre: 'Tarjeta gráfica blanca (200 W)', corto: 'GPU blanca', tdp: 200, color: '#E5E9F0' },
-  { id: 'gpu-negra', kind: 'gpu', nombre: 'Tarjeta gráfica negra con LED (170 W)', corto: 'GPU negra', tdp: 170, color: '#1C2029' },
+  { id: 'gpu-blanca', kind: 'gpu', nombre: 'Tarjeta gráfica blanca (200 W)', corto: 'GPU blanca', tdp: 200, color: '#E5E9F0', comercial: 'Gigabyte AERO' },
+  { id: 'gpu-negra', kind: 'gpu', nombre: 'Tarjeta gráfica negra con LED (170 W)', corto: 'GPU negra', tdp: 170, color: '#1C2029', comercial: 'Gigabyte' },
 
-  { id: 'nvme', kind: 'nvme', nombre: 'SSD NVMe M.2', corto: 'SSD NVMe', color: '#2C4B3E' },
+  { id: 'nvme', kind: 'nvme', nombre: 'SSD NVMe M.2', corto: 'SSD NVMe', color: '#2C4B3E', comercial: 'Seagate FireCuda' },
 
   // Fuentes: la potencia debe cubrir lo que necesita el equipo.
   { id: 'psu', kind: 'psu', nombre: 'Fuente de 650 W', corto: 'Fuente 650 W', watts: 650, color: '#1E222A' },
-  { id: 'psu-750', kind: 'psu', nombre: 'Fuente de 750 W', corto: 'Fuente 750 W', watts: 750, color: '#1E222A' },
+  { id: 'psu-750', kind: 'psu', nombre: 'Fuente de 750 W', corto: 'Fuente 750 W', watts: 750, color: '#1E222A', comercial: 'VITA' },
   { id: 'psu-x', kind: 'psu', nombre: 'Fuente de 450 W', corto: 'Fuente 450 W', watts: 450, color: '#1E222A', sinFoto: true }
 ];
 
