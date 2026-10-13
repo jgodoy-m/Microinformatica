@@ -2,9 +2,9 @@
 import * as THREE from 'three';
 import { CABLES } from './catalogo.js';
 import { SLOTS, SALIDA_CABLE, ALTURA_CABLE } from './geometria.js';
-import { hooks, cable, estado, pieza, piezaPlacada, tabla } from './estado.js';
+import { hooks, esFacil, cable, estado, pieza, piezaPlacada, tabla } from './estado.js';
 import { $, bandeja, botonesModo, fantasma } from './dom.js';
-import { actualizarGuias, ajustarTamano, caja, camera, conectorCable, construirCaso, construirGuias, construirPieza, construirTablero, dibujarPrevia, fans, grupoCables, grupoCaso, grupoPiezas, grupoTablero, huecoEn, ledMats, modelosListos, posicionDe, puertoEn, puertoRect, puntosCable, renderer, tuboCable, vaciar } from './escena.js';
+import { actualizarGuias, ajustarTamano, caja, camera, conectorCable, construirCaso, construirGuias, construirPieza, construirTablero, dibujarPrevia, fans, grupoCables, grupoCaso, grupoPiezas, grupoTablero, huecoEn, ledMats, modelosListos, posicionDe, puertoEn, puertoRect, puntosCable, renderer, tuboCable, vaciar, claveTablero } from './escena.js';
 import { cargarPedido, encender, intentarColocar, intentarConectar, log, pintarPanel, reiniciar } from './juego.js';
 import { pintarBandeja } from './bandeja.js';
 
@@ -19,7 +19,7 @@ function pintarEscena() {
   if (cajaPuesta) construirCaso(cajaPuesta);
 
   const placa = tabla();
-  if (placa && estado.tableroId !== placa.id) construirTablero(placa);
+  if (placa && estado.tableroId !== claveTablero(placa, esFacil())) construirTablero(placa, esFacil());
   grupoTablero.visible = !!placa;
 
   vaciar(grupoPiezas);

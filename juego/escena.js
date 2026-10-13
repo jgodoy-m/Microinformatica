@@ -130,7 +130,7 @@ export function crearTexturaTexto(texto, ancho, alto, fondo, color) {
 }
 
 // Placa de circuito: color según el modelo, pistas de cobre, zócalo, ranuras y serigrafía.
-export function texturaPlaca(placa) {
+export function texturaPlaca(placa, conTexto = true) {
   const W = 1800;
   const H = 1440;
   const k = 60;
@@ -177,7 +177,7 @@ export function texturaPlaca(placa) {
   // Zócalo: marco de plástico y contactos (más densos en LGA).
   rect(-2, 3, 4.4, 4.4, '#101318');
   rect(-2, 3, 3.95, 3.95, '#262B34');
-  const lga = placa.socket.startsWith('LGA');
+  const lga = conTexto && placa.socket.startsWith('LGA');
   const n = lga ? 36 : 30;
   const paso = 3.8 / n;
   for (let i = 0; i < n; i++) {
@@ -227,8 +227,10 @@ export function texturaPlaca(placa) {
   c.fillStyle = 'rgba(236, 239, 244, 0.7)';
   c.font = 'bold 26px system-ui, sans-serif';
   c.textAlign = 'center';
-  c.fillText(placa.socket, X(-2), Y(5.8));
-  c.fillText(placa.gen, X(5.65), Y(11.6));
+  if (conTexto) {
+    c.fillText(placa.socket, X(-2), Y(5.8));
+    c.fillText(placa.gen, X(5.65), Y(11.6));
+  }
   c.fillText('PCIE_X16', X(0.5), Y(-10.3));
   c.fillText('M.2_1', X(-9), Y(0.6));
   c.fillText('CPU_PWR', X(-12.5), Y(7.6));
@@ -309,10 +311,13 @@ export function construirCaso(modelo) {
 }
 
 // La placa se reconstruye cuando cambia el modelo (color, zócalo y memoria).
-export function construirTablero(placa) {
+// Clave con la que se reconoce la placa ya dibujada (cambia al pasar a modo difícil).
+export const claveTablero = (placa, conTexto) => placa.id + (conTexto ? '' : '#dificil');
+
+export function construirTablero(placa, conTexto = true) {
   vaciar(grupoTablero);
-  estado.tableroId = placa.id;
-  const cara = new THREE.MeshStandardMaterial({ map: texturaPlaca(placa), roughness: 0.5, metalness: 0.05 });
+  estado.tableroId = claveTablero(placa, conTexto);
+  const cara = new THREE.MeshStandardMaterial({ map: texturaPlaca(placa, conTexto), roughness: 0.5, metalness: 0.05 });
   const canto = matPlastico(placa.pcb);
   const pcb = new THREE.Mesh(new THREE.BoxGeometry(30, 24, 0.16), [canto, canto, canto, canto, cara, canto]);
   pcb.position.z = -0.08;
@@ -339,7 +344,7 @@ export function construirPieza(p, pos) {
   if (p.kind === 'cpu') {
     // Sustrato verde-negro bajo la tapa metálica con la etiqueta del modelo.
     g.add(en(caja(4.1, 4.1, 0.14, matPlastico('#1F2A24')), 0, 0, 0.07));
-    const etiqueta = matMetal('#C9D1DC', { map: texturaTexto(p.socket, 256, 256, '#A9B3C2', '#2E3440'), metalness: 0.6, roughness: 0.35 });
+    const etiqueta = matMetal('#C9D1DC', { map: texturaTexto(esFacil() ? p.socket : 'CPU', 256, 256, '#A9B3C2', '#2E3440'), metalness: 0.6, roughness: 0.35 });
     const tapa = new THREE.Mesh(new THREE.BoxGeometry(3.4, 3.4, 0.16), [matMetal(p.color), matMetal(p.color), matMetal(p.color), matMetal(p.color), etiqueta, matMetal(p.color)]);
     tapa.position.z = 0.22;
     tapa.castShadow = true;
@@ -393,7 +398,7 @@ export function construirPieza(p, pos) {
     }
     const etiqueta = new THREE.Mesh(
       new THREE.PlaneGeometry(4.6, 1.6),
-      new THREE.MeshStandardMaterial({ map: texturaTexto(`${p.watts} W`, 512, 180), roughness: 0.6 })
+      new THREE.MeshStandardMaterial({ map: texturaTexto(esFacil() ? `${p.watts} W` : 'PSU', 512, 180), roughness: 0.6 })
     );
     etiqueta.position.set(-4.2, 1.6, 3.52);
     g.add(etiqueta);
@@ -445,7 +450,7 @@ export function construirPiezaGlb(p, g, clave) {
     for (const cid of Object.keys(SALIDA_CABLE)) {
       g.add(en(caja(1.4, 0.8, 1.2, matNegro), SALIDA_CABLE[cid][0], 3.65, 0));
     }
-    const etiqueta = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.6), new THREE.MeshStandardMaterial({ map: texturaTexto(`${p.watts} W`, 512, 180), roughness: 0.6 }));
+    const etiqueta = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.6), new THREE.MeshStandardMaterial({ map: texturaTexto(esFacil() ? `${p.watts} W` : 'PSU', 512, 180), roughness: 0.6 }));
     etiqueta.position.set(-4.2, 1.6, 3.52);
     g.add(etiqueta);
   }
