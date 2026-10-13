@@ -6,6 +6,11 @@
 
   var NS = 'http://www.w3.org/2000/svg';
   var NOMINALES = [12, 5, 3.3];
+  /* Tolerancia ATX ±5 % por raíl (apuntes S12). Cada tensión se compara con su propio nominal. */
+  var TOLERANCIA = 0.05;
+  function fueraDeTolerancia(v) {
+    return NOMINALES.map(function (n, i) { return Math.abs(v[i] - n) > n * TOLERANCIA; });
+  }
   var ICONO_SOL = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
   var ICONO_LUNA = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
 
@@ -28,9 +33,79 @@
     var q = function (s) { return raiz.querySelector(s); };
     var qa = function (s) { return raiz.querySelectorAll(s); };
     var S;
+    /* Ronda: número de veces que se pulsa «Repetir». Alterna la variante de los casos que tienen escenarios (sin aleatoriedad). */
+    var ronda = 0;
+
+    /* Caso i con la variante v aplicada. Las variantes solo sustituyen res, fallos, luz, explicación, reparaciones, verificaciones y «exige». */
+    function casoEn(i, v) {
+      var base = C.casos[i];
+      var over = base.variantes && base.variantes[v];
+      if (!over) return base;
+      var c = Object.assign({}, base, over);
+      ['res', 'fallos', 'luz'].forEach(function (k) { c[k] = Object.assign({}, base[k] || {}, over[k] || {}); });
+      if (over.discrima) c.discrima = Object.assign({}, base.discrima, over.discrima);
+      return c;
+    }
+    function caso() { return casoEn(S.i, S.variante); }
 
     function nuevo() {
-      S = { i: 0, costo: 0, used: new Set(), medido: false, pts: [], luz: {}, volt: null };
+      S = { i: 0, costo: 0, used: new Set(), medido: false, pts: [], desglose: [], luz: {}, volt: null, varHist: [], repAceptada: null };
+      reiniciarCaso();
+    }
+
+    /* Estado que pertenece solo al caso actual. */
+    function reiniciarCaso() {
+      S.costo = 0; S.used = new Set(); S.medido = false; S.luz = {}; S.volt = null;
+      S.pistas = 0; S.dxFallos = 0; S.camPrematura = false;
+      S.diagOK = false; S.reparada = false; S.repErr = 0; S.verificada = false; S.hallazgo = {}; S.repAceptada = null;
+      S.variante = ronda % 2 ? 'mal' : 'defectuoso';
+    }
+
+    /* Un diagnóstico correcto solo se confirma si las pruebas discriminantes del caso están hechas. */
+    function discrimaHecha(c) {
+      if (!c.discrima) return true;
+      var usadas = c.discrima.ids.every(function (id) { return S.used.has(id); });
+      /* «exige» fija el resultado que debe dar cada prueba: la conclusión depende de lo que muestra la prueba, no solo de haberla hecho. */
+      var exige = c.discrima.exige || {};
+      return usadas && Object.keys(exige).every(function (id) { return S.hallazgo[id] === exige[id]; });
+    }
+
+    /* Criterio de utilidad: una prueba cuenta si cambia una lámpara o es medición básica (fuente o mínima configuración).
+       Cambiar la fuente es una sustitución, no una prueba: nunca cuenta como útil. */
+    function esUtil(id, c) {
+      if (id === 'cam') return false;
+      return !!c.luz[id] || id === 'fue' || id === 'min';
+    }
+
+    /* Puntuación de un caso (100 puntos), calculada al verificar la reparación.
+       Diagnóstico 30 · pruebas útiles 20 · sin sustituciones prematuras 10 · tiempo 10 · pistas 10 ·
+       diagnósticos sin errores 15 (−5 por cada error) · reparación y verificación 5.
+       La reparación no suma si hubo un diagnóstico erróneo antes: una reparación acertada tras un diagnóstico fallido no se premia. */
+    /* Reglas de la fórmula (cada acción puntúa en un único criterio):
+       · Pruebas útiles (20): proporción de pruebas útiles sobre el total realizado, sin contar «cam».
+       · Sin sustituciones prematuras (10): «cam» antes de medir la fuente resta todo este criterio.
+       · Tiempo (10): cada 10 min de pruebas útiles NO requeridas por el caso resta 1 punto.
+         Las pruebas discriminantes del caso son obligatorias y no restan tiempo.
+       · Las pruebas no útiles solo restan en «Pruebas útiles»; así ninguna acción se penaliza dos veces. */
+    function puntuarCaso(c) {
+      /* 'cam' se evalúa solo en «Sin sustituciones prematuras»: fuera del denominador de pruebas útiles, para no penalizarla dos veces. */
+      var usadas = Array.from(S.used).filter(function (id) { return id !== 'cam'; });
+      var utiles = usadas.filter(function (id) { return esUtil(id, c); }).length;
+      var requeridas = c.discrima ? c.discrima.ids : [];
+      var extras = usadas.filter(function (id) { return esUtil(id, c) && requeridas.indexOf(id) < 0; }).length;
+      var partes = [];
+      partes.push({ n: 'Diagnóstico correcto', pts: 30 });
+      partes.push({ n: 'Pruebas útiles (' + utiles + ' de ' + usadas.length + ')', pts: usadas.length ? Math.round(20 * utiles / usadas.length) : 0 });
+      partes.push({ n: 'Sin sustituciones prematuras', pts: S.camPrematura ? 0 : 10 });
+      partes.push({ n: 'Tiempo (pruebas útiles extra: ' + extras + ')', pts: Math.max(0, 10 - Math.floor(5 * extras / 10)) });
+      var coste = [3, 3, 4];
+      var sinPistas = 10 - coste.slice(0, S.pistas).reduce(function (a, b) { return a + b; }, 0);
+      partes.push({ n: 'Pistas usadas (' + S.pistas + ' de 3)', pts: sinPistas });
+      partes.push({ n: 'Diagnósticos sin errores (' + S.dxFallos + ' erróneos)', pts: Math.max(0, 15 - 5 * S.dxFallos) });
+      var repPts = S.dxFallos ? 0 : 5;
+      partes.push({ n: 'Reparación y verificación' + (S.dxFallos ? ' (sin puntos: hubo un diagnóstico erróneo)' : ''), pts: repPts });
+      var total = Math.max(0, partes.reduce(function (a, p) { return a + p.pts; }, 0));
+      return { total: total, partes: partes };
     }
 
     function log(h) {
@@ -54,9 +129,11 @@
         val.textContent = v.toFixed(2).replace('.', ',') + ' V';
         row.classList.toggle('bad', !vs.ok);
       });
+      var railes = ['+12 V', '+5 V', '+3,3 V'];
       q('.vnote').textContent = !vs ? 'Mide la fuente para ver los valores.'
-        : vs.ok ? 'Valores dentro de la tolerancia ATX (±5 %).'
-        : 'Tensión ausente o fuera de rango: la fuente es la pista.';
+        : vs.ok ? 'Los tres raíles están dentro de la tolerancia ATX (±5 %). Lecturas simuladas.'
+        : vs.v.every(function (x) { return x <= 0; }) ? 'Sin tensión en ningún raíl: hay que separar la fuente de un posible corto en la placa.'
+        : 'Fuera de tolerancia: ' + railes.filter(function (r, i) { return vs.fuera[i] || vs.v[i] <= 0; }).join(', ') + '. La fuente es sospechosa: hay que separarla de la placa.';
     }
 
     /* Actualiza botones deshabilitados, tiempo y lámparas sin reconstruir la lista. */
@@ -71,15 +148,31 @@
         else { q('.log').tabIndex = -1; q('.log').focus(); }
       }
       q('.coste').textContent = 'Tiempo gastado: ' + S.costo + ' min';
+      var bp = q('.pista');
+      bp.disabled = S.diagOK || S.pistas >= 3;
+      bp.textContent = S.pistas >= 3 ? 'Sin más pistas' : 'Pista (' + (S.pistas + 1) + ' de 3 · −' + [3, 3, 4][S.pistas] + ' pts)';
       pintarRack();
     }
 
+    /* Pista progresiva: tres niveles, cada uno con su coste en puntos (ver puntuarCaso). */
+    function pista() {
+      var c = caso();
+      if (S.diagOK || S.pistas >= 3) return;
+      S.pistas++;
+      log('<span class="aviso">Pista ' + S.pistas + ' de 3</span> ' + c.pistas[S.pistas - 1]);
+      actualizarEstado();
+    }
+
     function render() {
-      var c = C.casos[S.i];
+      var c = caso();
       q('.caso-n').textContent = 'Caso ' + (S.i + 1) + ' de ' + C.casos.length;
       q('.caso-t').textContent = c.t;
       q('.caso-s').textContent = c.s;
       q('.coste').textContent = 'Tiempo gastado: ' + S.costo + ' min';
+      q('.rep').hidden = true;
+      q('.verif-box').hidden = true;
+      q('.explicacion').hidden = true;
+      q('.next').hidden = true;
       var acts = q('.acts');
       acts.innerHTML = '';
       C.acciones.forEach(function (a) {
@@ -95,19 +188,29 @@
         b.textContent = C.causas[k];
         b.onclick = function () { diag(k); };
       });
-      pintarRack();
+      /* Recalcula pistas y pruebas deshabilitadas del caso nuevo (si no, la pista del caso anterior quedaría bloqueada). */
+      actualizarEstado();
     }
 
     function actuar(id) {
-      var c = C.casos[S.i];
+      var c = caso();
       S.used.add(id);
       S.costo += 5;
-      if (id === 'fue') { S.medido = true; S.volt = { v: c.volt, ok: c.volt.every(function (x) { return x > 0; }) }; }
+      if (id === 'fue') {
+        var v = c.volt || [0, 0, 0];
+        var fuera = fueraDeTolerancia(v);
+        S.medido = true;
+        S.volt = { v: v, fuera: fuera, ok: !fuera.some(Boolean) && v.every(function (x) { return x > 0; }) };
+      }
       if (c.luz[id]) S.luz[c.luz[id][0]] = c.luz[id][1];
+      /* Resultado de la prueba: 'fallo' si el caso la marca como fallida; 'sin_fallo' en otro caso. */
+      S.hallazgo[id] = c.fallos && c.fallos[id] ? 'fallo' : 'sin_fallo';
       var t = c.res[id] || 'No aporta nada nuevo en este caso.';
+      /* La inspección visual no confirma conexiones ni temperaturas: si no enciende ninguna lámpara, se marca como inconcluyente. */
+      if (!esUtil(id, c)) t = (id === 'vis' ? '<span class="aviso">Inconcluyente:</span> ' : '<span class="aviso">Prueba poco útil aquí:</span> ') + t;
       /* Un fallo de prueba: el resultado es negativo y se muestra en rojo. Cuesta lo mismo que una prueba normal. */
       if (c.fallos && c.fallos[id]) t = '<span class="bad">Prueba fallida.</span> ' + c.fallos[id];
-      if (id === 'cam' && !S.medido) { S.costo += 15; t += ' <span class="bad">Cambiar una pieza sin medir antes: +15 min.</span>'; }
+      if (id === 'cam' && !S.medido) { S.camPrematura = true; t += ' <span class="bad">Sustitución prematura: mide la fuente antes de cambiarla (sin puntos en este criterio).</span>'; }
       log(t);
       actualizarEstado();
     }
@@ -120,24 +223,113 @@
       box.hidden = false;
     }
 
+    /* Informe de intervención: lo que se confirmó, con qué pruebas, qué se reparó y cómo se verificó. */
+    function mostrarInforme(c, v) {
+      var pruebas = Array.from(S.used).map(function (id) {
+        var a = C.acciones.filter(function (x) { return x[0] === id; })[0];
+        return a ? a[1] : id;
+      });
+      var box = q('.explicacion');
+      box.insertAdjacentHTML('beforeend',
+        '<h3 class="label">Informe de intervención</h3><dl>' +
+          '<dt>Causa confirmada</dt><dd>' + escapar(C.causas[c.causa]) + '</dd>' +
+          '<dt>Pruebas realizadas</dt><dd>' + (pruebas.length ? escapar(pruebas.join('; ')) : 'Ninguna') + '</dd>' +
+          '<dt>Reparación</dt><dd>' + escapar(S.repAceptada.t) + '</dd>' +
+          '<dt>Verificación</dt><dd>' + escapar(v.t) + '</dd>' +
+        '</dl>');
+    }
+
+    /* Enfoca el siguiente botón habilitado de un grupo, o el registro si no queda ninguno. */
+    function enfocarSiguiente(botones) {
+      var siguiente = Array.prototype.find.call(botones, function (b) { return !b.disabled; });
+      if (siguiente) siguiente.focus(); else { q('.log').tabIndex = -1; q('.log').focus(); }
+    }
+
     function diag(k) {
-      var c = C.casos[S.i];
-      if (k === c.causa) {
-        var pts = Math.max(0, 100 - S.costo);
-        S.pts.push(pts);
-        S.luz[C.causaLampara[k]] = 'bad';
-        pintarRack();
-        log('<span class="ok">Correcto.</span> ' + c.explica + ' <b>Puntuación del caso: ' + pts + '/100</b>');
-        mostrarExplicacion(c);
-        qa('.acts button, .dx button').forEach(function (b) { b.disabled = true; });
-        var n = q('.next');
-        n.hidden = false;
-        n.textContent = S.i + 1 < C.casos.length ? 'Siguiente caso →' : 'Ver resultado';
-      } else {
-        S.costo += 20;
-        log('<span class="bad">No es esta causa.</span> Revisa lo que llevas medido. (+20 min)');
+      var c = caso();
+      if (S.diagOK) return;
+      if (k !== c.causa) {
+        S.dxFallos++;
+        /* Cada causa descartada se penaliza una sola vez: su botón se deshabilita. */
+        qa('.dx button')[Object.keys(C.causas).indexOf(k)].disabled = true;
+        log('<span class="bad">No es esta causa.</span> Revisa lo que llevas medido. (−5 puntos en este caso)');
         actualizarEstado();
+        enfocarSiguiente(qa('.dx button'));
+        return;
       }
+      if (!discrimaHecha(c)) {
+        /* No es un error: la causa encaja, pero hay otra compatible con el mismo síntoma que hay que descartar primero. */
+        log('<span class="aviso">Todavía no lo confirmo.</span> ' + c.discrima.texto);
+        return;
+      }
+      S.diagOK = true;
+      S.luz[C.causaLampara[k]] = 'bad';
+      qa('.dx button').forEach(function (b) { b.disabled = true; });
+      log('<span class="ok">Diagnóstico confirmado.</span> ' + c.explica + ' Ahora elige cómo lo reparas.');
+      mostrarExplicacion(c);
+      var reps = q('.reps');
+      reps.innerHTML = '';
+      c.reparaciones.forEach(function (r, i) {
+        var b = el('button', { class: 'act', type: 'button' }, reps);
+        b.textContent = r.t;
+        b.onclick = function () { reparar(i); };
+      });
+      q('.rep').hidden = false;
+      actualizarEstado();
+      q('.rep .act').focus();
+    }
+
+    function reparar(i) {
+      var c = caso();
+      var r = c.reparaciones[i];
+      var botones = q('.reps').querySelectorAll('button');
+      /* «requiere»: la reparación solo se acepta si el resultado de las pruebas la justifica. */
+      var justificada = !r.requiere || Object.keys(r.requiere).every(function (id) { return S.hallazgo[id] === r.requiere[id]; });
+      if (!r.ok || !justificada) {
+        S.repErr++;
+        botones[i].disabled = true;
+        var motivo = !r.ok ? 'Esta reparación no corrige la causa.' : 'Esta reparación no está justificada por lo que has medido.';
+        log('<span class="bad">' + motivo + '</span> ' + (r.ok ? r.noJustificada : r.res));
+        enfocarSiguiente(botones);
+        return;
+      }
+      S.reparada = true;
+      S.repAceptada = r;
+      botones.forEach(function (b) { b.disabled = true; });
+      log('<span class="ok">Reparación correcta.</span> ' + r.res + ' Ahora verifícala.');
+      var verifs = q('.verifs');
+      verifs.innerHTML = '';
+      c.verificaciones.forEach(function (v, j) {
+        var b = el('button', { class: 'act', type: 'button' }, verifs);
+        b.textContent = v.t;
+        b.onclick = function () { verificar(j); };
+      });
+      q('.verif-box').hidden = false;
+      q('.verifs button').focus();
+    }
+
+    function verificar(j) {
+      var c = caso();
+      var v = c.verificaciones[j];
+      var botones = q('.verifs').querySelectorAll('button');
+      if (!v.ok) {
+        botones[j].disabled = true;
+        log('<span class="bad">Sin verificación.</span> ' + v.res);
+        enfocarSiguiente(botones);
+        return;
+      }
+      S.verificada = true;
+      S.varHist[S.i] = S.variante;
+      botones.forEach(function (b) { b.disabled = true; });
+      var res = puntuarCaso(c);
+      S.pts.push(res.total);
+      S.desglose.push(res.partes);
+      log('<span class="ok">Verificado.</span> ' + v.res + ' <b>Puntuación del caso: ' + res.total + '/100</b>');
+      mostrarInforme(c, v);
+      var n = q('.next');
+      n.hidden = false;
+      n.textContent = S.i + 1 < C.casos.length ? 'Siguiente caso →' : 'Ver resultado';
+      n.focus();
       q('.coste').textContent = 'Tiempo gastado: ' + S.costo + ' min';
     }
 
@@ -149,18 +341,22 @@
       q('.sim-stage').hidden = true;
       var f = q('.fin');
       f.hidden = false;
-      var repaso = C.casos.map(function (c, i) {
+      var repaso = C.casos.map(function (base, i) {
+        var c = casoEn(i, S.varHist[i] || 'defectuoso');
         var leccion = c.explicacion[c.explicacion.length - 1][1];
-        return '<li><span class="repaso-t">' + c.t + '</span> <span class="val">' + S.pts[i] + '/100</span><p>' + leccion + '</p></li>';
+        var desglose = (S.desglose[i] || []).map(function (p) {
+          return '<li>' + escapar(p.n) + ': <span class="val">' + (p.pts >= 0 ? '+' : '') + p.pts + '</span></li>';
+        }).join('');
+        return '<li><span class="repaso-t">' + c.t + '</span> <span class="val">' + S.pts[i] + '/100</span>' +
+          '<ul class="desglose">' + desglose + '</ul><p>' + leccion + '</p></li>';
       }).join('');
       f.innerHTML = '<h2>Media: ' + media + '/100</h2><p>' + msg + '</p>' +
         '<h3 class="label">Repaso de las averías</h3><ol class="repaso">' + repaso + '</ol>' +
         '<button class="next repetir" type="button">Repetir</button>';
       f.querySelector('.repetir').onclick = function () {
+        ronda++;
         nuevo();
         q('.log').innerHTML = '';
-        q('.explicacion').hidden = true;
-        q('.next').hidden = true;
         q('.sim-stage').hidden = false;
         f.hidden = true;
         render();
@@ -189,24 +385,35 @@
             '<h3 class="label">Pruebas · cada una cuesta 5 min</h3>' +
             '<div class="btns acts"></div>' +
             '<div class="log" aria-live="polite"></div>' +
-            '<div class="explicacion" hidden></div>' +
+            '<div class="rep" hidden>' +
+              '<h3 class="label">Reparación · elige una</h3>' +
+              '<div class="btns reps"></div>' +
+              '<div class="verif-box" hidden>' +
+                '<h3 class="label">Verificación · comprueba que el equipo funciona</h3>' +
+                '<div class="btns verifs"></div>' +
+              '</div>' +
+            '</div>' +
             '<button class="next" type="button" hidden>Siguiente caso →</button>' +
+            '<div class="explicacion" hidden></div>' +
+            '<button class="pista act" type="button">Pista</button>' +
           '</div>' +
           '<div class="card">' +
             '<h3 class="label">¿Cuál es la causa?</h3>' +
             '<div class="btns dx"></div>' +
           '</div>' +
-          '<p class="foot">Cambia una sola cosa cada vez. Cambiar una pieza sin medir antes cuesta 15 min extra.</p>' +
+          '<p class="foot">Cambia una sola cosa cada vez. Cambiar una pieza sin medir antes resta puntos de evidencia.</p>' +
         '</div>' +
       '</div>' +
       '<div class="card fin" hidden></div>';
 
+    q('.pista').onclick = pista;
+
     q('.next').onclick = function () {
+      /* Solo se avanza con el caso verificado: el botón puede dispararse por código aunque esté oculto. */
+      if (!S.verificada) return;
       if (S.i + 1 < C.casos.length) {
-        S.i++; S.costo = 0; S.used = new Set(); S.medido = false; S.luz = {}; S.volt = null;
+        S.i++; reiniciarCaso();
         q('.log').innerHTML = '';
-        q('.explicacion').hidden = true;
-        q('.next').hidden = true;
         render();
       } else {
         fin();
@@ -295,6 +502,13 @@
       if (Q.i >= Q.list.length) {
         q('.info').innerHTML = '<b>Fin del quiz:</b> ' + Q.ok + ' de ' + Q.list.length + ' aciertos.';
         q('.qScore').textContent = '';
+        var rep = document.createElement('button');
+        rep.type = 'button';
+        rep.className = 'mQ repetir';
+        rep.textContent = 'Repetir quiz';
+        rep.onclick = function () { setModo('quiz'); };
+        q('.info').appendChild(rep);
+        rep.focus();
         return;
       }
       var target = Q.list[Q.i];
@@ -321,7 +535,15 @@
         q('.info').innerHTML = '<span class="bad">No era esa.</span> Era <b>' + escapar(Z[target].n) + '</b>: ' + escapar(Z[target].d);
       }
       Q.i++;
-      timer = setTimeout(function () { if (modo === 'quiz' && Q) preguntar(); }, 1600);
+      /* El marcador se actualiza al responder; el alumno avanza cuando quiere, sin temporizador. */
+      q('.qScore').textContent = 'Aciertos: ' + Q.ok + '/' + Q.i;
+      var sig = document.createElement('button');
+      sig.type = 'button';
+      sig.className = 'mQ siguiente';
+      sig.textContent = Q.i < Q.list.length ? 'Siguiente pregunta →' : 'Ver resultado';
+      sig.onclick = function () { preguntar(); };
+      q('.info').appendChild(sig);
+      sig.focus();
     }
 
     q('.mE').onclick = function () { setModo('explorar'); };

@@ -1,6 +1,7 @@
 /* Tema: averías en la placa base.
    Todo el contenido de este tema vive aquí. El motor (js/motor.js) no sabe nada de placas.
-   Coordenadas de zonas: en píxeles de la imagen (ancho × alto de foto), formato [x, y, ancho, alto]. */
+   Coordenadas de zonas: en píxeles de la imagen (ancho × alto de foto), formato [x, y, ancho, alto].
+   Cada caso sigue el orden: pruebas → diagnóstico (confirmado solo tras las pruebas discriminantes) → reparación → verificación. */
 window.TEMAS = window.TEMAS || [];
 window.TEMAS.push({
   id: 'placa-base',
@@ -125,7 +126,7 @@ window.TEMAS.push({
     causaLampara: { fuente: 'fuente', ram: 'ram', eps: 'cpu', temp: 'temp', sata: 'disco' },
     causas: {
       fuente: 'Fuente de alimentación',
-      ram: 'Módulo de RAM defectuoso',
+      ram: 'Módulo de RAM (defectuoso o mal asentado)',
       eps: 'Conector EPS de la CPU sin conectar',
       temp: 'Sobrecalentamiento (refrigeración)',
       sata: 'Cable de datos SATA suelto'
@@ -134,8 +135,9 @@ window.TEMAS.push({
       ['ent', 'Preguntar al cliente'],
       ['vis', 'Inspección visual'],
       ['fue', 'Medir +12 V, +5 V y +3,3 V'],
-      ['min', 'Mínima configuración (placa, CPU, 1 RAM)'],
+      ['min', 'Mínima configuración, o fuente sola sin placa'],
       ['ram', 'Probar la RAM en otro slot'],
+      ['reenc', 'Reencajar módulo y repetir prueba'],
       ['eps', 'Revisar el conector EPS'],
       ['sata', 'Revisar el cable SATA'],
       ['tmp', 'Ver temperaturas'],
@@ -143,58 +145,148 @@ window.TEMAS.push({
     ],
     casos: [
       { t: 'No da señales de vida', s: 'Pulsas el botón y no pasa nada. No hay ventiladores ni LED.', causa: 'fuente',
+        pistas: ['Nada responde: piensa en lo primero que la fuente necesita para arrancar, antes que en la placa o la CPU.', 'Mide las tensiones de la fuente. Si no hay ninguna en los tres raíles, hay que separar la fuente de un posible corto en la placa.', 'Sin +5 VSB de espera la fuente no escucha el botón. Un 0 V en todo no basta: prueba la fuente sola, sin placa, antes de confirmarla.'],
+        discrima: { ids: ['fue', 'min'], texto: 'Un 0 V en los raíles no distingue una fuente muerta de un cortocircuito en la placa. Mide y prueba la fuente sola, sin placa, antes de confirmarla.' },
         explica: 'Sin +5 VSB de espera la fuente no responde. Con una fuente de prueba la placa arranca.',
+        reparaciones: [
+          { t: 'Sustituir la fuente por una de prueba o de garantía', ok: true, res: 'Con la fuente nueva el equipo enciende y los tres raíles quedan dentro de tolerancia.' },
+          { t: 'Cambiar la placa base', ok: false, res: 'Sin fuente funcional, una placa nueva tampoco enciende. Cambiarla sin medir antes no tiene justificación.' },
+          { t: 'Cambiar la CPU y la RAM', ok: false, res: 'Sin tensión de alimentación, ni la CPU ni la RAM llegan a trabajar. Ese cambio no corrige la causa.' }
+        ],
+        verificaciones: [
+          { t: 'Encender y medir de nuevo los tres raíles con el equipo en carga', ok: true, res: 'Los raíles se mantienen en tolerancia y el equipo arranca.' },
+          { t: 'Dar el caso por cerrado sin encender', ok: false, res: 'Sin arrancar el equipo no hay verificación: podría seguir sin funcionar.' }
+        ],
         explicacion: [
           ['Qué pasa', 'El equipo no responde: ni ventiladores ni LED. Pulsar el botón no sirve de nada si la fuente no está lista.'],
           ['Por qué', 'La fuente siempre entrega +5 VSB de espera, aunque el equipo esté apagado. Al pulsar el botón, la placa baja la señal PS_ON# y la fuente conecta los raíles principales. Sin +5 VSB no hay nadie que escuche el botón.'],
-          ['Cómo se resuelve', 'Con el equipo enchufado y el interruptor de la fuente encendido, mide +5 VSB en el conector ATX (cable morado). Si no hay tensión, la fuente está averiada: cámbiala antes que la placa o la CPU.'],
+          ['Qué no puede concluir la medición', '0 V en los tres raíles no distingue una fuente muerta de un cortocircuito en la placa: un corto puede mantener la fuente en protección. Por eso se prueba la fuente sola, sin placa.'],
+          ['Cómo se resuelve', 'Con el equipo enchufado y el interruptor de la fuente encendido, mide +5 VSB en el conector ATX (cable morado). Si no hay tensión, prueba la fuente sola (sin placa): si tampoco da tensión, la fuente está averiada y se sustituye, no la placa ni la CPU.'],
           ['Lección', 'Sin tensión de espera no hay arranque. Mide la fuente antes de tocar la placa.']
         ],
-        res: { ent: 'Hubo una tormenta anoche y el equipo se apagó de golpe.', vis: 'Nada quemado a simple vista. El cable está bien enchufado.', fue: 'Sin +5 VSB: la fuente no responde. Es la pista principal.', min: 'Sin tensión no se puede probar la configuración mínima.', ram: 'Sin tensión no hay nada que probar en la RAM.', eps: 'Sin tensión, el conector EPS no es el problema.', sata: 'Sin tensión, el disco no es el problema.', tmp: 'No se puede medir: el equipo no arranca.', cam: 'Con una fuente de prueba la placa arranca. La original estaba averiada.' },
+        res: { ent: 'Hubo una tormenta anoche y el equipo se apagó de golpe.', vis: 'Nada quemado a simple vista. El cable está bien enchufado.', fue: 'Los tres raíles principales están a 0 V. Eso no distingue una fuente averiada de un corto en la placa: hay que probar la fuente sola.', min: 'Fuente sola, sin placa y con PS_ON# puenteado a masa: sin tensión en los raíles. La fuente es la causa. Si arrancara, el corto estaría en la placa.', ram: 'Sin tensión no hay nada que probar en la RAM.', eps: 'Sin tensión, el conector EPS no es el problema.', sata: 'Sin tensión, el disco no es el problema.', tmp: 'No se puede medir: el equipo no arranca.', cam: 'Con una fuente de prueba la placa arranca. La original estaba averiada.' },
         luz: { fue: ['fuente', 'bad'], cam: ['fuente', 'ok'] }, volt: [0, 0, 0] },
       { t: 'Pitidos y pantalla negra', s: 'Al arrancar suenan pitidos seguidos y la pantalla queda en negro.', causa: 'ram',
-        explica: 'Con ese módulo no arranca en ningún slot. El otro módulo arranca en los dos.',
+        pistas: ['Los pitidos apuntan al arranque de la memoria (POST), no a la alimentación: los valores de la fuente son correctos.', 'Prueba el módulo en otro slot y reencájalo con el equipo apagado. El resultado de cada prueba decide qué hacer.', 'Si el otro módulo arranca en ambos slots y este falla en todos, reencájalo del todo y repite la prueba antes de darlo por malo.'],
+        discrima: { ids: ['ram', 'reenc'], exige: { ram: 'fallo', reenc: 'fallo' }, texto: 'Un módulo mal asentado y uno defectuoso dan el mismo síntoma. Prueba el módulo en otro slot y reencájalo con el equipo apagado: el resultado del reencaje separa los dos casos.' },
+        explica: 'El módulo de RAM falla y el arranque se detiene en el POST.',
+        reparaciones: [
+          { t: 'Sustituir el módulo por otro compatible y probado', ok: true, requiere: { reenc: 'fallo' }, res: 'Con el módulo nuevo la placa completa el POST y no pita.', noJustificada: 'El reencaje ya resolvió el fallo: sustituir el módulo no está justificado.' },
+          { t: 'Reencajar el módulo hasta el fondo y verificar', ok: true, requiere: { reenc: 'sin_fallo' }, res: 'Con el encaje corregido, la placa arranca sin pitidos.', noJustificada: 'El reencaje no ha resuelto el fallo: el módulo está defectuoso y hay que sustituirlo.' },
+          { t: 'Cambiar la placa base', ok: false, res: 'Si el fallo acompaña al módulo, la placa no es la causa. Cambiarla no corrige nada.' },
+          { t: 'Actualizar la BIOS sin cambiar ningún módulo', ok: false, res: 'No hay indicio de fallo de BIOS: el fallo sigue al módulo en cualquier slot.' }
+        ],
+        verificaciones: [
+          { t: 'Arrancar y comprobar que no pita y que la BIOS detecta la memoria completa', ok: true, res: 'Sin pitidos y con la memoria completa en la BIOS.' },
+          { t: 'Dar la reparación por buena sin arrancar', ok: false, res: 'Sin arrancar no hay verificación: el fallo podría volver.' }
+        ],
         explicacion: [
           ['Qué pasa', 'Pitidos seguidos y pantalla negra: el arranque se detiene en el POST por un fallo de memoria.'],
-          ['Por qué', 'Con un módulo defectuoso, la BIOS no puede inicializar la memoria y emite un código de pitidos. El significado exacto depende del fabricante de la BIOS, así que consulta el manual de la placa.'],
-          ['Cómo se resuelve', 'Prueba un módulo cada vez en los slots que indique el manual (en dual channel, normalmente A2 y B2). Si el fallo sigue con un módulo en cualquier slot, ese módulo es el culpable.'],
-          ['Lección', 'Aísla un componente cada vez. Cambiar de slot separa el fallo del slot del fallo del módulo.']
+          ['Por qué', 'La BIOS no puede inicializar la memoria y emite un código de pitidos. El significado exacto depende del fabricante de la BIOS, así que consulta el manual de la placa.'],
+          ['Qué no puede concluir la prueba en otro slot', 'Que el fallo siga al módulo no demuestra que esté defectuoso: un módulo mal asentado también falla en cualquier slot. Solo el reencaje separa las dos causas.'],
+          ['Cómo se resuelve', 'Con el equipo apagado y desenchufado, reencaja el módulo hasta el fondo y repite el arranque. Si el fallo persiste, el módulo está defectuoso y se sustituye.'],
+          ['Lección', 'Aísla un componente cada vez. Un fallo que sigue al módulo puede ser un módulo malo o un encaje malo: el reencaje lo distingue.']
         ],
         fallos: { ram: 'Con el módulo en otro slot, la placa también pita. El fallo viaja con el módulo, no con el slot.' },
-        res: { ent: 'El cliente añadió memoria la semana pasada.', vis: 'Un módulo queda ligeramente levantado del slot.', fue: 'Los valores de la fuente son correctos.', min: 'Con una sola RAM el patrón de pitidos cambia según el módulo que pongas.', ram: 'Con ese módulo no arranca en ningún slot. El otro arranca en ambos.', eps: 'El EPS está bien conectado y la CPU tiene tensión.', tmp: 'Las temperaturas están en rango: no es el calor.', cam: 'Cambiar la fuente no altera los pitidos.' },
-        luz: { fue: ['fuente', 'ok'], ram: ['ram', 'bad'], min: ['cpu', 'ok'], tmp: ['temp', 'ok'], vis: ['ram', 'bad'] } },
+        res: { ent: 'El cliente añadió memoria la semana pasada.', vis: 'Los módulos parecen bien encajados a simple vista. Una inspección no confirma el encaje.', fue: 'Los valores de la fuente son correctos.', min: 'Con una sola RAM el patrón de pitidos cambia según el módulo que pongas.', ram: 'Con ese módulo no arranca en ningún slot. El otro arranca en ambos.', eps: 'El EPS está bien conectado y la CPU tiene tensión.', tmp: 'Las temperaturas están en rango: no es el calor.', cam: 'Cambiar la fuente no altera los pitidos.' },
+        luz: { fue: ['fuente', 'ok'], ram: ['ram', 'bad'], min: ['cpu', 'ok'], tmp: ['temp', 'ok'] }, volt: [12.04, 5.02, 3.31],
+        variantes: {
+          defectuoso: {
+            explica: 'Con ese módulo no arranca en ningún slot. El otro módulo arranca en los dos.',
+            explicacion: [
+              ['Qué pasa', 'Pitidos seguidos y pantalla negra: el arranque se detiene en el POST por un fallo de memoria.'],
+              ['Por qué', 'Con un módulo defectuoso, la BIOS no puede inicializar la memoria y emite un código de pitidos. El significado exacto depende del fabricante de la BIOS, así que consulta el manual de la placa.'],
+              ['Qué no puede concluir la prueba en otro slot', 'Que el fallo siga al módulo no demuestra que esté defectuoso: un módulo mal asentado también falla en cualquier slot. Solo el reencaje separa las dos causas.'],
+              ['Cómo se resuelve', 'Con el equipo apagado, reencaja el módulo y repite el arranque. Como sigue pitando, el módulo está defectuoso: sustitúyelo.'],
+              ['Lección', 'Aísla un componente cada vez. Un reencaje que no cambia nada descarta el encaje y deja al módulo como culpable.']
+            ],
+            res: { ram: 'Con ese módulo no arranca en ningún slot. El otro arranca en ambos.', reenc: 'Con el equipo apagado y desenchufado, reencajas el módulo hasta el fondo y cierran los clips. Al arrancar, la placa sigue pitando.' },
+            fallos: { reenc: 'Con el módulo bien asentado, la placa sigue pitando: el fallo persiste.' },
+            luz: { reenc: ['ram', 'bad'] }
+          },
+          mal: {
+            explica: 'El módulo no estaba bien asentado: al reencajarlo, la placa arranca sin pitidos.',
+            explicacion: [
+              ['Qué pasa', 'Pitidos seguidos y pantalla negra: el arranque se detiene en el POST por un fallo de memoria.'],
+              ['Por qué', 'Un módulo mal asentado no hace buen contacto con los pines del slot. La BIOS no puede inicializar la memoria y emite pitidos igual que con un módulo defectuoso.'],
+              ['Qué no puede concluir la prueba en otro slot', 'Que pite en otro slot no demuestra que el módulo esté defectuoso: un módulo mal asentado también falla en todos. Solo el reencaje separa las dos causas.'],
+              ['Cómo se resuelve', 'Con el equipo apagado y desenchufado, reencaja el módulo hasta el fondo, comprueba que los clips cierran y repite el arranque. No hace falta cambiar piezas.'],
+              ['Lección', 'Un síntoma que se repite en todos los slots no siempre es un módulo malo: reencájalo antes de sustituirlo.']
+            ],
+            res: { ram: 'Con el módulo en otro slot, la placa sigue pitando. Eso no separa un módulo malo de uno mal asentado.', reenc: 'Con el equipo apagado y desenchufado, reencajas el módulo hasta el fondo y cierran los clips. Al arrancar, la placa arranca sin pitidos.' },
+            fallos: {},
+            luz: { reenc: ['ram', 'ok'] },
+            discrima: { exige: { ram: 'fallo', reenc: 'sin_fallo' } }
+          }
+        }
+      },
       { t: 'Se apaga a los 10 minutos de jugar', s: 'Arranca bien. Tras un rato de juego, el equipo se apaga de golpe.', causa: 'temp',
-        explica: 'La CPU llega a 98 °C y la protección térmica corta. El disipador tiene polvo y el ventilador frena.',
+        pistas: ['El equipo arranca bien y se apaga solo al cargar: piensa en lo que aumenta con la carga.', 'Mira la temperatura de la CPU bajo carga y el estado del disipador y de su ventilador.', 'Si la CPU llega a su límite térmico y el calor sigue subiendo, la protección corta la alimentación sin aviso. Limpiar y revisar la refrigeración es el paso siguiente.'],
+        discrima: { ids: ['tmp'], texto: 'Un apagado bajo carga puede venir de la temperatura o de la fuente. La fuente está medida en reposo; falta la temperatura real de la CPU bajo carga.' },
+        explica: 'La CPU llega a su límite térmico y la protección corta. El disipador tiene polvo y el ventilador frena.',
+        reparaciones: [
+          { t: 'Limpiar el disipador, revisar el ventilador y reaplicar pasta térmica', ok: true, res: 'Tras la limpieza la CPU baja de temperatura bajo carga y el equipo aguanta el juego.' },
+          { t: 'Cambiar la fuente', ok: false, res: 'La fuente está bien medida. Cambiarla no baja la temperatura de la CPU.' },
+          { t: 'Subir la velocidad del ventilador de caja sin limpiar', ok: false, res: 'Puede ayudar algo, pero no quita el polvo del disipador. Sin limpieza, el problema vuelve.' }
+        ],
+        verificaciones: [
+          { t: 'Medir la temperatura de la CPU bajo carga durante 20 minutos', ok: true, res: 'La temperatura se mantiene por debajo del límite y el equipo no se apaga.' },
+          { t: 'Dar la reparación por buena sin medir', ok: false, res: 'Limpiar no demuestra nada: falta medir la temperatura bajo carga.' }
+        ],
         explicacion: [
           ['Qué pasa', 'El equipo arranca bien y, tras un rato de carga, se apaga de golpe sin aviso.'],
-          ['Por qué', 'La CPU alcanza su temperatura máxima (Tjmax, cerca de 100 °C en muchos modelos) y la protección térmica corta la alimentación. El polvo en el disipador, un ventilador lento o una pasta de contacto seca reducen la disipación.'],
+          ['Por qué', 'Al llegar a su temperatura máxima (Tjunction; 100 °C en el i7-9700K), la CPU reduce su velocidad (throttling). Si el calor sigue subiendo, la protección térmica corta la alimentación. El polvo en el disipador, un ventilador lento o una pasta de contacto seca reducen la disipación.'],
+          ['Qué no puede concluir la inspección', 'El polvo y un ventilador que frena son indicios, no una medida: sin temperatura no se sabe si la refrigeración basta.'],
           ['Cómo se resuelve', 'Mide la temperatura bajo carga y las RPM del ventilador de CPU. Limpia el disipador, revisa el ventilador y, si la pasta está seca, reaplícala.'],
           ['Lección', 'Un apagado que se repite bajo carga apunta a la refrigeración. Mide antes de cambiar piezas.']
         ],
-        fallos: { tmp: 'No hay lectura: el sensor de la CPU no responde en la BIOS. No conoces la temperatura real y hay que medirla bajo carga con otra herramienta.' },
-        res: { ent: 'Pasa siempre en verano y con la caja cerrada.', vis: 'El disipador tiene polvo y el ventilador de CPU frena al tocarlo.', fue: 'La fuente está bien medida. No es ella.', min: 'Sin juego el fallo no aparece: la mínima configuración no lo reproduce.', ram: 'La RAM supera el test: no es la causa.', tmp: 'CPU a 98 °C antes de apagarse. La protección corta el equipo.', cam: 'Cambiar la fuente no cambia nada: sigue apagándose igual.' },
-        luz: { fue: ['fuente', 'ok'], vis: ['temp', 'bad'], tmp: ['temp', 'bad'], ram: ['ram', 'ok'], cam: ['fuente', 'ok'] } },
+        res: { ent: 'Pasa siempre en verano y con la caja cerrada.', vis: 'Hay polvo en el disipador y el ventilador de CPU frena al tocarlo. Es un indicio: falta la temperatura.', fue: 'Los raíles están en tolerancia con el equipo en reposo. Eso no prueba la fuente bajo carga: la temperatura de la CPU es lo que separa las dos hipótesis.', min: 'Sin juego el fallo no aparece: la mínima configuración no lo reproduce.', ram: 'La RAM supera el test: no es la causa.', tmp: 'CPU a 100 °C bajo carga, en su límite térmico (lectura simulada). Si el calor sigue subiendo, la protección corta el equipo.', cam: 'Cambiar la fuente no cambia nada: sigue apagándose igual.' },
+        luz: { fue: ['fuente', 'ok'], tmp: ['temp', 'bad'], ram: ['ram', 'ok'], cam: ['fuente', 'ok'] }, volt: [12.10, 5.00, 3.30] },
       { t: 'Pantalla negra con ventiladores', s: 'Enciende, los ventiladores giran, pero no sale imagen y la placa no pasa el POST.', causa: 'eps',
+        pistas: ['Los ventiladores giran: eso demuestra que hay alimentación, pero no que la CPU la reciba.', 'Revisa por separado los conectores que alimentan la placa y los que alimentan la CPU.', 'El conector de 8 pines alimenta la CPU directamente. Si no está asentado del todo, la CPU no recibe +12 V aunque la placa arranque.'],
+        discrima: { ids: ['eps'], texto: 'Pantalla negra con ventiladores también encaja con una CPU mal asentada o con una RAM que no arranca. Revisa el conector EPS antes de confirmarlo.' },
         explica: 'El conector EPS de 8 pines está flojo. La CPU no recibe +12 V aunque la placa tenga tensión.',
+        reparaciones: [
+          { t: 'Desconectar el EPS, revisar los pines y encajarlo hasta oír el clic', ok: true, res: 'Con el EPS encajado del todo, la CPU recibe +12 V y el equipo completa el POST.' },
+          { t: 'Cambiar la CPU', ok: false, res: 'Sin comprobar antes el conector de alimentación, cambiar la CPU es una sustitución sin evidencia.' },
+          { t: 'Cambiar la placa base', ok: false, res: 'La ATX de 24 pines entrega tensión a la placa y el fallo está en el EPS. Cambiar la placa no lo corrige.' }
+        ],
+        verificaciones: [
+          { t: 'Arrancar y comprobar que la BIOS muestra la CPU y completa el POST', ok: true, res: 'El POST se completa y la BIOS muestra la CPU.' },
+          { t: 'Dar la reparación por buena sin arrancar', ok: false, res: 'Encajar el conector no demuestra nada: falta comprobar el arranque.' }
+        ],
         explicacion: [
           ['Qué pasa', 'Enciende, los ventiladores giran, pero no sale imagen y la placa no completa el POST.'],
           ['Por qué', 'El conector EPS de 8 pines alimenta la CPU directamente. La ATX de 24 pines alimenta la placa, pero sin EPS la CPU no recibe la tensión que necesita y el arranque no avanza.'],
+          ['Qué no puede concluir la observación', 'Que los ventiladores giren demuestra que hay alimentación en la placa, no que la CPU la reciba.'],
           ['Cómo se resuelve', 'Desconecta el EPS, comprueba que no tiene pines doblados y vuelve a encajarlo hasta oír el clic. Después prueba de nuevo.'],
           ['Lección', 'ATX y EPS son conectores distintos. Que los ventiladores giren no demuestra que la CPU tenga alimentación.']
         ],
-        fallos: { eps: 'El conector parece encajado, pero al presionarlo no hace clic. No está asentado y la CPU sigue sin alimentación.' },
-        res: { ent: 'El equipo se movió al limpiarlo hace unos días.', vis: 'El cable EPS está algo suelto en la placa.', fue: 'Los valores de la fuente son correctos.', min: 'Con la configuración mínima sigue sin arrancar. Revisa la alimentación de la CPU.', eps: 'El conector EPS está flojo. Al encajarlo del todo, el equipo arranca.', ram: 'Probar la RAM no cambia el resultado: sigue en negro.', tmp: 'No se puede medir sin POST.', cam: 'Cambiar la fuente no soluciona la pantalla negra.' },
-        luz: { fue: ['fuente', 'ok'], vis: ['cpu', 'bad'], min: ['cpu', 'bad'], eps: ['cpu', 'bad'], ram: ['ram', 'ok'] } },
+        fallos: { eps: 'Al presionarlo no hace clic: el conector no está asentado y la CPU no recibe +12 V.' },
+        res: { ent: 'El equipo se movió al limpiarlo hace unos días.', vis: 'El cable EPS parece algo suelto. Es un indicio: hay que comprobarlo encajándolo.', fue: 'Los valores de la fuente son correctos.', min: 'Con la configuración mínima sigue sin arrancar. Revisa la alimentación de la CPU.', eps: 'El conector EPS está flojo. Al encajarlo del todo, el equipo arranca.', ram: 'Probar la RAM no cambia el resultado: sigue en negro.', tmp: 'No se puede medir sin POST.', cam: 'Cambiar la fuente no soluciona la pantalla negra.' },
+        luz: { fue: ['fuente', 'ok'], min: ['cpu', 'bad'], eps: ['cpu', 'bad'], ram: ['ram', 'ok'] }, volt: [11.98, 5.04, 3.32] },
       { t: 'El disco no aparece', s: 'En la BIOS no aparece el disco SATA. El resto del equipo funciona.', causa: 'sata',
+        pistas: ['El disco tiene alimentación pero no aparece en la BIOS. ¿Qué más necesita un disco para ser detectado?', 'Revisa por separado el cable de datos y el de alimentación del disco.', 'Los datos van a la placa y la alimentación a la fuente. Si el cable de datos está suelto, el disco puede girar sin ser visible.'],
+        discrima: { ids: ['sata'], texto: 'Un cable de datos suelto y un disco averiado dan el mismo síntoma. Revisa el cable de datos antes de confirmarlo.' },
         explica: 'El cable de datos está suelto. El disco tiene alimentación pero no datos.',
+        reparaciones: [
+          { t: 'Recolocar el cable de datos en el disco y en la placa, y probar otro puerto', ok: true, res: 'Con el cable de datos bien asentado, el disco aparece en la BIOS.' },
+          { t: 'Sustituir el disco', ok: false, res: 'Un disco nuevo con el mismo cable tampoco aparecería. Hay que comprobar el cable antes de cambiar el disco.' },
+          { t: 'Cambiar el cable de alimentación desde la fuente', ok: false, res: 'La alimentación ya es correcta: la medición da +12 V. Ese cambio no corrige un problema de datos.' }
+        ],
+        verificaciones: [
+          { t: 'Reiniciar, entrar en la BIOS y comprobar que el disco aparece', ok: true, res: 'El disco aparece en la BIOS y en el sistema.' },
+          { t: 'Dar la reparación por buena sin mirar la BIOS', ok: false, res: 'Si no se comprueba la detección, no hay verificación.' }
+        ],
         explicacion: [
           ['Qué pasa', 'En la BIOS no aparece el disco SATA, pero el resto del equipo funciona con normalidad.'],
           ['Por qué', 'Un disco SATA necesita dos cables independientes: alimentación desde la fuente (conector SATA de 15 pines) y datos desde la placa (cable de 7 pines). El disco puede girar y no tener datos si el cable de datos está suelto.'],
+          ['Qué no puede concluir la inspección', 'El cable de datos parece asentado a simple vista, pero una inspección no confirma una conexión: hay que recolocarlo y probarlo.'],
           ['Cómo se resuelve', 'Revisa los dos cables por separado. Recoloca el de datos, prueba otro puerto SATA y, si hace falta, otro cable. Comprueba en la BIOS si el disco aparece.'],
           ['Lección', 'Revisa la alimentación y los datos por separado: un cable de datos suelto no se nota a simple vista.']
         ],
-        res: { ent: 'El disco se cayó al mover la caja hace unos días.', vis: 'El cable de alimentación del disco está bien. El de datos parece suelto.', fue: 'Los valores de la fuente son correctos.', sata: 'El cable de datos está suelto. Al encajarlo, el disco aparece.', min: 'La mínima configuración arranca. El fallo está en el disco.', ram: 'La RAM no tiene nada que ver con un disco que no aparece.', cam: 'Cambiar la fuente no tiene sentido: el resto del equipo funciona.' },
-        luz: { fue: ['fuente', 'ok'], vis: ['disco', 'bad'], sata: ['disco', 'bad'], min: ['cpu', 'ok'], ram: ['ram', 'ok'] } }
+        res: { ent: 'El disco se cayó al mover la caja hace unos días.', vis: 'El cable de alimentación del disco parece bien conectado, y el de datos también. Una inspección no confirma ninguno de los dos.', fue: 'Los raíles están en tolerancia. Eso no prueba que el conector SATA de alimentación esté asentado.', sata: 'El cable de datos está suelto. Al encajarlo, el disco aparece.', min: 'La mínima configuración arranca: el resto del equipo no es el problema.', ram: 'La RAM no tiene nada que ver con un disco que no aparece.', cam: 'Cambiar la fuente no tiene sentido: el resto del equipo funciona.' },
+        luz: { fue: ['fuente', 'ok'], sata: ['disco', 'bad'], min: ['cpu', 'ok'], ram: ['ram', 'ok'] }, volt: [12.02, 4.99, 3.29] }
     ]
   }
 });
