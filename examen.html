@@ -155,19 +155,15 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
       <h2 class="pregunta" id="pregunta"></h2>
       <div id="opciones" role="group" aria-label="Opciones de respuesta"></div>
       <div id="corta" hidden>
-        <label class="label" for="respuesta">Escribe tu respuesta (opcional)</label>
+        <label class="label" for="respuesta">Escribe tu respuesta</label>
         <textarea id="respuesta" rows="3" style="width:100%;font:inherit;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text)"></textarea>
         <div class="feedback" id="modelo" hidden></div>
-        <div class="acciones" id="autoeval" hidden>
-          <button type="button" class="btn" id="bien">La tenía bien</button>
-          <button type="button" class="btn secundario" id="mal">La tenía mal</button>
-        </div>
       </div>
       <div class="feedback" id="feedback" hidden></div>
       <div class="acciones">
         <button type="button" class="btn secundario" id="salir">Terminar ahora</button>
         <button type="button" class="btn" id="comprobar" disabled>Comprobar</button>
-        <button type="button" class="btn" id="ver" hidden>Ver respuesta</button>
+        <button type="button" class="btn" id="ver" hidden>Corregir</button>
         <button type="button" class="btn" id="siguiente" hidden>Siguiente</button>
       </div>
     </div>
@@ -252,8 +248,8 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
     $('opciones').hidden = corta;
     $('corta').hidden = !corta;
     $('respuesta').value = '';
+    $('respuesta').disabled = false;
     $('modelo').hidden = true;
-    $('autoeval').hidden = true;
     $('ver').hidden = !corta;
     if (corta) {
       $('comprobar').hidden = true;
@@ -316,32 +312,69 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
     $('siguiente').hidden = false;
   }
 
-  /* Respuesta corta: se muestra la respuesta modelo y el alumno se autoevalúa. */
-  function verRespuesta() {
+  /* Respuesta corta: corrección automática por palabras clave. */
+  const VACIAS = new Set(['de', 'la', 'el', 'los', 'las', 'y', 'en', 'con', 'del', 'al', 'por', 'para', 'se', 'a', 'o', 'lo', 'su', 'sus', 'un', 'una', 'unos', 'unas', 'que', 'como', 'es', 'son', 'sobre', 'entre', 'ya', 'esta', 'este', 'eso', 'sin']);
+
+  function normalizar(t) {
+    return t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9+ ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  // Quita la "s" final de las palabras largas (pines/pin, condensadores/condensador).
+  function raiz(p) { return p.length > 3 && p.endsWith('s') ? p.slice(0, -1) : p; }
+  // Equivalencias de escritura: "voltios" = "V", "vatios" = "W"...
+  const EQUIVALENTES = { voltio: 'v', voltios: 'v', vatio: 'w', vatios: 'w', watt: 'w', watts: 'w', gigabyte: 'gb', gigabytes: 'gb', megabyte: 'mb', megabytes: 'mb' };
+  function palabras(t) {
+    return normalizar(t).split(' ').filter((p) => p && !VACIAS.has(p)).map((p) => EQUIVALENTES[p] || raiz(p));
+  }
+
+  /* Grupos de palabras clave: cada grupo tiene alternativas separadas por "|".
+     Si la pregunta no trae "claves", se usan las palabras de la opción correcta. */
+  function grupos(q, correcta) {
+    if (q.claves) return q.claves.map((c) => c.split('|').map((alt) => palabras(alt)));
+    return palabras(correcta).map((p) => [[p]]);
+  }
+
+  function corregirTexto(it, texto) {
+    const respuesta = new Set(palabras(texto));
+    const gs = grupos(it.q, it.opciones[it.correcta]);
+    const cumple = (g) => g.some((alt) => alt.length && alt.every((t) => respuesta.has(t)));
+    const encontrados = gs.filter(cumple);
+    const faltan = gs.filter((g) => !cumple(g));
+    const necesarios = Math.max(1, Math.ceil(gs.length * 0.6));
+    const porcentaje = gs.length ? Math.round(encontrados.length / gs.length * 100) : 0;
+    const acierto = texto.trim() !== '' && encontrados.length >= necesarios;
+    return { acierto, porcentaje, encontrados, faltan, gs };
+  }
+
+  function corregir() {
     const it = items[i];
+    const texto = $('respuesta').value;
+    const r = corregirTexto(it, texto);
+    it.respuestaEscrita = texto;
+    it.autoEval = r.acierto;
+    if (r.acierto) aciertos++;
+    $('aciertos').textContent = 'Aciertos: ' + aciertos;
+    $('respuesta').disabled = true;
+    const etiqueta = (g) => g.map((alt) => alt.join(' ')).join(' / ');
     const m = $('modelo');
-    m.className = 'feedback';
+    m.className = 'feedback ' + (r.acierto ? 'ok' : 'mal');
     m.innerHTML = '';
     const titulo = document.createElement('strong');
-    titulo.textContent = 'Respuesta modelo: ' + it.opciones[it.correcta];
-    const texto = document.createElement('p');
-    texto.textContent = it.q.explica;
+    titulo.textContent = (r.acierto ? 'Correcta' : 'Incorrecta') + ' · coincidencia ' + r.porcentaje + ' %';
+    const modeloTexto = document.createElement('p');
+    modeloTexto.textContent = 'Respuesta modelo: ' + it.opciones[it.correcta];
+    const detalle = document.createElement('p');
+    detalle.textContent = (r.encontrados.length ? 'Palabras clave encontradas: ' + r.encontrados.map(etiqueta).join(', ') + '. ' : '')
+      + (r.faltan.length ? 'Faltan: ' + r.faltan.map(etiqueta).join(', ') + '.' : '');
+    const explica = document.createElement('p');
+    explica.textContent = it.q.explica;
     const enlace = document.createElement('a');
     enlace.className = 'ver';
     enlace.href = 'apuntes/' + APUNTES[it.q.fuente].ver;
     enlace.textContent = 'Ver en ' + APUNTES[it.q.fuente].nombre.replace('Apuntes ', 'los apuntes ');
-    m.append(titulo, texto, enlace);
+    m.append(titulo, modeloTexto, detalle, explica, enlace);
     m.hidden = false;
     $('ver').hidden = true;
-    $('autoeval').hidden = false;
-  }
-
-  function autoevaluar(acierto) {
-    const it = items[i];
-    it.autoEval = acierto;
-    if (acierto) aciertos++;
-    $('aciertos').textContent = 'Aciertos: ' + aciertos;
-    $('autoeval').hidden = true;
     $('siguiente').hidden = false;
   }
 
@@ -409,9 +442,7 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
   $('empezar').onclick = empezar;
   $('comprobar').onclick = comprobar;
   $('siguiente').onclick = siguiente;
-  $('ver').onclick = verRespuesta;
-  $('bien').onclick = () => autoevaluar(true);
-  $('mal').onclick = () => autoevaluar(false);
+  $('ver').onclick = corregir;
   $('salir').onclick = terminar;
   $('repetir').onclick = volverAlInicio;
   $('total').textContent = window.BANCO.length + ' preguntas en el banco.';
