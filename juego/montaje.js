@@ -10,6 +10,8 @@ const progEl = $('progreso');
 const mensajeEl = $('mensaje');
 const pasosEl = $('pasos');
 const etapasEl = $('etapas');
+const centroEl = document.querySelector('.centro');
+const columnaIzqEl = document.querySelector('.columna-izq');
 const nivelEl = $('nivel');
 const pistaContadorEl = $('pista-contador');
 const clienteEl = $('cliente');
@@ -967,17 +969,11 @@ const PISTAS = [
   'Cada cable sale de la fuente y termina en el conector que tenga su mismo número de pines.',
   'Antes de encender, revisa que cada pieza y cable del pedido esté colocado.'
 ];
-const PISTAS_MAX_DIFICIL = 2;
-
+// Las pistas solo existen en fácil, sin límite. En difícil la tarjeta está oculta.
 function pedirPista() {
+  if (!esFacil()) return;
   const i = pasos().findIndex((p) => !p.hecho());
-  if (!esFacil() && S.pistas >= PISTAS_MAX_DIFICIL) {
-    log('info', `En modo difícil hay ${PISTAS_MAX_DIFICIL} pistas por partida y ya las has usado.`);
-    return;
-  }
   const texto = PISTAS[i < 0 ? PISTAS.length - 1 : i];
-  // Solo las pistas de difícil cuentan para el límite. El contador es de la partida, no del modo.
-  if (!esFacil()) S.pistas++;
   S.pistaPaso = i;
   $('pista-texto').textContent = `Pista: ${texto}`;
   pintarPanel();
@@ -1043,6 +1039,8 @@ function pintarPanel() {
     ? (S.final ? `Equipo montado · Errores: ${S.errores}` : `Paso ${i < 0 ? lista.length : i + 1} de ${lista.length} · Errores: ${S.errores}`)
     : `Errores: ${S.errores}`;
 
+  // En difícil no hay instrucciones ni pistas: la tarjeta entera desaparece.
+  $('instrucciones-titulo').closest('.tarjeta').hidden = !esFacil();
   pasosEl.innerHTML = lista.map((p, n) => {
     const estado = p.hecho() ? 'hecho' : n === i ? 'actual' : 'pendiente';
     const texto = p.txt;
@@ -1056,34 +1054,33 @@ function pintarPanel() {
   const c1 = componentesListos();
   const c2 = conexionesListas();
   // Una etapa solo se completa si lo anterior también lo está (un componente retirado reabre Componentes).
-  // Lo que comprueba cada etapa. Coincide con lo que hace encender(): el POST exige que no falte nada,
-  // y la compatibilidad ya se comprobó al colocar cada pieza y al conectar cada cable.
   const etapas = [
-    ['Componentes', c1 ? 'hecho' : 'actual', 'Las piezas del pedido están instaladas en el chasis.'],
-    ['Conexiones', c1 && c2 ? 'hecho' : c1 ? 'actual' : 'pendiente', 'Los tres cables de alimentación están en sus conectores.'],
-    ['Comprobación', S.final ? 'hecho' : c1 && c2 ? 'actual' : 'pendiente', 'Con todo instalado y conectado, al encender se revisa que no falte nada. La compatibilidad ya se comprobó al colocar cada pieza.'],
-    ['Encendido', S.final ? 'hecho' : 'pendiente', 'Si no queda nada pendiente, el equipo arranca y la BIOS muestra la pantalla POST.']
+    ['Componentes', c1 ? 'hecho' : 'actual'],
+    ['Conexiones', c1 && c2 ? 'hecho' : c1 ? 'actual' : 'pendiente'],
+    ['Comprobación', S.final ? 'hecho' : c1 && c2 ? 'actual' : 'pendiente'],
+    ['Encendido', S.final ? 'hecho' : 'pendiente']
   ];
   const textoEstado = { hecho: 'Completado', actual: 'En curso', pendiente: 'Pendiente' };
-  etapasEl.innerHTML = etapas.map(([nombre, estado, explica], n) => {
+  etapasEl.innerHTML = etapas.map(([nombre, estado], n) => {
     const actual = estado === 'actual' ? ' aria-current="step"' : '';
-    return `<li data-estado="${estado}"${actual}><span class="circulo">${estado === 'hecho' ? '✓' : n + 1}</span><span class="etiqueta">${nombre}</span><span class="estado-etapa">${textoEstado[estado]}</span><span class="explica">${explica}</span></li>`;
+    return `<li data-estado="${estado}"${actual}><span class="circulo">${estado === 'hecho' ? '✓' : n + 1}</span><span class="etiqueta">${nombre}</span><span class="estado-etapa">${textoEstado[estado]}</span></li>`;
   }).join('');
+  // En difícil el estado del montaje va en vertical en la columna izquierda, bajo los botones.
+  document.body.classList.toggle('modo-dificil', !esFacil());
+  const estadoEl = $('estado-titulo').parentElement;
+  if (esFacil() && estadoEl.parentElement !== centroEl) centroEl.prepend(estadoEl);
+  else if (!esFacil() && estadoEl.parentElement !== columnaIzqEl) columnaIzqEl.append(estadoEl);
 
-  let texto;
+  // En difícil no se orienta ni se avisa de errores: solo se anuncia el final.
+  let texto = '';
   if (S.final) texto = `<strong>Montaje completado.</strong> El equipo arranca. Errores durante el montaje: ${S.errores}.`;
-  else if (seleccion) texto = '<strong>Pieza seleccionada.</strong> Elige un destino de la lista y confirma.';
-  else if (c1 && c2) texto = '<strong>Todo conectado.</strong> Pulsa «Encender equipo» para comprobar el montaje.';
-  else texto = `<strong>Siguiente paso.</strong> ${lista[i].txt}`;
-  if (ultimoAviso && !S.final) texto += ` <span class="aviso">${ultimoAviso}</span>`;
+  else if (esFacil() && seleccion) texto = '<strong>Pieza seleccionada.</strong> Elige un destino de la lista y confirma.';
+  else if (esFacil() && c1 && c2) texto = '<strong>Todo conectado.</strong> Pulsa «Encender equipo» para comprobar el montaje.';
+  else if (esFacil()) texto = `<strong>Siguiente paso.</strong> ${lista[i].txt}`;
+  if (esFacil() && ultimoAviso && !S.final) texto += ` <span class="aviso">${ultimoAviso}</span>`;
   mensajeEl.innerHTML = texto;
 
-  pistaContadorEl.textContent = esFacil() ? 'Pistas sin límite en fácil' : `Pistas usadas: ${S.pistas} de ${PISTAS_MAX_DIFICIL}`;
-  const botonPista = $('pista');
-  const teniaFoco = document.activeElement === botonPista;
-  botonPista.disabled = !esFacil() && S.pistas >= PISTAS_MAX_DIFICIL;
-  // Un botón desactivado pierde el foco: el teclado no debe quedarse sin punto de partida.
-  if (teniaFoco && botonPista.disabled) mensajeEl.focus();
+  pistaContadorEl.textContent = 'Pistas sin límite';
 }
 
 // Especificaciones exactas de las piezas del pedido (solo en modo fácil).
