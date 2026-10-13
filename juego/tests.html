@@ -17,6 +17,7 @@
   <script type="module">
     import { potenciaNecesaria, comprobarColocacion, longitudPuntos } from './reglas.js';
     import { PIEZAS, CABLES, PEDIDOS, PLATAFORMAS, PSUS, GPUS } from './catalogo.js';
+    import { SLOTS, PORTS, NECESITA, SALIDA_CABLE } from './geometria.js';
 
     const resultados = [];
     const comprobar = (nombre, condicion) => resultados.push({ nombre, ok: !!condicion });
@@ -58,6 +59,13 @@
     }
     comprobar('hay al menos 13 pedidos', PEDIDOS.length >= 13);
     comprobar('cables con longitud máxima', CABLES.every((c) => c.longitudMax > 0));
+
+    // Geometría: huecos, conectores y salidas de cable coherentes
+    const tipos = new Set(PIEZAS.map((p) => p.kind).concat(['cable']));
+    comprobar('cada hueco acepta tipos conocidos', Object.values(SLOTS).every((h) => h.accepts.every((t) => PIEZAS.some((p) => p.kind === t))));
+    comprobar('cada conector tiene la pieza que lo necesita', Object.keys(PORTS).every((pid) => tipos.has(NECESITA[pid]) || PIEZAS.some((p) => p.kind === NECESITA[pid])));
+    comprobar('cada cable tiene su conector y su salida', CABLES.every((c) => PORTS[c.port] && SALIDA_CABLE[c.id]));
+    comprobar('los huecos de la placa están dentro de ella (la fuente va delante)', Object.values(SLOTS).filter((h) => h.nombre !== 'chasis' && h.nombre !== 'hueco de la fuente').every((h) => Math.abs(h.x) < 15 && Math.abs(h.y) < 12));
 
     const fallos = resultados.filter((r) => !r.ok);
     document.getElementById('resumen').textContent = fallos.length

@@ -3,6 +3,7 @@ import { RoomEnvironment } from 'three/addons/RoomEnvironment.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { PIEZAS, CABLES, PEDIDOS } from './catalogo.js';
 import { comprobarColocacion, potenciaNecesaria as potencia, longitudPuntos } from './reglas.js';
+import { SLOTS, NECESITA, PORTS, SALIDA_CABLE, ALTURA_CABLE, RADIO_CABLE, EXPLICA } from './geometria.js';
 
 const $ = (id) => document.getElementById(id);
 const logEl = $('log');
@@ -18,42 +19,6 @@ const teclado = $('teclado');
 const contenedorHuecos = $('huecos');
 
 const TDP_GPU = PIEZAS.find((p) => p.kind === 'gpu').tdp;
-
-// Coordenadas en unidades 3D. Centro de la placa = (0, 0). La placa mide 30 x 24.
-const SLOTS = {
-  caja:  { x: 0, y: 0, w: 34, h: 34, accepts: ['caja'], nombre: 'chasis' },
-  board: { x: 0, y: 0, w: 30, h: 24, accepts: ['board'], nombre: 'anclaje de la placa base' },
-  cpu:   { x: -2.0, y: 3.0, w: 4.0, h: 4.0, accepts: ['cpu'], nombre: 'socket del procesador' },
-  ram1:  { x: 5.2, y: 4.3, w: 0.7, h: 13, accepts: ['ram'], nombre: 'ranura de memoria' },
-  ram2:  { x: 6.1, y: 4.3, w: 0.7, h: 13, accepts: ['ram'], nombre: 'ranura de memoria' },
-  pcie:  { x: 0.5, y: -8.6, w: 11, h: 0.9, accepts: ['gpu'], nombre: 'ranura PCIe x16' },
-  m2:    { x: -9.0, y: -1.6, w: 8, h: 2.2, accepts: ['nvme'], nombre: 'ranura M.2' },
-  psu:   { x: 0, y: -15.5, w: 16, h: 6.5, accepts: ['psu'], nombre: 'hueco de la fuente' }
-};
-
-// Tipo de pieza que debe estar montada para que el conector esté disponible.
-const NECESITA = { atx24: 'board', eps8: 'board', pcie8: 'gpu' };
-const PORTS = {
-  atx24: { x: 12.5, y: 2.5, w: 1.8, h: 5, z: 0.5, etiqueta: 'ATX 24' },
-  eps8:  { x: -12.5, y: 10, w: 2.5, h: 2, z: 0.5, etiqueta: 'EPS 8' },
-  // El conector PCIe está en la esquina superior derecha de la gráfica, que se monta sobre su ranura.
-  pcie8: { relativo: true, dx: 4.6, dy: 1.6, w: 2.0, h: 2.2, etiqueta: 'PCIe 6+2' }
-};
-
-// Salida de cada cable: frente del conector modular de la fuente.
-const SALIDA_CABLE = {
-  'c-atx': [7.0, -11.45, 3.5],
-  'c-eps': [-6.5, -11.45, 3.5],
-  'c-pcie': [2.5, -11.45, 3.5]
-};
-const ALTURA_CABLE = 2.9;
-const RADIO_CABLE = 0.2;
-
-const EXPLICA = {
-  'c-atx': 'Sin ATX 24 pines la placa no recibe alimentación y no arranca (apuntes S07).',
-  'c-eps': 'Sin EPS 8 pines el procesador no recibe alimentación (apuntes S07).',
-  'c-pcie': 'Sin PCIe 6+2 pines la tarjeta gráfica no tiene la alimentación adicional que necesita (apuntes S07).'
-};
 
 // ---------- Estado ----------
 let S;
@@ -177,7 +142,15 @@ function ventilador(r, colorAro) {
   return g;
 }
 
+// Las etiquetas se crean una vez y se reutilizan (antes se creaba una textura nueva en cada acción).
+const cacheTexturas = new Map();
 function texturaTexto(texto, ancho, alto, fondo = '#20252E', color = '#ECEFF4') {
+  const clave = [texto, ancho, alto, fondo, color].join('|');
+  if (!cacheTexturas.has(clave)) cacheTexturas.set(clave, crearTexturaTexto(texto, ancho, alto, fondo, color));
+  return cacheTexturas.get(clave);
+}
+
+function crearTexturaTexto(texto, ancho, alto, fondo, color) {
   const cv = document.createElement('canvas');
   cv.width = ancho;
   cv.height = alto;
@@ -345,7 +318,7 @@ Promise.all(Object.entries(MODELOS).map(([clave, url]) => new Promise((resolver)
 // ---------- Construcción de la escena fija ----------
 // Chasis según la caja elegida: lateral de cristal o metálico, y tiras RGB si la caja las tiene.
 function construirCaso(modelo) {
-  grupoCaso.clear();
+  vaciar(grupoCaso);
   const carcasa = new THREE.MeshPhysicalMaterial({ color: modelo.color, roughness: 0.45, metalness: 0.2, clearcoat: 0.6, clearcoatRoughness: 0.3 });
   const interior = matPlastico('#262B35');
   grupoCaso.add(en(caja(34, 34, 0.5, interior), 0, -2, -0.9));
@@ -375,7 +348,7 @@ function construirCaso(modelo) {
 
 // La placa se reconstruye cuando cambia el modelo (color, zócalo y memoria).
 function construirTablero(placa) {
-  grupoTablero.clear();
+  vaciar(grupoTablero);
   tableroId = placa.id;
   const cara = new THREE.MeshStandardMaterial({ map: texturaPlaca(placa), roughness: 0.5, metalness: 0.05 });
   const canto = matPlastico(placa.pcb);
@@ -470,11 +443,20 @@ function construirPieza(p, pos) {
   return g;
 }
 
+// Vacía un grupo liberando las geometrías propias (las de los modelos glTF se comparten con la plantilla).
+function vaciar(grupo) {
+  grupo.traverse((o) => {
+    if (o.isMesh && !o.userData.compartida) o.geometry.dispose();
+  });
+  grupo.clear();
+}
+
 // Pieza con su modelo 3D. Los ventiladores (nodo 'Fan') giran; el aro y la tira RGB dependen de la caja.
 function construirPiezaGlb(p, g, clave) {
   const modelo = plantillas[clave].clone(true);
   modelo.traverse((o) => {
     if (!o.isMesh) return;
+    o.userData.compartida = true;
     o.castShadow = true;
     o.receiveShadow = true;
     o.material = o.material.clone();
@@ -917,7 +899,10 @@ function conectorCable(color, r) {
 }
 
 function dibujarPrevia(a, p) {
-  if (vistaPrevia) grupoCables.remove(vistaPrevia);
+  if (vistaPrevia) {
+    grupoCables.remove(vistaPrevia);
+    vistaPrevia.geometry.dispose();
+  }
   const trazado = [...a.ruta, [p.x, p.y, ALTURA_CABLE]];
   let largo = 0;
   for (let i = 1; i < trazado.length; i++) largo += Math.hypot(trazado[i][0] - trazado[i - 1][0], trazado[i][1] - trazado[i - 1][1], trazado[i][2] - trazado[i - 1][2]);
@@ -932,7 +917,7 @@ function pintarEscena() {
   fans.length = 0;
   const cajaPuesta = piezaPlacada('caja');
   rgbActivo = !!cajaPuesta?.rgb;
-  grupoCaso.clear();
+  vaciar(grupoCaso);
   grupoCaso.visible = !!cajaPuesta;
   if (cajaPuesta) construirCaso(cajaPuesta);
 
@@ -940,7 +925,7 @@ function pintarEscena() {
   if (placa && tableroId !== placa.id) construirTablero(placa);
   grupoTablero.visible = !!placa;
 
-  grupoPiezas.clear();
+  vaciar(grupoPiezas);
   for (const id of Object.keys(S.placed)) {
     if (pieza(id).kind === 'board' || pieza(id).kind === 'caja') continue;
     grupoPiezas.add(construirPieza(pieza(id), posicionDe(id)));
@@ -948,7 +933,7 @@ function pintarEscena() {
   ledMats.forEach((mat, n) => { mat.userData.desfase = (n * 0.17) % 1; });
   for (const mat of ledMats) mat.emissiveIntensity = S.final ? 2.2 : 0.9;
 
-  grupoCables.clear();
+  vaciar(grupoCables);
   vistaPrevia = null;
   for (const c of CABLES) {
     const conexion = S.plugged[c.id];
