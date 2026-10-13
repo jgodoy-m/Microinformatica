@@ -2,19 +2,25 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/RoomEnvironment.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { PIEZAS, CABLES, PEDIDOS } from './catalogo.js';
+import { potenciaNecesaria, motivoColocar, motivoConectar, longitudCable, longitudTrazado, simplificarTrazado, motivoLongitud, cascadaRetirada } from './reglas.js';
 
 const $ = (id) => document.getElementById(id);
 const logEl = $('log');
-const objEl = $('objetivo');
 const progEl = $('progreso');
+const mensajeEl = $('mensaje');
+const pasosEl = $('pasos');
+const etapasEl = $('etapas');
+const nivelEl = $('nivel');
+const pistaContadorEl = $('pista-contador');
 const clienteEl = $('cliente');
 const especEl = $('especificaciones');
 const botonesModo = document.querySelectorAll('[data-modo]');
+const botonesFiltro = document.querySelectorAll('[data-filtro]');
+let filtro = 'todos';
+let ultimoAviso = '';   // último error de colocación o conexión, mientras no haya otra acción correcta
 const contenedor = $('escena');
 const bandeja = $('bandeja');
 const fantasma = $('fantasma');
-
-const TDP_GPU = PIEZAS.find((p) => p.kind === 'gpu').tdp;
 
 // Coordenadas en unidades 3D. Centro de la placa = (0, 0). La placa mide 30 x 24.
 const SLOTS = {
@@ -56,6 +62,13 @@ const EXPLICA = {
 let S;
 let entradas = [];
 let arrastre = null;
+let movido = false;        // el puntero se ha desplazado (no es un toque)
+let inicioPuntero = null;
+let seleccion = null;      // pieza o cable elegido con toque o teclado
+let destino = null;        // hueco o conector elegido para esa pieza
+let modoPendiente = null;  // dificultad elegida, pendiente de confirmar
+let retiradaPendiente = null; // id de la pieza cuya retirada espera confirmación (la lista se recalcula al confirmar)
+let focoAntes = null;      // elemento que tenía el foco al abrir un diálogo: se le devuelve al cerrarlo
 let destelloHasta = 0;
 let modo = 'facil';
 const esFacil = () => modo === 'facil';
@@ -75,7 +88,9 @@ const enPedido = (id) => Object.values(pedido().piezas).flat().includes(id);
 const piezaPlacada = (kind) => Object.keys(S.placed).map(pieza).find((p) => p.kind === kind);
 const tabla = () => piezaPlacada('board');
 const cpuActual = () => piezaPlacada('cpu') ?? pieza(pedido().piezas.cpu);
-const potenciaNecesaria = () => Math.ceil((cpuActual().tdp + TDP_GPU + 100) * 1.3);
+// La GPU que cuenta es la del pedido, no la primera del catálogo.
+const gpuActual = () => pieza(pedido().piezas.gpu);
+const potencia = () => potenciaNecesaria(cpuActual().tdp, gpuActual().tdp);
 
 // ---------- Escena 3D ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -93,8 +108,8 @@ const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
 const camera = new THREE.PerspectiveCamera(32, 1.6, 0.1, 300);
-camera.position.set(6, 6, 84);
-camera.lookAt(0, -3, 0);
+camera.position.set(44, 28, 74);
+camera.lookAt(0, -2, 0);
 
 const luzPrincipal = new THREE.DirectionalLight('#ffffff', 1.3);
 luzPrincipal.position.set(12, 22, 40);
@@ -123,12 +138,25 @@ scene.add(grupoCaso, grupoTablero, grupoPiezas, grupoCables, grupoGuias);
 
 const fans = [];
 const ledMats = [];
+const ledCaso = [];   // tiras RGB del chasis: se vuelven a registrar en cada redibujado
 
 const matMetal = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, metalness: 0.75, roughness: 0.3, ...extra });
 const matPlastico = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, metalness: 0.05, roughness: 0.65, ...extra });
 const matOro = new THREE.MeshStandardMaterial({ color: '#D9B25F', metalness: 1, roughness: 0.3 });
 const matNegro = matPlastico('#15181E');
 const matCable = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0 });
+
+// Libera la GPU de un objeto y sus hijos. Las geometrías de los modelos GLB se comparten entre piezas: no se liberan.
+function liberar(obj, geoCompartida = false) {
+  if (obj.geometry && !geoCompartida) obj.geometry.dispose();
+  if (obj.material) [].concat(obj.material).forEach((m) => { m.map?.dispose(); m.dispose(); });
+  for (const hijo of obj.children) liberar(hijo, geoCompartida || hijo.userData.compartido === true);
+}
+
+function vaciar(grupo) {
+  for (const hijo of [...grupo.children]) liberar(hijo, hijo.userData.compartido === true);
+  grupo.clear();
+}
 
 function caja(w, h, d, mat) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
@@ -340,39 +368,173 @@ Promise.all(Object.entries(MODELOS).map(([clave, url]) => new Promise((resolver)
 }))).then(() => pintarEscena());
 
 // ---------- Construcción de la escena fija ----------
-// Chasis según la caja elegida: lateral de cristal o metálico, y tiras RGB si la caja las tiene.
-function construirCaso(modelo) {
-  grupoCaso.clear();
-  const carcasa = new THREE.MeshPhysicalMaterial({ color: modelo.color, roughness: 0.45, metalness: 0.2, clearcoat: 0.6, clearcoatRoughness: 0.3 });
-  const interior = matPlastico('#262B35');
-  grupoCaso.add(en(caja(34, 34, 0.5, interior), 0, -2, -0.9));
-  grupoCaso.add(en(caja(34, 0.6, 9, carcasa), 0, 15.3, 3.55));
-  grupoCaso.add(en(caja(34, 0.6, 9, carcasa), 0, -19.3, 3.55));
-  grupoCaso.add(en(caja(0.6, 34.6, 9, carcasa), -17.3, -2, 3.55));
-  // Lateral derecho: cristal o panel metálico.
+// Geometrías de caja: cada tamaño se crea una vez y se comparte entre las piezas del chasis.
+const geometriasCaja = new Map();
+function geometriaCaja(w, h, d) {
+  const clave = `${w}x${h}x${d}`;
+  if (!geometriasCaja.has(clave)) geometriasCaja.set(clave, new THREE.BoxGeometry(w, h, d));
+  return geometriasCaja.get(clave);
+}
+// Añade un bloque del chasis. Su geometría es compartida: al liberar la escena no se borra.
+function bloque(grupo, w, h, d, mat, x, y, z) {
+  const m = new THREE.Mesh(geometriaCaja(w, h, d), mat);
+  m.position.set(x, y, z);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  m.userData.compartido = true;
+  grupo.add(m);
+  return m;
+}
+
+// Chasis de la caja elegida. Tres partes independientes, según los campos del catálogo:
+// - estructura común (pared, bandeja, separadores, bahía de fuente, ventilador superior);
+// - lateral según `cristal` (panel transparente con marco, o panel metálico opaco con rejilla);
+// - frontal y luces según `rgb` (rejilla metálica con ventilador RGB frontal, o tiras interiores en cristal).
+// Las coordenadas de montaje no cambian: placa en z = 0, fuente en y ≈ -15,5, caja ≈ 34 × 34 × 10.
+const fansCaso = [];   // ventiladores del chasis: giran aunque la escena se redibuje
+
+function materialesCaso(modelo) {
+  return {
+    metal: new THREE.MeshStandardMaterial({ color: modelo.color, roughness: 0.5, metalness: 0.6 }),
+    pared: matPlastico('#1A1E26', { roughness: 0.85 }),
+    bandeja: new THREE.MeshStandardMaterial({ color: '#5B6478', roughness: 0.4, metalness: 0.75 }),
+    borde: new THREE.MeshStandardMaterial({ color: '#D8DEE9', roughness: 0.3, metalness: 0.8 }),
+    oscuro: matPlastico('#0E1014', { roughness: 0.9 }),
+    dorado: new THREE.MeshStandardMaterial({ color: '#B8893F', roughness: 0.35, metalness: 0.9 }),
+    vidrio: new THREE.MeshPhysicalMaterial({ color: '#88C0D0', transparent: true, opacity: 0.2, roughness: 0.05, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05, depthWrite: false, side: THREE.DoubleSide }),
+    reflejo: new THREE.MeshBasicMaterial({ color: '#ECEFF4', transparent: true, opacity: 0.1, depthWrite: false })
+  };
+}
+
+// Ventilador del chasis: se guarda para que siga girando cuando la escena se redibuja.
+function ventiladorCaso(grupo, r, x, y, z, girarX = 0, girarY = 0) {
+  const v = ventilador(r, '#88C0D0');
+  v.position.set(x, y, z);
+  v.rotation.set(girarX, girarY, 0);
+  grupo.add(v);
+  fansCaso.push(fans.pop());
+}
+
+// Estructura común: la misma en las cuatro cajas.
+function estructuraComun(grupo, m) {
+  // Pared trasera y bandeja de placa, más clara, que se separa del fondo.
+  bloque(grupo, 34, 34, 0.4, m.pared, 0, -2, -1.5);
+  bloque(grupo, 31, 25, 0.2, m.bandeja, 0, 0, -1.2);
+
+  // Separadores con arandela en el punto de apoyo.
+  const alturaSeparador = 0.94;
+  for (const [x, y] of [[-13.5, 10.5], [13.5, 10.5], [-13.5, -10.5], [13.5, -10.5], [0, 10.5], [0, -10.5]]) {
+    const cilindro = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, alturaSeparador, 12), m.dorado);
+    cilindro.rotation.x = Math.PI / 2;
+    cilindro.position.set(x, y, -1.1 + alturaSeparador / 2 - 0.02);
+    cilindro.castShadow = true;
+    grupo.add(cilindro);
+    const arandela = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.08, 14), m.dorado);
+    arandela.rotation.x = Math.PI / 2;
+    arandela.position.set(x, y, -0.2);
+    grupo.add(arandela);
+  }
+
+  // Techo, base y lateral izquierdo: paneles metálicos con profundidad.
+  bloque(grupo, 34, 0.6, 9.5, m.metal, 0, 15.3, 3.25);
+  bloque(grupo, 34, 0.6, 9.5, m.metal, 0, -19.3, 3.25);
+  bloque(grupo, 0.6, 34.6, 9.5, m.metal, -17.3, -2, 3.25);
+
+  // Postes y travesaños del frente (el frente queda abierto para montar).
+  for (const x of [-17.3, 17.3]) bloque(grupo, 0.8, 34.6, 0.8, m.borde, x, -2, 8);
+  bloque(grupo, 34.6, 0.8, 0.8, m.borde, 0, 15.3, 8);
+  bloque(grupo, 34.6, 0.8, 0.8, m.borde, 0, -19.3, 8);
+
+  // Bahía de la fuente: estante, paredes laterales y rejilla de ventilación en el suelo.
+  bloque(grupo, 34, 0.4, 9.5, m.metal, 0, -12.45, 3.25);
+  for (const x of [-8.6, 8.6]) bloque(grupo, 0.4, 6.8, 9.5, m.metal, x, -15.9, 3.25);
+  for (let i = 0; i < 6; i++) bloque(grupo, 10, 0.15, 0.35, m.oscuro, 0, -19.05, 1.2 + i * 1.2);
+
+  // Rejilla de lamas en el techo.
+  for (let i = 0; i < 6; i++) bloque(grupo, 10, 0.12, 0.35, m.oscuro, 0, 15.7, 1.2 + i * 1.2);
+
+  // Ventilador trasero superior, junto a la pared trasera.
+  ventiladorCaso(grupo, 2.4, -8, 15.9, -0.3, -Math.PI / 2);
+
+  // Siete ranuras de expansión en la pared trasera, en la zona de la GPU.
+  for (let i = 0; i < 7; i++) bloque(grupo, 1.0, 1.9, 0.2, m.oscuro, 4 + i * 1.5, -9.2, -1.28);
+
+  // Orificios de paso de cables en el borde de la bandeja, fuera de la huella de la placa.
+  for (const y of [6, 0, -6]) {
+    for (const x of [-15.5, 15.5]) {
+      const orificio = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.06, 14), m.oscuro);
+      orificio.rotation.x = Math.PI / 2;
+      orificio.position.set(x, y, -1.08);
+      grupo.add(orificio);
+    }
+  }
+}
+
+// Lateral derecho según `cristal`. Cristal: panel transparente con marco metálico y un reflejo sutil.
+// Metálica: panel opaco y sólido, con una rejilla de lamas en la parte superior.
+function panelLateral(grupo, modelo, m) {
   if (modelo.cristal) {
-    const cristal = new THREE.Mesh(
-      new THREE.BoxGeometry(0.3, 34, 9),
-      new THREE.MeshPhysicalMaterial({ color: '#9FB3CC', transparent: true, opacity: 0.14, roughness: 0.05, clearcoat: 1 })
-    );
-    cristal.position.set(17.3, -2, 3.55);
-    grupoCaso.add(cristal);
+    bloque(grupo, 0.3, 33.4, 9.2, m.vidrio, 17.3, -2, 3.25);
+    bloque(grupo, 0.06, 13, 2.2, m.reflejo, 17.5, 4, 5.5);
+    bloque(grupo, 0.06, 6, 1.0, m.reflejo, 17.5, -10, 6.8);
+    bloque(grupo, 0.06, 33.4, 0.2, m.borde, 17.5, -2, 8.0);
+    for (const y of [15.3, -19.3]) bloque(grupo, 0.8, 0.8, 9.5, m.borde, 17.3, y, 3.25);
+    bloque(grupo, 0.8, 34.6, 0.8, m.borde, 17.3, -2, -1.2);
+    bloque(grupo, 0.8, 0.5, 9.5, m.borde, 17.3, 6.5, 3.25);
   } else {
-    grupoCaso.add(en(caja(0.6, 34.6, 9, carcasa), 17.3, -2, 3.55));
+    bloque(grupo, 0.6, 34.6, 9.5, m.metal, 17.3, -2, 3.25);
+    // Rejilla lateral: placa oscura empotrada con lamas horizontales visibles desde la cámara.
+    bloque(grupo, 0.2, 5.6, 6.2, m.oscuro, 17.45, 9.6, 4.2);
+    for (let i = 0; i < 7; i++) bloque(grupo, 0.3, 0.22, 6.0, m.metal, 17.62, 12.2 - i * 0.6, 4.2);
   }
-  // Tiras de luz RGB en el marco superior y en el interior del lateral.
-  if (modelo.rgb) {
-    const luzTira = matPlastico('#88C0D0', { emissive: '#88C0D0', emissiveIntensity: 1.2 });
-    ledMats.push(luzTira);
-    grupoCaso.add(en(caja(30, 0.25, 0.25, luzTira), 0, 14.8, -0.2));
-    grupoCaso.add(en(caja(0.25, 30, 0.25, luzTira), 16.9, -2, -0.2));
+}
+
+// Frontal: la metálica muestra una rejilla en la franja superior, y deja el centro libre para montar.
+function frontalCaso(grupo, modelo, m) {
+  if (modelo.cristal) return;
+  // Bisel superior: placa sólida de 2,5 de alto con lamas de ventilación integradas.
+  bloque(grupo, 34.6, 2.5, 0.4, m.metal, 0, 14.05, 8.2);
+  for (let i = 0; i < 5; i++) bloque(grupo, 28, 0.22, 0.2, m.oscuro, 0, 13.2 + i * 0.4, 8.5);
+  // Bisel inferior: banda sólida con rejilla sobre la bahía de la fuente.
+  bloque(grupo, 34.6, 0.8, 0.4, m.metal, 0, -18.9, 8.2);
+  for (let i = 0; i < 12; i++) bloque(grupo, 0.22, 0.6, 0.2, m.oscuro, -14.5 + i * 2.4, -18.9, 8.5);
+}
+
+// Luces según `rgb`. Cristal: tiras interiores, visibles a través del lateral transparente.
+// Metálica: luz en elementos concretos del frontal (franja y ventilador frontal), no en todo el marco.
+function lucesCaso(grupo, modelo, m) {
+  if (modelo.cristal) {
+    // Dos ventiladores interiores pegados al cristal (girados hacia el lateral) y tiras grandes en el fondo.
+    ventiladorCaso(grupo, 2.2, 16.6, 5, 2.5, 0, Math.PI / 2);
+    ventiladorCaso(grupo, 2.2, 16.6, -9, 2.5, 0, Math.PI / 2);
+    const luz = () => matPlastico('#88C0D0', { emissive: '#88C0D0', emissiveIntensity: 2.0 });
+    for (const mesh of [bloque(grupo, 30, 0.6, 0.4, luz(), 0, 14.4, -1.2), bloque(grupo, 0.4, 32, 0.4, luz(), 16.2, -2, -0.9)]) ledCaso.push(mesh.material);
+  } else {
+    // Dos ventiladores frontales centrados en el bisel inferior: la luz sale de los aros, no del marco.
+    for (const x of [-6.4, 6.4]) {
+      bloque(grupo, 5.4, 5.4, 0.3, m.oscuro, x, -16.2, 8.0);
+      ventiladorCaso(grupo, 2.2, x, -16.2, 8.5, 0, 0);
+    }
   }
+}
+
+function construirCaso(modelo) {
+  fansCaso.length = 0;
+  ledCaso.length = 0;
+  const m = materialesCaso(modelo);
+  const antes = ledMats.length;
+  estructuraComun(grupoCaso, m);
+  panelLateral(grupoCaso, modelo, m);
+  frontalCaso(grupoCaso, modelo, m);
+  // Los ventiladores con aro (superior y, si es RGB, frontal) pasan a la lista de luces del chasis.
+  if (modelo.rgb) lucesCaso(grupoCaso, modelo, m);
+  ledCaso.push(...ledMats.splice(antes));
   chasisId = modelo.id;
 }
 
 // La placa se reconstruye cuando cambia el modelo (color, zócalo y memoria).
 function construirTablero(placa) {
-  grupoTablero.clear();
+  vaciar(grupoTablero);
   tableroId = placa.id;
   const cara = new THREE.MeshStandardMaterial({ map: texturaPlaca(placa), roughness: 0.5, metalness: 0.05 });
   const canto = matPlastico(placa.pcb);
@@ -470,6 +632,7 @@ function construirPieza(p, pos) {
 // Pieza con su modelo 3D. Los ventiladores (nodo 'Fan') giran; el aro y la tira RGB dependen de la caja.
 function construirPiezaGlb(p, g, clave) {
   const modelo = plantillas[clave].clone(true);
+  modelo.userData.compartido = true;
   modelo.traverse((o) => {
     if (!o.isMesh) return;
     o.castShadow = true;
@@ -563,76 +726,146 @@ function log(tipo, msg) {
 }
 function fallo(msg, corto) {
   S.errores++;
-  log('bad', esFacil() ? msg : (corto ?? 'No encaja con el pedido.'));
+  const texto = esFacil() ? msg : (corto ?? 'No encaja con el pedido.');
+  S.fallos.push(texto);
+  ultimoAviso = texto;
+  log('bad', texto);
 }
-function ok(msg) { log('ok', msg); }
+function ok(msg) {
+  ultimoAviso = '';
+  log('ok', msg);
+}
 
-// Devuelve null si la pieza puede ir en ese hueco; si no, el motivo (largo y corto).
-function motivoColocar(p, sid) {
-  const placa = tabla();
-  if (p.kind !== 'caja' && !piezaPlacada('caja')) {
-    return { msg: 'Primero elige la caja: sin chasis no hay dónde montar el equipo.', corto: 'Primero la caja.' };
-  }
-  if (p.kind !== 'caja' && p.kind !== 'board' && !placa) {
-    return { msg: 'Primero fija la placa base en el chasis: sin ella no hay dónde montar el resto.', corto: 'Primero la placa base.' };
-  }
-  if (occupied(sid)) return { msg: `El ${SLOTS[sid].nombre} ya está ocupado.`, corto: 'Ese hueco ya está ocupado.' };
-  if (p.kind === 'cpu' && p.socket !== placa.socket) {
-    return { msg: `${p.nombre} no encaja: es para socket ${p.socket} y la placa tiene ${placa.socket}. Cada socket admite solo sus familias de procesador (apuntes S11).`, corto: 'Ese procesador no encaja en esta placa.' };
-  }
-  if (p.kind === 'ram' && p.gen !== placa.gen) {
-    return { msg: `${p.nombre} no entra en una placa ${placa.gen}: las ranuras son distintas según la generación (apuntes S11).`, corto: 'Esa memoria no encaja en esta placa.' };
-  }
-  if (p.kind === 'psu' && p.watts < potenciaNecesaria()) {
-    return { msg: `La fuente de ${p.watts} W se queda corta: el equipo necesita al menos ${potenciaNecesaria()} W, según (TDP CPU + TDP GPU + 100 W) × 1,3 (apuntes S11).`, corto: 'Esa fuente no basta para este equipo.' };
-  }
-  if (!enPedido(p.id)) {
-    return { msg: `${p.nombre} no es el componente que pide el cliente en este pedido. Mira el pedido y elige otra pieza.`, corto: 'Esa pieza no es la que pide el cliente.' };
-  }
-  return null;
+// Reglas aplicadas al estado de la partida (la lógica pura está en reglas.js).
+// Pista de difícil para una pieza que no pide el pedido. Solo se da cuando el texto del cliente
+// enuncia la propiedad y la pieza la contradice; si no, no hay orientación verificable.
+function orientacionNoPedido(p) {
+  if (p.kind !== 'caja') return null;
+  const requerida = pieza(pedido().piezas.caja);
+  if (!/RGB|luces/i.test(pedido().cliente) || p.rgb === requerida.rgb) return null;
+  return `Esta caja no es la del pedido: el cliente pide una caja ${requerida.rgb ? 'con' : 'sin'} iluminación RGB.`;
+}
+
+function motivoColocarJuego(p, sid) {
+  return motivoColocar(p, {
+    placa: tabla(),
+    cajaPuesta: !!piezaPlacada('caja'),
+    ocupado: occupied(sid),
+    nombreHueco: SLOTS[sid].nombre,
+    potencia: potencia(),
+    enPedido: enPedido(p.id),
+    orientacion: enPedido(p.id) ? undefined : orientacionNoPedido(p)
+  });
+}
+
+function motivoConectarJuego(c, pid) {
+  return motivoConectar(c, pid, {
+    etiqueta: PORTS[pid].etiqueta,
+    visible: puertoVisible(pid),
+    psuPuesta: !!piezaPlacada('psu'),
+    ocupado: pluggedPort(pid)
+  });
 }
 
 function intentarColocar(p, x, y) {
   const sid = huecoEn(x, y, p);
   if (!sid) return;
-  const motivo = motivoColocar(p, sid);
-  if (motivo) return fallo(motivo.msg, motivo.corto);
-  S.placed[p.id] = sid;
-  const mensajes = {
-    caja: `${p.nombre} colocada: ${p.rgb ? 'tiene iluminación RGB' : 'no lleva iluminación RGB'}.`,
-    board: esFacil() ? `${p.nombre} fijada en el chasis: los separadores evitan que toque la caja (apuntes S08).` : `${p.nombre} fijada en el chasis.`,
-    cpu: `Procesador asentado en el socket ${p.socket}.`,
-    ram: `${p.nombre} instalado en la ranura.`,
-    gpu: 'Tarjeta gráfica en la ranura PCIe x16.',
-    nvme: 'SSD NVMe en la ranura M.2.',
-    psu: `Fuente de ${p.watts} W: suficiente para los ${potenciaNecesaria()} W que necesita el equipo.`
-  };
-  ok(esFacil() ? mensajes[p.kind] : 'Pieza colocada.');
+  colocarEn(p, sid);
 }
 
-// Devuelve null si el cable puede conectarse a ese conector (sin mirar la longitud).
-function motivoConectar(c, pid) {
-  if (c.port !== pid) {
-    return { msg: `${c.nombre} no encaja en el conector ${PORTS[pid].etiqueta}: el número de pines y la forma son distintos (apuntes S07).`, corto: 'Ese cable no encaja en ese conector.' };
+// Coloca la pieza en el hueco indicado si las reglas lo permiten. Devuelve true si la colocó.
+function colocarEn(p, sid) {
+  const motivo = motivoColocarJuego(p, sid);
+  if (motivo) {
+    fallo(motivo.msg, motivo.corto);
+    return false;
   }
-  if (!piezaPlacada('psu')) return { msg: 'Antes de conectar los cables, instala la fuente: de ella salen.', corto: 'Primero la fuente.' };
-  if (pluggedPort(pid)) return { msg: `El conector ${PORTS[pid].etiqueta} ya tiene un cable.`, corto: 'Ese conector ya tiene cable.' };
-  return null;
+  S.placed[p.id] = sid;
+  cerrarDialogosPendientes();
+  ok(explicarColocacion(p));
+  return true;
+}
+
+// Un diálogo pendiente describe el estado en el que se abrió. Si el estado cambia, se cierra y se vuelve a pedir.
+function cerrarDialogosPendientes() {
+  cerrarRetirada();
+  cerrarCambioModo();
+}
+
+// Explicaciones de acierto: función de la pieza y requisito que se cumple. Cada tipo se explica una vez por partida.
+const FUNCION_PIEZA = {
+  caja: 'El chasis sostiene la placa base y el resto de componentes.',
+  board: 'La placa base conecta el procesador, la memoria, la gráfica y el almacenamiento.',
+  cpu: 'El procesador ejecuta las instrucciones del equipo.',
+  ram: 'La memoria guarda los datos que el procesador usa en cada momento.',
+  gpu: 'La tarjeta gráfica genera la imagen que se ve en la pantalla.',
+  nvme: 'El SSD guarda el sistema operativo y los archivos.',
+  psu: 'La fuente convierte la corriente de la red en la tensión que necesitan los componentes. Instalarla no basta: de ella salen los cables que alimentan la placa, el procesador y la gráfica.'
+};
+const FUNCION_CABLE = {
+  'c-atx': 'Lleva la alimentación principal de la fuente a la placa base.',
+  'c-eps': 'Alimenta el procesador directamente desde la fuente.',
+  'c-pcie': 'Aporta la alimentación extra que necesita la tarjeta gráfica.'
+};
+
+function requisitoPieza(p) {
+  switch (p.kind) {
+    case 'caja': return p.rgb ? 'Tiene iluminación RGB, como pide el cliente.' : 'No lleva iluminación RGB, como pide el cliente.';
+    case 'board': return `Su socket (${p.socket}) y su memoria (${p.gen}) fijan qué procesador y qué módulos admite.`;
+    case 'cpu': return `Socket ${p.socket}: coincide con el de la placa base.`;
+    case 'ram': return `Generación ${p.gen}: coincide con la de la placa base.`;
+    case 'gpu': return `Su consumo (${p.tdp} W) cuenta para calcular la potencia de la fuente.`;
+    case 'nvme': return 'La ranura M.2 acepta este formato.';
+    case 'psu': return `Sus ${p.watts} W cubren los ${potencia()} W que necesita el equipo.`;
+    default: return '';
+  }
+}
+
+function explicarColocacion(p) {
+  const titulo = esFacil() ? p.nombre : NOMBRE_GENERICO[p.kind];
+  if (S.explicadas[p.kind]) return `Pieza colocada: ${titulo}.`;
+  S.explicadas[p.kind] = true;
+  return `Pieza colocada: ${titulo}. ${FUNCION_PIEZA[p.kind]} ${requisitoPieza(p)}`;
+}
+
+function explicarConexion(c, pid, largo) {
+  const titulo = esFacil() ? c.nombre : 'Cable de alimentación';
+  if (S.explicadas[c.id]) return `${titulo} conectado.`;
+  S.explicadas[c.id] = true;
+  const medida = esFacil() ? ` Recorrido: ${Math.round(largo)} cm de ${c.longitudMax} cm.` : '';
+  return `${titulo} conectado. ${FUNCION_CABLE[c.id]} Su conector coincide con el ${PORTS[pid].etiqueta}.${medida}`;
 }
 
 function intentarConectar(c, x, y, ruta) {
   const pid = puertoEn(x, y);
   if (!pid) return log('info', `${c.nombre} vuelve a la bandeja: suéltalo sobre su conector.`);
-  const motivo = motivoConectar(c, pid);
-  if (motivo) return fallo(motivo.msg, motivo.corto);
-  const largo = longitudCable(ruta, puertoRect(pid));
-  if (largo > c.longitudMax) {
-    return fallo(`${c.nombre} mide ${Math.round(largo)} cm de recorrido y el máximo es ${c.longitudMax} cm. Trázalo más directo entre la fuente y el conector.`, 'Ese cable no llega al conector.');
-  }
-  S.plugged[c.id] = { port: pid, ruta };
-  ok(esFacil() ? `${c.nombre} conectado (${Math.round(largo)} cm de ${c.longitudMax} cm).` : 'Cable conectado.');
+  conectarEn(c, pid, ruta);
 }
 
+// Conecta el cable al conector indicado si las reglas y la longitud lo permiten. Devuelve true si lo conectó.
+function conectarEn(c, pid, ruta) {
+  const motivo = motivoConectarJuego(c, pid);
+  if (motivo) {
+    fallo(motivo.msg, motivo.corto);
+    return false;
+  }
+  const largo = longitudCable(ruta, puertoRect(pid), ALTURA_CABLE);
+  const fueraDeLongitud = motivoLongitud(c, largo);
+  if (fueraDeLongitud) {
+    fallo(fueraDeLongitud.msg, fueraDeLongitud.corto);
+    return false;
+  }
+  S.plugged[c.id] = { port: pid, ruta };
+  cerrarDialogosPendientes();
+  ok(explicarConexion(c, pid, largo));
+  return true;
+}
+
+
+// Textos que cuentan piezas: salen del número real, no de una frase fija.
+const NUMEROS_TEXTO = ['cero', 'un', 'dos', 'tres', 'cuatro'];
+const textoModulos = (n) => (n === 1 ? 'el módulo' : `los ${NUMEROS_TEXTO[n]} módulos`);
+const textoCables = () => `los ${NUMEROS_TEXTO[CABLES.length]} cables`;
 
 // Pasos del pedido en curso (el texto depende de las piezas que pide el cliente).
 function pasos() {
@@ -641,46 +874,147 @@ function pasos() {
     { txt: `Coloca la caja: ${pieza(p.caja).nombre}.`, hecho: () => placed(p.caja) },
     { txt: `Fija la ${pieza(p.board).nombre} en el chasis.`, hecho: () => placed(p.board) },
     { txt: `Coloca el procesador ${pieza(p.cpu).socket} en su socket.`, hecho: () => placed(p.cpu) },
-    { txt: `Instala los dos módulos de RAM ${pieza(p.ram[0]).gen}.`, hecho: () => p.ram.every(placed) },
+    { txt: `Instala ${textoModulos(p.ram.length)} de RAM ${pieza(p.ram[0]).gen}.`, hecho: () => p.ram.every(placed) },
     { txt: 'Coloca la tarjeta gráfica en la ranura PCIe x16.', hecho: () => placed(p.gpu) },
     { txt: 'Instala el SSD NVMe en la ranura M.2.', hecho: () => placed(p.nvme) },
     { txt: 'Coloca la fuente de alimentación en su hueco.', hecho: () => placed(p.psu) },
-    { txt: 'Conecta los tres cables de alimentación a sus conectores.', hecho: () => CABLES.every((c) => plugged(c.id)) },
-    { txt: 'Pulsa «Encender el equipo» para comprobar el montaje.', hecho: () => S.final }
+    { txt: `Conecta ${textoCables()} de alimentación a sus conectores.`, hecho: () => CABLES.every((c) => plugged(c.id)) },
+    { txt: 'Pulsa «Encender equipo» para comprobar el montaje.', hecho: () => S.final }
   ];
 }
 
 function encender() {
-  if (S.final) return;
-  const pendientes = pasos().slice(0, -1).filter((p) => !p.hecho());
+  if (S.final) {
+    log('info', 'El equipo ya arrancó en este pedido. Pulsa «Empezar de nuevo» para montar otro.');
+    return;
+  }
+  const pasosPedido = pasos();
+  const pendientes = pasosPedido.slice(0, -1).filter((p) => !p.hecho());
   if (pendientes.length) {
     S.errores++;
+    const aviso = esFacil() ? `El equipo no arranca. Falta: ${pendientes[0].txt}` : 'El equipo no arranca: comprueba que todas las piezas del pedido y los tres cables están colocados.';
+    S.fallos.push('Se intentó encender con piezas o cables pendientes');
+    ultimoAviso = aviso;
+    log('bad', aviso);
     if (esFacil()) {
-      log('bad', `El equipo no arranca. Falta: ${pendientes[0].txt}`);
       CABLES.filter((c) => !plugged(c.id)).forEach((c) => log('info', EXPLICA[c.id]));
       destelloHasta = performance.now() + 4000;
-    } else {
-      log('bad', 'El equipo no arranca. Revisa el pedido y las conexiones.');
     }
     pintarEscena();
     return;
   }
   S.final = true;
-  log('ok', `El equipo arranca y la BIOS muestra la pantalla POST. Errores durante el montaje: ${S.errores}.`);
+  log('ok', 'El equipo arranca y la BIOS muestra la pantalla POST.');
+  resumenFinal();
   pintarPanel();
   pintarEscena();
 }
 
-function cargarPedido(id) {
-  S = { pedido: id, placed: {}, plugged: {}, errores: 0, final: false };
-  entradas = [];
+// Qué se ha comprobado y qué errores se cometieron. Sin puntuación ni persistencia.
+// Resumen del POST. Todo sale del estado de la partida: nada se afirma sin comprobarlo aquí.
+function resumenFinal() {
+  const superadas = ETIQUETAS_PASOS.filter((_, i) => pasos()[i].hecho());
+  log('info', `Comprobaciones superadas (${superadas.length} de ${ETIQUETAS_PASOS.length}): ${superadas.join(', ')}.`);
+
+  const nombres = Object.keys(S.placed).map(nombreElemento);
+  log('info', `Componentes instalados (${nombres.length}): ${nombres.join(', ')}.`);
+
+  const conectados = CABLES.filter((c) => plugged(c.id));
+  log('info', `Conexiones verificadas (${conectados.length} de ${CABLES.length}): ${conectados.map((c) => c.nombre).join(', ')}.`);
+
+  // Compatibilidad: cada condición se vuelve a comprobar con las piezas instaladas.
+  const cpu = piezaPlacada('cpu');
+  const placa = tabla();
+  const psu = piezaPlacada('psu');
+  const memorias = Object.keys(S.placed).map(pieza).filter((p) => p.kind === 'ram');
+  const condiciones = [
+    ['socket del procesador y de la placa base', !!cpu && !!placa && cpu.socket === placa.socket],
+    ['memoria de la misma generación que la placa', memorias.length > 0 && memorias.every((m) => m.gen === placa?.gen)],
+    [`fuente de ${psu?.watts} W para los ${potencia()} W necesarios`, !!psu && psu.watts >= potencia()],
+    ['tarjeta gráfica en la ranura PCIe', placed(pedido().piezas.gpu)],
+    ['los tres cables en su conector', conectados.length === CABLES.length]
+  ];
+  const cumplidas = condiciones.filter(([, ok]) => ok).map(([texto]) => texto);
+  log('info', `Compatibilidad comprobada (${cumplidas.length} de ${condiciones.length}): ${cumplidas.join('; ')}.`);
+  if (cumplidas.length === condiciones.length) {
+    log('info', 'Por eso puede arrancar: cada pieza del pedido está instalada, los cables llegan a sus conectores y la fuente cubre la potencia del equipo.');
+  }
+
+  if (!S.fallos.length) {
+    log('info', 'No se cometieron errores durante el montaje.');
+  } else {
+    const cuentas = new Map();
+    for (const f of S.fallos) cuentas.set(f, (cuentas.get(f) ?? 0) + 1);
+    log('info', `Errores cometidos (${S.errores}):`);
+    for (const [texto, veces] of cuentas) log('info', `· ${texto}${veces > 1 ? ` (${veces} veces)` : ''}`);
+  }
+  log('info', S.retiradas ? `Piezas o cables retirados durante el montaje: ${S.retiradas}.` : 'No se retiró ninguna pieza ni cable.');
+}
+
+// Nombres de las comprobaciones, en el mismo orden que pasos().
+const ETIQUETAS_PASOS = ['caja', 'placa base', 'procesador', 'memoria', 'gráfica', 'SSD', 'fuente', 'cables de alimentación', 'encendido'];
+
+// Pistas: ayudan a razonar qué comprobar sin decir qué pieza concreta elegir.
+const PISTAS = [
+  'Mira en el pedido si el cliente pide luces RGB o un lateral de cristal: eso decide la caja.',
+  'La placa base define el socket del procesador y el tipo de memoria. Ambos deben encajar con el resto del pedido.',
+  'Compara el socket del procesador con el de la placa base.',
+  'La memoria debe ser de la misma generación que la placa (DDR4 o DDR5).',
+  'La tarjeta gráfica va en la ranura PCIe x16. Fíjate en su consumo para la fuente.',
+  'El SSD va en la ranura M.2 de la placa.',
+  'La potencia mínima es (TDP de la CPU + TDP de la GPU + 100 W) × 1,3. La fuente del pedido debe darla.',
+  'Cada cable sale de la fuente y termina en el conector que tenga su mismo número de pines.',
+  'Antes de encender, revisa que cada pieza y cable del pedido esté colocado.'
+];
+const PISTAS_MAX_DIFICIL = 2;
+
+function pedirPista() {
+  const i = pasos().findIndex((p) => !p.hecho());
+  if (!esFacil() && S.pistas >= PISTAS_MAX_DIFICIL) {
+    log('info', `En modo difícil hay ${PISTAS_MAX_DIFICIL} pistas por partida y ya las has usado.`);
+    return;
+  }
+  const texto = PISTAS[i < 0 ? PISTAS.length - 1 : i];
+  // Solo las pistas de difícil cuentan para el límite. El contador es de la partida, no del modo.
+  if (!esFacil()) S.pistas++;
+  S.pistaPaso = i;
+  $('pista-texto').textContent = `Pista: ${texto}`;
+  pintarPanel();
+}
+
+// Empieza una partida con el pedido indicado. Limpia todo lo de la partida anterior.
+// Semántica de los contadores (ver juego/tests.html, «Contadores»):
+// - Una partida es un pedido elegido con «Reiniciar» o al empezar. Sus contadores (pistas, errores,
+//   retiradas y el registro) empiezan a cero.
+// - Un cambio de dificultad rehace el montaje (la confirmación lo avisa), pero sigue siendo la misma
+//   partida: partidaPrevia conserva los contadores y el registro.
+function cargarPedido(id, partidaPrevia = null) {
+  cancelarArrastreEnCurso();
+  const c = partidaPrevia ?? { pistas: 0, errores: 0, fallos: [], retiradas: 0 };
+  S = { pedido: id, placed: {}, plugged: {}, pistaPaso: null, final: false, explicadas: {}, ...c, fallos: [...c.fallos] };
+  if (!partidaPrevia) entradas = [];
+  seleccion = null;
+  destino = null;
+  ultimoAviso = '';
+  cerrarRetirada();
+  cerrarCambioModo();
+  pintarSeleccion();
+  vistaPrevia = null;
+  destelloHasta = 0;
+  chasisId = null;
+  tableroId = null;
+  $('pista-texto').textContent = '';
   clienteEl.textContent = pedido().cliente;
-  especEl.innerHTML = especificaciones().map((t) => `<li>${t}</li>`).join('');
+  especEl.innerHTML = especificaciones().map(([k, v]) => `<li><span>${k}</span><span>${v}</span></li>`).join('');
   especEl.hidden = !esFacil();
   pintarEscena();
-  log('info', esFacil()
-    ? `Montaje nuevo: ${pedido().titulo}. Empieza eligiendo la caja y arrastrándola al chasis.`
-    : 'Montaje nuevo. Lee lo que pide el cliente y monta el equipo.');
+  if (partidaPrevia) {
+    log('info', `Cambio a dificultad ${esFacil() ? 'fácil' : 'difícil'}: el montaje empieza de nuevo. Se conservan las pistas, los errores y las retiradas de esta partida.`);
+  } else {
+    log('info', esFacil()
+      ? `Montaje nuevo: ${pedido().titulo}. Empieza eligiendo la caja y arrastrándola al chasis.`
+      : 'Montaje nuevo. Lee lo que pide el cliente y monta el equipo.');
+  }
 }
 
 // Pedido al azar: no se puede elegir.
@@ -688,33 +1022,92 @@ function reiniciar() {
   cargarPedido(PEDIDOS[Math.floor(Math.random() * PEDIDOS.length)].id);
 }
 
+// Pasos sin nombres de piezas para el modo difícil.
+const pasosGenericos = () => [
+  'Elige la caja del pedido.',
+  'Fija la placa base en el chasis.',
+  'Asienta el procesador en su socket.',
+  `Instala ${textoModulos(pedido().piezas.ram.length)} de memoria.`,
+  'Coloca la tarjeta gráfica en su ranura.',
+  'Instala el almacenamiento M.2.',
+  'Coloca la fuente de alimentación.',
+  `Conecta ${textoCables()} de alimentación.`,
+  'Pulsa «Encender equipo» para comprobar el montaje.'
+];
+
+const componentesListos = () => {
+  const p = pedido().piezas;
+  return [p.caja, p.board, p.cpu, ...p.ram, p.gpu, p.nvme, p.psu].every(placed);
+};
+const conexionesListas = () => CABLES.every((c) => plugged(c.id));
+
 function pintarPanel() {
   const lista = pasos();
   const i = lista.findIndex((p) => !p.hecho());
-  if (!esFacil()) {
-    objEl.textContent = S.final ? 'Equipo montado' : 'Monta el equipo del pedido.';
-    progEl.textContent = `Errores: ${S.errores}`;
-    return;
-  }
-  objEl.textContent = i < 0 ? 'Equipo montado' : lista[i].txt;
-  const paso = i < 0 ? lista.length : i + 1;
-  progEl.textContent = `Paso ${paso} de ${lista.length} · Errores: ${S.errores}`;
+  // Una pista se refiere al paso en el que se pidió: si ese paso ya está hecho, deja de mostrarse.
+  if (S.pistaPaso !== i) $('pista-texto').textContent = '';
+  nivelEl.textContent = esFacil() ? 'Nivel fácil' : 'Nivel difícil';
+  nivelEl.dataset.nivel = modo;
+  progEl.textContent = esFacil()
+    ? (S.final ? `Equipo montado · Errores: ${S.errores}` : `Paso ${i < 0 ? lista.length : i + 1} de ${lista.length} · Errores: ${S.errores}`)
+    : `Errores: ${S.errores}`;
+
+  const genericos = pasosGenericos();
+  pasosEl.innerHTML = lista.map((p, n) => {
+    const estado = p.hecho() ? 'hecho' : n === i ? 'actual' : 'pendiente';
+    const texto = esFacil() ? p.txt : genericos[n];
+    const etiqueta = { hecho: 'Hecho', actual: 'Siguiente', pendiente: 'Pendiente' }[estado];
+    const actual = estado === 'actual' ? ' aria-current="step"' : '';
+    return `<li data-estado="${estado}"${actual}><span class="num">${estado === 'hecho' ? '✓' : n + 1}</span><span>${texto}</span><span class="etiqueta-paso">${etiqueta}</span></li>`;
+  }).join('');
+  const paso = pasosEl.querySelector('[aria-current="step"]');
+  if (paso) pasosEl.scrollTop = paso.offsetTop - pasosEl.offsetTop - 8;
+
+  const c1 = componentesListos();
+  const c2 = conexionesListas();
+  // Una etapa solo se completa si lo anterior también lo está (un componente retirado reabre Componentes).
+  // Lo que comprueba cada etapa. Coincide con lo que hace encender(): el POST exige que no falte nada,
+  // y la compatibilidad ya se comprobó al colocar cada pieza y al conectar cada cable.
+  const etapas = [
+    ['Componentes', c1 ? 'hecho' : 'actual', 'Las piezas del pedido están instaladas en el chasis.'],
+    ['Conexiones', c1 && c2 ? 'hecho' : c1 ? 'actual' : 'pendiente', 'Los tres cables de alimentación están en sus conectores.'],
+    ['Comprobación', S.final ? 'hecho' : c1 && c2 ? 'actual' : 'pendiente', 'Con todo instalado y conectado, al encender se revisa que no falte nada. La compatibilidad ya se comprobó al colocar cada pieza.'],
+    ['Encendido', S.final ? 'hecho' : 'pendiente', 'Si no queda nada pendiente, el equipo arranca y la BIOS muestra la pantalla POST.']
+  ];
+  const textoEstado = { hecho: 'Completado', actual: 'En curso', pendiente: 'Pendiente' };
+  etapasEl.innerHTML = etapas.map(([nombre, estado, explica], n) => {
+    const actual = estado === 'actual' ? ' aria-current="step"' : '';
+    return `<li data-estado="${estado}"${actual}><span class="circulo">${estado === 'hecho' ? '✓' : n + 1}</span><span class="etiqueta">${nombre}</span><span class="estado-etapa">${textoEstado[estado]}</span><span class="explica">${explica}</span></li>`;
+  }).join('');
+
+  let texto;
+  if (S.final) texto = `<strong>Montaje completado.</strong> El equipo arranca. Errores durante el montaje: ${S.errores}.`;
+  else if (seleccion) texto = '<strong>Pieza seleccionada.</strong> Elige un destino de la lista y confirma.';
+  else if (c1 && c2) texto = '<strong>Todo conectado.</strong> Pulsa «Encender equipo» para comprobar el montaje.';
+  else texto = `<strong>Siguiente paso.</strong> ${esFacil() ? lista[i].txt : genericos[i]}`;
+  if (ultimoAviso && !S.final) texto += ` <span class="aviso">${ultimoAviso}</span>`;
+  mensajeEl.innerHTML = texto;
+
+  pistaContadorEl.textContent = esFacil() ? 'Pistas sin límite en fácil' : `Pistas usadas: ${S.pistas} de ${PISTAS_MAX_DIFICIL}`;
+  const botonPista = $('pista');
+  const teniaFoco = document.activeElement === botonPista;
+  botonPista.disabled = !esFacil() && S.pistas >= PISTAS_MAX_DIFICIL;
+  // Un botón desactivado pierde el foco: el teclado no debe quedarse sin punto de partida.
+  if (teniaFoco && botonPista.disabled) mensajeEl.focus();
 }
 
-// Especificaciones que pide el cliente (lo único que se ve en modo difícil).
+// Especificaciones exactas de las piezas del pedido (solo en modo fácil).
 function especificaciones() {
   const pz = pedido().piezas;
-  const placa = pieza(pz.board);
-  const cpu = pieza(pz.cpu);
   const rams = pz.ram.map(pieza);
   return [
-    `Caja: ${pieza(pz.caja).nombre}`,
-    `Placa base ${placa.socket} con memoria ${placa.gen}`,
-    `Procesador ${cpu.socket} de ${cpu.tdp} W`,
-    `${rams.length} módulos de RAM ${rams[0].gen}`,
-    `Tarjeta gráfica de ${TDP_GPU} W`,
-    'SSD NVMe M.2',
-    `Fuente de al menos ${Math.ceil((cpu.tdp + TDP_GPU + 100) * 1.3)} W`
+    ['Caja', pieza(pz.caja).nombre],
+    ['Placa base', pieza(pz.board).nombre],
+    ['Procesador', pieza(pz.cpu).nombre],
+    ['Memoria', `${rams.length} × ${rams[0].nombre}`],
+    ['Gráfica', gpuActual().nombre],
+    ['Almacenamiento', pieza(pz.nvme).nombre],
+    ['Fuente', `${pieza(pz.psu).nombre} (mínimo ${potencia()} W)`]
   ];
 }
 
@@ -724,7 +1117,7 @@ function specDe(p) {
   if (p.kind === 'board') return `${p.socket} · ${p.gen}`;
   if (p.kind === 'cpu') return `${p.socket} · ${p.tdp} W`;
   if (p.kind === 'ram') return p.gen;
-  if (p.kind === 'gpu') return `${TDP_GPU} W`;
+  if (p.kind === 'gpu') return `${p.tdp} W`;
   if (p.kind === 'nvme') return 'M.2';
   if (p.kind === 'psu') return `${p.watts} W`;
   return '';
@@ -732,108 +1125,128 @@ function specDe(p) {
 
 // ---------- Bandeja ----------
 // Desplegables de la bandeja: uno por tipo de componente.
-const GRUPOS = {
-  caja: 'Caja',
-  board: 'Placa base',
-  cpu: 'Procesador',
-  ram: 'Memoria RAM',
-  gpu: 'Tarjeta gráfica',
-  nvme: 'Almacenamiento',
-  psu: 'Fuente de alimentación',
-  cable: 'Cables de alimentación'
-};
-const abiertos = {};
 // Nombres sin datos técnicos, para el modo difícil.
 const NOMBRE_GENERICO = { caja: 'Caja', board: 'Placa base', cpu: 'Procesador', ram: 'Memoria RAM', gpu: 'Tarjeta gráfica', nvme: 'SSD', psu: 'Fuente de alimentación', cable: 'Cable de alimentación' };
 
 function pintarBandeja() {
-  bandeja.querySelectorAll('.grupo').forEach((el) => el.remove());
+  bandeja.innerHTML = '';
   const items = [
-    ...PIEZAS.filter((p) => !placed(p.id)).map((p) => ({ id: p.id, kind: p.kind, tipo: 'parte', corto: p.corto, spec: specDe(p), color: p.color, foto: !p.sinFoto })),
-    ...CABLES.filter((c) => !plugged(c.id)).map((c) => ({ id: c.id, kind: 'cable', tipo: 'cable', corto: c.corto, spec: `Conector ${PORTS[c.port].etiqueta}`, color: c.color, foto: !c.sinFoto }))
-  ];
-  const porGrupo = {};
-  for (const it of items) (porGrupo[it.kind] ??= []).push(it);
-  for (const [kind, lista] of Object.entries(porGrupo)) {
-    const grupo = document.createElement('details');
-    grupo.className = 'grupo';
-    grupo.open = abiertos[kind] ?? true;
-    grupo.addEventListener('toggle', () => { abiertos[kind] = grupo.open; });
-    grupo.innerHTML = `<summary>${GRUPOS[kind]} <span class="cuenta">${lista.length}</span></summary><div class="grupo-fichas"></div>`;
-    bandeja.appendChild(grupo);
-    for (const it of lista) pintarFicha(it, grupo.querySelector('.grupo-fichas'));
-  }
+    ...PIEZAS.map((p) => ({ id: p.id, kind: p.kind, tipo: 'parte', nombre: p.nombre, corto: p.corto, spec: specDe(p), color: p.color, foto: !p.sinFoto, instalado: placed(p.id) })),
+    ...CABLES.map((c) => ({ id: c.id, kind: 'cable', tipo: 'cable', nombre: c.nombre, corto: c.corto, spec: `Conector ${PORTS[c.port].etiqueta}`, color: c.color, foto: !c.sinFoto, instalado: plugged(c.id) }))
+  ].filter((it) => filtro === 'todos' || (filtro === 'cables' ? it.tipo === 'cable' : it.tipo === 'parte'));
+  for (const it of items) pintarFicha(it, bandeja);
 }
 
-function pintarFicha(it, contenedorFichas) {
-  {
-    const el = document.createElement('button');
-    el.type = 'button';
-    el.className = 'ficha';
-    el.dataset.id = it.id;
-    el.dataset.tipo = it.tipo;
-    const foto = it.foto ? `<img src="fotos/${it.id}.png" alt="" loading="lazy">` : '';
-    const dato = esFacil() && it.spec ? `<small>${it.spec}</small>` : '';
-    const nombre = esFacil() ? it.corto : NOMBRE_GENERICO[it.kind];
-    el.innerHTML = `<span class="miniatura">${foto}</span><span class="texto">${nombre}${dato}</span>`;
-    // Sin foto (o si falla la carga): la pieza se ve con su color.
-    const miniatura = el.querySelector('.miniatura');
-    if (!it.foto) miniatura.style.background = it.color;
-    else el.querySelector('img').addEventListener('error', () => {
-      miniatura.style.background = it.color;
-      miniatura.querySelector('img').remove();
-    }, { once: true });
-    if (esFacil() && it.tipo === 'cable' && performance.now() < destelloHasta) el.classList.add('destacar');
-    contenedorFichas.appendChild(el);
+// Una pieza instalada no se puede volver a coger: aparece como «Instalado» o «Conectado».
+// Icono de respaldo para las piezas sin foto. Un dibujo por tipo, con el mismo encuadre que las fotos.
+const ICONOS = {
+  caja: '<rect x="14" y="6" width="28" height="36" rx="3"/><circle cx="28" cy="18" r="6"/><path d="M14 30h28"/>',
+  board: '<rect x="8" y="6" width="40" height="36" rx="2"/><rect x="16" y="13" width="10" height="10"/><path d="M32 12h10M32 17h10M32 22h10M16 32h24M16 36h24"/>',
+  cpu: '<rect x="12" y="12" width="32" height="24" rx="2"/><rect x="19" y="19" width="18" height="10"/><path d="M18 8v4M24 8v4M30 8v4M36 8v4M18 36v4M24 36v4M30 36v4M36 36v4"/>',
+  ram: '<rect x="6" y="18" width="44" height="12" rx="1"/><path d="M12 18v12M18 18v12M24 18v12M30 18v12M36 18v12M42 18v12"/><path d="M10 30v4M46 30v4"/>',
+  gpu: '<rect x="4" y="12" width="48" height="24" rx="3"/><circle cx="18" cy="24" r="7"/><circle cx="38" cy="24" r="7"/>',
+  nvme: '<rect x="6" y="19" width="44" height="10" rx="1"/><path d="M14 19v10M22 19v10M30 19v10"/><rect x="40" y="21" width="6" height="6"/>',
+  psu: '<rect x="10" y="10" width="36" height="28" rx="3"/><circle cx="28" cy="24" r="9"/><path d="M28 15v18M19 24h18"/>',
+  cable: '<path d="M8 14c10 0 10 20 20 20s10-14 20-14" fill="none"/><rect x="40" y="26" width="10" height="10" rx="1"/>'
+};
+const ICONOS_CAJA = {
+  // Cristal: panel lateral dibujado con su marco y el hueco transparente.
+  cristal: '<rect x="8" y="6" width="36" height="36" rx="2"/><rect x="30" y="10" width="10" height="28" rx="1" stroke-dasharray="2 2"/>',
+  // Metálica: cuerpo sólido, con rejilla frontal de lamas.
+  metal: '<rect x="8" y="6" width="36" height="36" rx="2" fill="#4C566A"/><path d="M14 14h24M14 18h24M14 22h24" stroke="#D8DEE9"/>',
+};
+const LUZ_ICONO = '<circle cx="36" cy="38" r="2" fill="#B48EAD" stroke="none"/><circle cx="42" cy="38" r="2" fill="#B48EAD" stroke="none"/>';
+const iconoPieza = (kind, id) => {
+  const variante = PIEZAS.find((p) => p.id === id);
+  let cuerpo = ICONOS[kind] ?? ICONOS.caja;
+  if (kind === 'caja' && variante) {
+    cuerpo = ICONOS_CAJA[variante.cristal ? 'cristal' : 'metal'];
+    if (variante.rgb) cuerpo += LUZ_ICONO;
   }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 48"><g fill="#2E3440" stroke="#88C0D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${cuerpo}</g></svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+};
+
+function pintarFicha(it, contenedorFichas) {
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.className = 'ficha';
+  el.dataset.id = it.id;
+  el.dataset.tipo = it.tipo;
+  el.dataset.estado = it.instalado ? 'instalado' : 'pendiente';
+  el.setAttribute('aria-disabled', String(it.instalado));
+  const elegida = seleccion?.id === it.id;
+  el.setAttribute('aria-pressed', String(elegida));
+  el.classList.toggle('seleccionada', elegida);
+  // Foto real si existe; si no, el icono del tipo. Nunca un recuadro vacío.
+  const imagen = it.foto ? `fotos/${it.id}.png` : iconoPieza(it.kind, it.id);
+  const foto = `<img src="${imagen}" alt="" loading="lazy" class="${it.foto ? 'foto' : 'icono'}">`;
+  const dato = esFacil() && it.spec ? `<small>${it.spec}</small>` : '';
+  // En fácil, la ficha usa el mismo nombre que las instrucciones y el pedido (así el alumno los reconoce).
+  const nombre = esFacil() ? it.nombre : NOMBRE_GENERICO[it.kind];
+  const marca = elegida ? '<em class="marca">Seleccionada</em>' : '';
+  const estado = it.instalado ? (it.tipo === 'cable' ? 'Conectado' : 'Instalado') : 'Disponible';
+  el.innerHTML = `<span class="miniatura">${foto}</span><span class="texto">${nombre}${dato}${marca}</span><span class="estado">${estado}</span>`;
+  // Nombre accesible con pausas entre datos: el texto de los spans se leería pegado («RGBCon RGB»).
+  const datoAccesible = esFacil() && it.spec ? it.spec : '';
+  el.setAttribute('aria-label', [nombre, datoAccesible, elegida ? 'seleccionada' : '', estado].filter(Boolean).join('. '));
+  // Si la foto no carga, se usa el icono del tipo.
+  if (it.foto) el.querySelector('img').addEventListener('error', (e) => {
+    e.target.src = iconoPieza(it.kind, it.id);
+    e.target.className = 'icono';
+  }, { once: true });
+  if (esFacil() && it.tipo === 'cable' && performance.now() < destelloHasta) el.classList.add('destacar');
+  contenedorFichas.appendChild(el);
 }
 
 // ---------- Guías de hueco y puerto ----------
 const guiaSlot = {};
 const guiaPort = {};
-const materialGuia = () => new THREE.MeshBasicMaterial({ color: '#EBCB8B', transparent: true, opacity: 0, depthWrite: false });
+// Guía de hueco o conector: solo el contorno. Un plano relleno tapaba el chasis y se veía como un bloque.
+const contornoUnitario = new THREE.EdgesGeometry(new THREE.PlaneGeometry(1, 1));
+const materialGuia = () => new THREE.LineBasicMaterial({ color: '#81A1C1', transparent: true, opacity: 0, depthWrite: false });
 
 function construirGuias() {
   for (const [id, s] of Object.entries(SLOTS)) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(s.w + 0.6, s.h + 0.6), materialGuia());
+    const m = new THREE.LineSegments(contornoUnitario, materialGuia());
+    m.scale.set(s.w + 0.6, s.h + 0.6, 1);
     m.position.set(s.x, s.y, 0.06);
     grupoGuias.add(m);
     guiaSlot[id] = m;
   }
   for (const pid of Object.keys(PORTS)) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), materialGuia());
+    const m = new THREE.LineSegments(contornoUnitario, materialGuia());
     grupoGuias.add(m);
     guiaPort[pid] = m;
   }
 }
 
+// Las guías solo aparecen cuando el alumno tiene una pieza seleccionada o arrastrada:
+// muestran los huecos (o conectores) que admiten esa pieza. El destino en el que está el cursor se resalta.
 function actualizarGuias(hover, valido = false) {
-  const color = (id) => (hover !== id ? '#EBCB8B' : valido ? '#A3BE8C' : '#BF616A');
-  if (!esFacil()) {
-    for (const m of [...Object.values(guiaSlot), ...Object.values(guiaPort)]) m.visible = false;
-    return;
-  }
-  const hayPlaca = !!tabla();
+  const color = (id) => (hover !== id ? '#81A1C1' : valido ? '#A3BE8C' : '#BF616A');
+  const objetivo = seleccion ?? arrastre;
+  const item = objetivo ? (objetivo.tipo === 'cable' ? cable(objetivo.id) : pieza(objetivo.id)) : null;
+  const esCable = objetivo?.tipo === 'cable';
   for (const [id, m] of Object.entries(guiaSlot)) {
     const s = SLOTS[id];
-    const relevante = id === 'board' ? !hayPlaca : (hayPlaca || id === 'psu') && !occupied(id);
-    m.visible = relevante;
-    // La placa ocupa casi todo el chasis: su guía solo se marca de forma sutil.
-    const base = id === 'board' ? 0.1 : 0.4;
-    m.material.opacity = hover === id ? (id === 'board' ? 0.25 : 0.8) : base;
+    const visible = !!item && esFacil() && !esCable && s.accepts.includes(item.kind) && !occupied(id);
+    m.visible = visible;
+    if (!visible) continue;
+    m.material.opacity = hover === id ? 1 : 0.6;
     m.material.color.set(color(id));
+    m.scale.set(s.w + 0.6, s.h + 0.6, 1);
     m.position.set(s.x, s.y, 0.06);
   }
   for (const [pid, m] of Object.entries(guiaPort)) {
-    const visible = puertoVisible(pid) && !pluggedPort(pid);
+    const visible = !!item && esFacil() && esCable && item.port === pid && puertoVisible(pid) && !pluggedPort(pid);
     m.visible = visible;
-    if (visible) {
-      const r = puertoRect(pid);
-      m.position.set(r.x, r.y, r.z + 0.06);
-      m.scale.set(r.w + 0.8, r.h + 0.8, 1);
-      m.material.opacity = hover === pid ? 0.9 : 0.55;
-      m.material.color.set(color(pid));
-    }
+    if (!visible) continue;
+    const r = puertoRect(pid);
+    m.position.set(r.x, r.y, r.z + 0.06);
+    m.scale.set(r.w + 0.8, r.h + 0.8, 1);
+    m.material.opacity = hover === pid ? 1 : 0.6;
+    m.material.color.set(color(pid));
   }
 }
 
@@ -842,14 +1255,6 @@ function actualizarGuias(hover, valido = false) {
 function puntosCable(ruta, r) {
   const altura = Math.max(ALTURA_CABLE, r.z + 1.6);
   return [...ruta, [r.x, r.y, altura], [r.x, r.y, r.z + 1.2]];
-}
-
-// Largo del recorrido en cm (1 unidad de escena ≈ 1 cm).
-function longitudCable(ruta, r) {
-  const puntos = puntosCable(ruta, r);
-  let total = 0;
-  for (let i = 1; i < puntos.length; i++) total += Math.hypot(puntos[i][0] - puntos[i - 1][0], puntos[i][1] - puntos[i - 1][1], puntos[i][2] - puntos[i - 1][2]);
-  return total;
 }
 
 function tuboCable(puntos, color) {
@@ -880,12 +1285,15 @@ function conectorCable(color, r) {
 }
 
 function dibujarPrevia(a, p) {
-  if (vistaPrevia) grupoCables.remove(vistaPrevia);
+  if (vistaPrevia) {
+    grupoCables.remove(vistaPrevia);
+    liberar(vistaPrevia);
+  }
   const trazado = [...a.ruta, [p.x, p.y, ALTURA_CABLE]];
-  let largo = 0;
-  for (let i = 1; i < trazado.length; i++) largo += Math.hypot(trazado[i][0] - trazado[i - 1][0], trazado[i][1] - trazado[i - 1][1], trazado[i][2] - trazado[i - 1][2]);
+  const largo = longitudTrazado(simplificarTrazado(trazado));
   const excede = largo > cable(a.id).longitudMax;
   vistaPrevia = tuboCable(trazado, excede ? '#E0868E' : cable(a.id).color);
+  // En rojo cuando el recorrido ya supera el máximo del cable.
   grupoCables.add(vistaPrevia);
 }
 
@@ -895,15 +1303,29 @@ function pintarEscena() {
   fans.length = 0;
   const cajaPuesta = piezaPlacada('caja');
   rgbActivo = !!cajaPuesta?.rgb;
-  grupoCaso.clear();
   grupoCaso.visible = !!cajaPuesta;
-  if (cajaPuesta) construirCaso(cajaPuesta);
+  if (!cajaPuesta) {
+    // Sin caja no queda chasis oculto en memoria: se libera y se reconstruirá al volver a colocarla.
+    vaciar(grupoCaso);
+    ledCaso.length = 0;
+    chasisId = null;
+  } else if (chasisId !== cajaPuesta.id) {
+    vaciar(grupoCaso);
+    construirCaso(cajaPuesta);
+  }
+  if (cajaPuesta?.rgb) ledMats.push(...ledCaso);
+  fans.push(...fansCaso);
 
   const placa = tabla();
-  if (placa && tableroId !== placa.id) construirTablero(placa);
   grupoTablero.visible = !!placa;
+  if (!placa) {
+    vaciar(grupoTablero);
+    tableroId = null;
+  } else if (tableroId !== placa.id) {
+    construirTablero(placa);
+  }
 
-  grupoPiezas.clear();
+  vaciar(grupoPiezas);
   for (const id of Object.keys(S.placed)) {
     if (pieza(id).kind === 'board' || pieza(id).kind === 'caja') continue;
     grupoPiezas.add(construirPieza(pieza(id), posicionDe(id)));
@@ -911,7 +1333,7 @@ function pintarEscena() {
   ledMats.forEach((mat, n) => { mat.userData.desfase = (n * 0.17) % 1; });
   for (const mat of ledMats) mat.emissiveIntensity = S.final ? 2.2 : 0.9;
 
-  grupoCables.clear();
+  vaciar(grupoCables);
   vistaPrevia = null;
   for (const c of CABLES) {
     const conexion = S.plugged[c.id];
@@ -922,6 +1344,7 @@ function pintarEscena() {
   }
 
   pintarBandeja();
+  pintarMontadas();
   actualizarGuias(null);
   pintarPanel();
 }
@@ -947,9 +1370,11 @@ function moverFantasma(clientX, clientY) {
 
 bandeja.addEventListener('pointerdown', (e) => {
   const el = e.target.closest('.ficha');
-  if (!el) return;
+  if (!el || el.getAttribute('aria-disabled') === 'true') return;
   e.preventDefault();
   arrastre = { id: el.dataset.id, tipo: el.dataset.tipo, el, ruta: null };
+  movido = false;
+  inicioPuntero = { x: e.clientX, y: e.clientY };
   if (arrastre.tipo === 'cable') arrastre.ruta = [SALIDA_CABLE[arrastre.id]];
   el.style.opacity = '0.4';
   fantasma.textContent = el.textContent;
@@ -960,6 +1385,10 @@ bandeja.addEventListener('pointerdown', (e) => {
 window.addEventListener('pointermove', (e) => {
   if (!arrastre) return;
   moverFantasma(e.clientX, e.clientY);
+  if (!movido && Math.hypot(e.clientX - inicioPuntero.x, e.clientY - inicioPuntero.y) > 6) movido = true;
+  if (!movido) return;
+  // Con el arrastre en marcha, la selección por toque deja de aplicar.
+  if (seleccion) cancelarSeleccion(false);
   const p = puntoEnPlaca(e.clientX, e.clientY);
   let hover = null;
   if (p) {
@@ -979,8 +1408,8 @@ window.addEventListener('pointermove', (e) => {
     }
   }
   const valido = arrastre.tipo === 'cable'
-    ? !!hover && !motivoConectar(cable(arrastre.id), hover)
-    : !!hover && !motivoColocar(pieza(arrastre.id), hover);
+    ? !!hover && !motivoConectarJuego(cable(arrastre.id), hover)
+    : !!hover && !motivoColocarJuego(pieza(arrastre.id), hover);
   actualizarGuias(hover, valido);
 });
 
@@ -989,6 +1418,12 @@ function terminarArrastre(e, cancelado) {
   const a = arrastre;
   arrastre = null;
   fantasma.style.display = 'none';
+  // Un toque sin desplazamiento selecciona la pieza para colocarla desde el panel (también sirve al tocar en pantalla táctil).
+  if (!cancelado && !movido && e.type === 'pointerup') {
+    pintarEscena();
+    seleccionar(a.id, a.tipo);
+    return;
+  }
   if (!cancelado) {
     const p = puntoEnPlaca(e.clientX, e.clientY);
     if (a.tipo === 'cable' && !p) log('info', `${cable(a.id).nombre} vuelve a la bandeja: suéltalo sobre su conector.`);
@@ -1002,6 +1437,119 @@ function terminarArrastre(e, cancelado) {
 
 window.addEventListener('pointerup', (e) => terminarArrastre(e, false));
 window.addEventListener('pointercancel', (e) => terminarArrastre(e, true));
+
+// ---------- Colocación con teclado o toque ----------
+// Pieza o cable elegido → destino (hueco o conector) → confirmar. Esc cancela en cualquier paso.
+function destinosDe(item, tipo) {
+  if (tipo === 'cable') {
+    return Object.keys(PORTS).map((pid) => {
+      const m = motivoConectarJuego(item, pid);
+      return { id: pid, etiqueta: `Conector ${PORTS[pid].etiqueta}`, motivo: m };
+    });
+  }
+  return Object.entries(SLOTS).filter(([, s]) => s.accepts.includes(item.kind)).map(([sid, s]) => {
+    const m = motivoColocarJuego(item, sid);
+    const etiqueta = sid === 'ram1' ? `${s.nombre} 1` : sid === 'ram2' ? `${s.nombre} 2` : s.nombre;
+    return { id: sid, etiqueta, motivo: m };
+  });
+}
+
+function seleccionar(id, tipo) {
+  if (seleccion?.id === id) return cancelarSeleccion();
+  seleccion = { id, tipo };
+  destino = null;
+  pintarSeleccion();
+  pintarBandeja();
+  actualizarGuias(null);
+  $('seleccion-titulo').focus();
+}
+
+function cancelarSeleccion(enfocar = true) {
+  if (!seleccion) return;
+  seleccion = null;
+  destino = null;
+  pintarSeleccion();
+  pintarBandeja();
+  actualizarGuias(null);
+  if (enfocar) bandeja.querySelector('.ficha:not([aria-disabled="true"])')?.focus();
+}
+
+function cancelarArrastreEnCurso() {
+  if (!arrastre) return;
+  arrastre = null;
+  movido = false;
+  fantasma.style.display = 'none';
+}
+
+function pintarSeleccion() {
+  const panel = $('seleccion');
+  if (!seleccion) {
+    panel.hidden = true;
+    $('destinos').innerHTML = '';
+    $('seleccion-motivo').textContent = '';
+    $('confirmar').disabled = true;
+    return;
+  }
+  const item = seleccion.tipo === 'cable' ? cable(seleccion.id) : pieza(seleccion.id);
+  const clave = seleccion.tipo === 'cable' ? 'cable' : item.kind;
+  const nombre = esFacil() ? item.corto : NOMBRE_GENERICO[clave];
+  const verbo = seleccion.tipo === 'cable' ? 'Conectar' : 'Colocar';
+  $('seleccion-titulo').textContent = `${verbo}: ${nombre}`;
+  $('confirmar').textContent = seleccion.tipo === 'cable' ? 'Confirmar conexión' : 'Confirmar colocación';
+  const lista = destinosDe(item, seleccion.tipo);
+  $('destinos').innerHTML = lista.map((d) => {
+    const estado = d.motivo ? 'no válido' : 'válido';
+    const marca = destino === d.id ? ' · elegido' : '';
+    return `<li><button type="button" class="boton destino" data-dest="${d.id}" aria-pressed="${destino === d.id}">${d.etiqueta}: ${estado}${marca}</button></li>`;
+  }).join('');
+  const elegido = lista.find((d) => d.id === destino);
+  $('seleccion-motivo').textContent = elegido?.motivo
+    ? (esFacil() ? elegido.motivo.msg : elegido.motivo.corto)
+    : (elegido ? 'Destino válido: confirma para colocarla.' : 'Elige un destino de la lista.');
+  $('confirmar').disabled = !(elegido && !elegido.motivo);
+  panel.hidden = false;
+}
+
+function elegirDestino(id) {
+  destino = id;
+  pintarSeleccion();
+  actualizarGuias(destino, !!destinosDe(seleccion.tipo === 'cable' ? cable(seleccion.id) : pieza(seleccion.id), seleccion.tipo).find((d) => d.id === id && !d.motivo));
+  document.querySelector(`[data-dest="${id}"]`)?.focus();
+}
+
+function confirmarSeleccion() {
+  if (!seleccion || !destino) return;
+  const { id, tipo } = seleccion;
+  const hecho = tipo === 'cable' ? conectarEn(cable(id), destino, [SALIDA_CABLE[id]]) : colocarEn(pieza(id), destino);
+  if (!hecho) { pintarSeleccion(); return; }
+  seleccion = null;
+  destino = null;
+  pintarEscena();
+  pintarSeleccion();
+  // El inventario se reconstruye: el foco vuelve a la primera pieza disponible, o al mensaje si no queda ninguna.
+  const siguiente = bandeja.querySelector('.ficha:not([aria-disabled="true"])');
+  (siguiente ?? mensajeEl).focus();
+}
+
+$('destinos').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-dest]');
+  if (b) elegirDestino(b.dataset.dest);
+});
+$('confirmar').addEventListener('click', confirmarSeleccion);
+$('cancelar').addEventListener('click', () => cancelarSeleccion());
+$('pista').addEventListener('click', pedirPista);
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (retiradaPendiente) cerrarRetiradaYEnfocar();
+  else if (modoPendiente) { cerrarCambioModo(); devolverFoco(); }
+  else if (seleccion) cancelarSeleccion();
+});
+// Teclado: Intro o Espacio sobre una ficha la selecciona (el navegador lo envía como clic sin posición).
+bandeja.addEventListener('click', (e) => {
+  const el = e.target.closest('.ficha');
+  if (!el || e.detail !== 0 || el.getAttribute('aria-disabled') === 'true') return;
+  seleccionar(el.dataset.id, el.dataset.tipo);
+});
 
 // ---------- Tamaño y bucle ----------
 function ajustarTamano() {
@@ -1032,19 +1580,208 @@ renderer.setAnimationLoop(() => {
   renderer.render(scene, camera);
 });
 
+// ---------- Cámara ----------
+// Vista inicial y destino de la cámara. Los controles acercan o alejan sobre la misma línea de mira.
+const VISTA = { posicion: camera.position.clone(), objetivo: new THREE.Vector3(0, -3, 0) };
+const DISTANCIA_MIN = 40;
+const DISTANCIA_MAX = 140;
+
+function acercarCamara(factor) {
+  const dir = camera.position.clone().sub(VISTA.objetivo);
+  const distancia = Math.min(DISTANCIA_MAX, Math.max(DISTANCIA_MIN, dir.length() * factor));
+  camera.position.copy(VISTA.objetivo).add(dir.normalize().multiplyScalar(distancia));
+  camera.lookAt(VISTA.objetivo);
+  camera.updateMatrixWorld();
+}
+
+function restablecerCamara() {
+  camera.position.copy(VISTA.posicion);
+  camera.lookAt(VISTA.objetivo);
+  camera.updateMatrixWorld();
+}
+
+$('zoom-mas').addEventListener('click', () => acercarCamara(0.8));
+$('zoom-menos').addEventListener('click', () => acercarCamara(1.25));
+$('camara-reset').addEventListener('click', restablecerCamara);
+
+// Pantalla completa solo si el navegador la permite; si no, el botón no se muestra.
+const botonPantalla = $('pantalla');
+if (document.fullscreenEnabled) {
+  botonPantalla.addEventListener('click', () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else contenedor.requestFullscreen();
+  });
+} else {
+  botonPantalla.hidden = true;
+}
+
+// Filtros del inventario: Todos, Hardware y Cables.
+for (const b of botonesFiltro) {
+  b.addEventListener('click', () => {
+    filtro = b.dataset.filtro;
+    for (const o of botonesFiltro) o.setAttribute('aria-pressed', String(o === b));
+    pintarBandeja();
+  });
+}
+
 // ---------- Inicio ----------
 construirGuias();
 ajustarTamano();
 reiniciar();
 
 $('encender').addEventListener('click', encender);
+// ---------- Cambio de dificultad: con progreso, confirmación; la dificultad activa no hace nada ----------
+const hayProgreso = () => Object.keys(S.placed).length > 0 || Object.keys(S.plugged).length > 0;
+
+function aplicarModo(nuevo) {
+  modo = nuevo;
+  for (const o of botonesModo) o.setAttribute('aria-pressed', String(o.dataset.modo === modo));
+  // Mismo pedido y misma partida: el cambio de dificultad conserva pistas, errores, retiradas y registro.
+  cargarPedido(S.pedido, { pistas: S.pistas, errores: S.errores, fallos: S.fallos, retiradas: S.retiradas });
+}
+
+function pedirCambioModo(nuevo) {
+  modoPendiente = nuevo;
+  const piezas = Object.keys(S.placed).length;
+  const cables = Object.keys(S.plugged).length;
+  const cuenta = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+  $('confirmar-modo-texto').textContent = `Cambiar a dificultad ${nuevo === 'facil' ? 'fácil' : 'difícil'} empezará de nuevo el montaje de este pedido. Se perderán ${cuenta(piezas, 'pieza', 'piezas')} y ${cuenta(cables, 'cable', 'cables')} colocados. Se conservan las pistas, los errores y las retiradas de esta partida.`;
+  recordarFoco();
+  $('confirmar-modo').hidden = false;
+  $('confirmar-modo-titulo').focus();
+}
+
+function cerrarCambioModo() {
+  modoPendiente = null;
+  $('confirmar-modo').hidden = true;
+}
+
 for (const b of botonesModo) {
   b.addEventListener('click', () => {
-    modo = b.dataset.modo;
-    for (const o of botonesModo) o.setAttribute('aria-pressed', String(o === b));
-    cargarPedido(S.pedido);
+    const nuevo = b.dataset.modo;
+    if (nuevo === modo) return;
+    if (hayProgreso()) return pedirCambioModo(nuevo);
+    aplicarModo(nuevo);
   });
 }
+$('modo-confirmar').addEventListener('click', () => {
+  const nuevo = modoPendiente;
+  cerrarCambioModo();
+  if (nuevo) aplicarModo(nuevo);
+  devolverFoco();
+});
+$('modo-cancelar').addEventListener('click', () => {
+  cerrarCambioModo();
+  devolverFoco();
+});
+
+// Foco de los diálogos: se guarda al abrirlos y se devuelve al cerrarlos (si ese elemento sigue en pantalla).
+function recordarFoco() {
+  focoAntes = document.activeElement;
+}
+function devolverFoco() {
+  const el = focoAntes;
+  focoAntes = null;
+  if (el?.isConnected && el.offsetParent !== null) el.focus();
+  else mensajeEl.focus();
+}
+
+// ---------- Deshacer: retirar piezas o cables colocados, con sus dependencias ----------
+// Qué requiere cada pieza o cable para estar montado (según las mismas reglas de colocación y conexión).
+function requisitosDe(id) {
+  const caja = piezaPlacada('caja')?.id;
+  const tablero = tabla()?.id;
+  if (cable(id)) {
+    const req = [];
+    const psu = piezaPlacada('psu')?.id;
+    if (psu) req.push(psu);
+    const duenio = NECESITA[cable(id).port] === 'board' ? tablero : piezaPlacada(NECESITA[cable(id).port])?.id;
+    if (duenio) req.push(duenio);
+    return req;
+  }
+  const p = pieza(id);
+  if (p.kind === 'caja') return [];
+  if (p.kind === 'board') return [caja].filter(Boolean);
+  return [caja, tablero].filter(Boolean);
+}
+
+// Nombre de una pieza o cable. Las dos memorias se distinguen por su ranura (si no, salen iguales).
+function nombreElemento(id) {
+  if (cable(id)) return esFacil() ? cable(id).corto : 'Cable de alimentación';
+  const p = pieza(id);
+  const base = esFacil() ? p.corto : NOMBRE_GENERICO[p.kind];
+  const sid = S.placed[id];
+  return p.kind === 'ram' && sid ? `${base}, ranura ${sid.slice(-1)}` : base;
+}
+
+// Todo lo que se retiraría con `id` según el estado actual (se recalcula al confirmar).
+function idsRetirada(id) {
+  return cascadaRetirada(id, requisitosDe, [...Object.keys(S.placed), ...Object.keys(S.plugged)]);
+}
+
+function pedirRetirada(id) {
+  const ids = idsRetirada(id);
+  if (ids.length === 1) return aplicarRetirada(ids);
+  retiradaPendiente = id;
+  // Punto y coma: algunos nombres ya llevan coma («RAM DDR4, ranura 1»).
+  const extra = ids.slice(1).map(nombreElemento).join('; ');
+  $('retirada-texto').textContent = `Retirar ${nombreElemento(id)} también retirará: ${extra}. ¿Confirmas?`;
+  recordarFoco();
+  $('confirmar-retirada').hidden = false;
+  $('retirada-titulo').focus();
+}
+
+function cerrarRetirada() {
+  retiradaPendiente = null;
+  $('confirmar-retirada').hidden = true;
+}
+
+// Cierra la confirmación de retirada y devuelve el foco a quien la abrió.
+function cerrarRetiradaYEnfocar() {
+  cerrarRetirada();
+  devolverFoco();
+}
+
+function aplicarRetirada(ids) {
+  cerrarRetirada();
+  // Los nombres se leen antes de borrar: la ranura de una memoria sale de S.placed.
+  const nombres = ids.map(nombreElemento).join('; ');
+  for (const x of ids) {
+    if (cable(x)) delete S.plugged[x];
+    else delete S.placed[x];
+  }
+  seleccion = null;
+  destino = null;
+  ultimoAviso = '';
+  if (S.final) S.final = false;
+  S.retiradas += ids.length;
+  cerrarDialogosPendientes();
+  log('info', `Retirado: ${nombres}.`);
+  pintarEscena();
+  pintarSeleccion();
+}
+
+function pintarMontadas() {
+  const lista = $('lista-montadas');
+  const ids = [...Object.keys(S.placed), ...Object.keys(S.plugged)];
+  lista.innerHTML = ids.length
+    ? ids.map((id) => `<li><button type="button" class="boton" data-retirar="${id}">Retirar ${nombreElemento(id)}</button></li>`).join('')
+    : '<li class="ayuda">Todavía no hay piezas ni cables montados.</li>';
+}
+
+$('lista-montadas').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-retirar]');
+  if (!b) return;
+  pedirRetirada(b.dataset.retirar);
+  // Sin dependencias se retira al momento: el botón que se pulsó ya no existe, así que el foco va al mensaje.
+  if (!retiradaPendiente) mensajeEl.focus();
+});
+$('retirada-confirmar').addEventListener('click', () => {
+  if (!retiradaPendiente) return;
+  aplicarRetirada(idsRetirada(retiradaPendiente));
+  devolverFoco();
+});
+$('retirada-cancelar').addEventListener('click', cerrarRetiradaYEnfocar);
 botonesModo.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.modo === modo)));
 $('reiniciar').addEventListener('click', reiniciar);
 $('tema').addEventListener('click', () => {
@@ -1054,9 +1791,19 @@ $('tema').addEventListener('click', () => {
   try { localStorage.setItem('temario-tema', nuevo); } catch (_) {}
 });
 
-// Ayudas para pruebas automáticas: coordenadas de pantalla de huecos y puertos.
+// Ayudas para pruebas automáticas (juego/tests.html y pruebas manuales en el navegador).
 window.montaje = {
   estado: () => JSON.parse(JSON.stringify(S)),
+  cargar: (id) => cargarPedido(id),
+  pedidos: () => PEDIDOS.map((p) => p.id),
+  modo: () => modo,
+  seleccion: () => (seleccion ? { ...seleccion, destino } : null),
+  renderInfo: () => ({ geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures }),
+  camara: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),
+  lucesCaja: () => ledCaso.length,
+  // Paneles transparentes del chasis (el cristal). Una caja metálica no tiene ninguno.
+  vidriosCaja: () => grupoCaso.children.filter((m) => m.material?.transparent && m.material?.opacity < 0.5).length,
+  guiasVisibles: () => [...Object.entries(guiaSlot), ...Object.entries(guiaPort)].filter(([, m]) => m.visible).map(([id]) => id),
   pantallaDeHueco(id) {
     const s = SLOTS[id];
     return pantallaDe(s.x, s.y, 0);
