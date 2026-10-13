@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/RoomEnvironment.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { PIEZAS, CABLES, PEDIDOS } from './catalogo.js';
+import { comprobarColocacion, potenciaNecesaria as potencia, longitudPuntos } from './reglas.js';
 
 const $ = (id) => document.getElementById(id);
 const logEl = $('log');
@@ -75,7 +76,7 @@ const enPedido = (id) => Object.values(pedido().piezas).flat().includes(id);
 const piezaPlacada = (kind) => Object.keys(S.placed).map(pieza).find((p) => p.kind === kind);
 const tabla = () => piezaPlacada('board');
 const cpuActual = () => piezaPlacada('cpu') ?? pieza(pedido().piezas.cpu);
-const potenciaNecesaria = () => Math.ceil((cpuActual().tdp + TDP_GPU + 100) * 1.3);
+const potenciaNecesaria = () => potencia(cpuActual().tdp, TDP_GPU);
 
 // ---------- Escena 3D ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -543,7 +544,7 @@ function huecoEn(x, y, pieza_) {
   let distOcupado = Infinity;
   for (const [id, s] of Object.entries(SLOTS)) {
     if (!s.accepts.includes(pieza_.kind)) continue;
-    if (Math.abs(x - s.x) > s.w / 2 + 0.6 || Math.abs(y - s.y) > s.h / 2 + 0.6) continue;
+    if (Math.abs(x - s.x) > s.w / 2 + 1.2 || Math.abs(y - s.y) > s.h / 2 + 1.2) continue;
     const d = Math.hypot(x - s.x, y - s.y);
     if (occupied(id)) {
       if (d < distOcupado) { distOcupado = d; ocupado = id; }
@@ -570,26 +571,18 @@ function ok(msg) { log('ok', msg); }
 function intentarColocar(p, x, y) {
   const sid = huecoEn(x, y, p);
   if (!sid) return;
-  const placa = tabla();
-  if (p.kind !== 'caja' && !piezaPlacada('caja')) {
-    return fallo('Primero elige la caja: sin chasis no hay dónde montar el equipo.', 'Primero la caja.');
-  }
-  if (p.kind !== 'caja' && p.kind !== 'board' && !placa) {
-    return fallo('Primero fija la placa base en el chasis: sin ella no hay dónde montar el resto.', 'Primero la placa base.');
-  }
-  if (occupied(sid)) return fallo(`El ${SLOTS[sid].nombre} ya está ocupado.`, 'Ese hueco ya está ocupado.');
-  if (p.kind === 'cpu' && p.socket !== placa.socket) {
-    return fallo(`${p.nombre} no encaja: es para socket ${p.socket} y la placa tiene ${placa.socket}. Cada socket admite solo sus familias de procesador (apuntes S11).`, 'Ese procesador no encaja en esta placa.');
-  }
-  if (p.kind === 'ram' && p.gen !== placa.gen) {
-    return fallo(`${p.nombre} no entra en una placa ${placa.gen}: las ranuras son distintas según la generación (apuntes S11).`, 'Esa memoria no encaja en esta placa.');
-  }
-  if (p.kind === 'psu' && p.watts < potenciaNecesaria()) {
-    return fallo(`La fuente de ${p.watts} W se queda corta: el equipo necesita al menos ${potenciaNecesaria()} W, según (TDP CPU + TDP GPU + 100 W) × 1,3 (apuntes S11).`, 'Esa fuente no basta para este equipo.');
-  }
-  if (!enPedido(p.id)) {
-    return fallo(`${p.nombre} no es el componente que pide el cliente en este pedido. Mira el pedido y elige otra pieza.`, 'Esa pieza no es la que pide el cliente.');
-  }
+  const cpu = cpuActual();
+  const resultado = comprobarColocacion({
+    pieza: p,
+    placa: tabla(),
+    cajaPuesta: piezaPlacada('caja'),
+    ocupado: occupied(sid),
+    nombreHueco: SLOTS[sid].nombre,
+    cpuTdp: cpu.tdp,
+    tdpGpu: TDP_GPU,
+    enPedido: enPedido(p.id)
+  });
+  if (!resultado.ok) return fallo(resultado.motivo, resultado.corto);
   S.placed[p.id] = sid;
   const mensajes = {
     caja: `${p.nombre} colocada: ${p.rgb ? 'tiene iluminación RGB' : 'no lleva iluminación RGB'}.`,
@@ -828,10 +821,7 @@ function puntosCable(ruta, r) {
 
 // Largo del recorrido en cm (1 unidad de escena ≈ 1 cm).
 function longitudCable(ruta, r) {
-  const puntos = puntosCable(ruta, r);
-  let total = 0;
-  for (let i = 1; i < puntos.length; i++) total += Math.hypot(puntos[i][0] - puntos[i - 1][0], puntos[i][1] - puntos[i - 1][1], puntos[i][2] - puntos[i - 1][2]);
-  return total;
+  return longitudPuntos(puntosCable(ruta, r));
 }
 
 function tuboCable(puntos, color) {
@@ -970,6 +960,8 @@ function terminarArrastre(e, cancelado) {
     if (p) {
       if (a.tipo === 'cable') intentarConectar(cable(a.id), p.x, p.y, a.ruta);
       else intentarColocar(pieza(a.id), p.x, p.y);
+    } else if (a.tipo !== 'cable') {
+      log('info', 'Suelta la pieza sobre el chasis para colocarla.');
     }
   }
   pintarEscena();
