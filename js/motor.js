@@ -59,6 +59,21 @@
         : 'Tensión ausente o fuera de rango: la fuente es la pista.';
     }
 
+    /* Actualiza botones deshabilitados, tiempo y lámparas sin reconstruir la lista. */
+    function actualizarEstado() {
+      var botones = qa('.acts button');
+      /* Guardamos el botón con foco antes de deshabilitarlo: al deshabilitarse, el navegador le quita el foco. */
+      var conFoco = document.activeElement;
+      botones.forEach(function (b, i) { b.disabled = S.used.has(C.acciones[i][0]); });
+      if (conFoco && conFoco.disabled) {
+        var siguiente = Array.prototype.find.call(botones, function (b) { return !b.disabled; });
+        if (siguiente) siguiente.focus();
+        else { q('.log').tabIndex = -1; q('.log').focus(); }
+      }
+      q('.coste').textContent = 'Tiempo gastado: ' + S.costo + ' min';
+      pintarRack();
+    }
+
     function render() {
       var c = C.casos[S.i];
       q('.caso-n').textContent = 'Caso ' + (S.i + 1) + ' de ' + C.casos.length;
@@ -94,7 +109,7 @@
       if (c.fallos && c.fallos[id]) t = '<span class="bad">Prueba fallida.</span> ' + c.fallos[id];
       if (id === 'cam' && !S.medido) { S.costo += 15; t += ' <span class="bad">Cambiar una pieza sin medir antes: +15 min.</span>'; }
       log(t);
-      render();
+      actualizarEstado();
     }
 
     function mostrarExplicacion(c) {
@@ -121,7 +136,7 @@
       } else {
         S.costo += 20;
         log('<span class="bad">No es esta causa.</span> Revisa lo que llevas medido. (+20 min)');
-        render();
+        actualizarEstado();
       }
       q('.coste').textContent = 'Tiempo gastado: ' + S.costo + ' min';
     }
