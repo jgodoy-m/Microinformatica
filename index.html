@@ -881,12 +881,13 @@
 
     .seccion-cabecera { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin: 0 0 24px; }
     .seccion-cabecera h2 { font-size: 26px; font-weight: 700; margin: 0; color: var(--text); }
+    .seccion-cabecera h2::before { content: ""; display: inline-block; width: 28px; height: 2px; margin-right: 14px; vertical-align: middle; background: var(--nord8); border-radius: 2px; }
     .enlace-seccion { color: var(--nord8); text-decoration: none; font-size: 15px; font-weight: 500; white-space: nowrap; min-height: 44px; display: inline-flex; align-items: center; }
     .enlace-seccion:hover { text-decoration: underline; }
 
     .practice { padding: 40px 0 16px; }
     .practice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
-    .practice-card { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 12px; min-height: 212px; padding: 26px 26px 24px 30px; border-radius: 16px; border: 1px solid var(--acento); background: linear-gradient(180deg, color-mix(in srgb, var(--acento) 7%, var(--surface)), var(--surface)); color: var(--text); text-decoration: none; transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+    .practice-card { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 12px; min-height: 212px; padding: 26px 26px 24px 30px; border-radius: 16px; border: 1px solid var(--acento); background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--acento) 20%, transparent), transparent 60%), linear-gradient(180deg, color-mix(in srgb, var(--acento) 10%, var(--surface)), var(--surface)); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--acento) 30%, transparent), 0 0 0 1px color-mix(in srgb, var(--acento) 12%, transparent); color: var(--text); text-decoration: none; transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
     .practice-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--acento); }
     .practice-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,.25); border-color: var(--acento); }
     .practice-card.acento-cian { --acento: var(--nord8); }
