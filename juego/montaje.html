@@ -31,29 +31,29 @@
     /* Paleta Nord. Modo oscuro por defecto; el modo claro usa los mismos colores en otro orden. */
     :root {
       color-scheme: dark;
-      --bg: #09182C;
-      --fondo: radial-gradient(1200px 620px at 50% -12%, #1E3857 0%, #0F2038 45%, #09182C 100%);
-      --panel: #12253C;
-      --panel-2: #162941;
-      --panel-3: #1C2F46;
+      --bg: #2E3440;
+      --fondo: var(--bg);
+      --panel: #3B4252;
+      --panel-2: #434C5E;
+      --panel-3: #434C5E;
       --text: #ECEFF4;
-      --muted: #B8C4D6;
-      --line: #22395A;
+      --muted: #D8DEE9;
+      --line: #4C566A;
       --accent: #88C0D0;
       --accent-2: #81A1C1;
-      --on-accent: #09182C;
+      --on-accent: #2E3440;
       --pill-ok: rgba(163, 190, 140, .16);
       --pill-acento: rgba(136, 192, 208, .16);
       --ok-texto: #A3BE8C;
       --acento-texto: #88C0D0;
       --aviso-texto: #EBCB8B;
-      --error-texto: #E88A93;
+      --error-texto: #F2A5AB;
       --ok: #A3BE8C;
       --warn: #EBCB8B;
       --bad: #BF616A;
       --alt: #B48EAD;
       --focus: #88C0D0;
-      --pista: #AA8EE7;
+      --pista: #CFAAC9;
     }
     html[data-theme="light"] {
       --fondo: var(--bg);
@@ -83,7 +83,7 @@
     }
 
     *, *::before, *::after { box-sizing: border-box; }
-    body { margin: 0; background: var(--fondo) fixed, var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; min-height: 100vh; }
+    body { margin: 0; background: var(--fondo); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; min-height: 100vh; }
     h1, h2, h3, p, ol, ul, dl, dd { margin: 0; }
     :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
     button { font: inherit; color: inherit; }
