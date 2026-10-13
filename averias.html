@@ -11,81 +11,28 @@
    Frost (nord7-10) para acentos y foco; Aurora (nord11-15) para estados.
    Los tonos de texto de estado en modo claro son versiones más oscuras de Aurora para mantener 4.5:1. */
 :root{
-  color-scheme:light;
-  --bg:#ECEFF4;          /* nord6 */
-  --card:#E5E9F0;        /* nord5 */
-  --fg:#2E3440;          /* nord0 */
-  --muted:#4C566A;       /* nord3 */
-  --line:#D8DEE9;        /* nord4 */
-  --rack:#3B4252;        /* nord1 */
-  --rack-fg:#ECEFF4;     /* nord6 */
-  --rack-muted:#D8DEE9;  /* nord4 */
-  --btn:#E5E9F0;
-  --accent:#88C0D0;      /* nord8 */
-  --accent-ink:#2E3440;  /* nord0 */
-  --focus:#5E81AC;       /* nord10 */
-  --ok:#4F6B3A;          /* nord14 oscurecido */
-  --bad:#A3414A;         /* nord11 oscurecido */
-  --warn:#EBCB8B;        /* nord13 */
-  --lamp-ok:#A3BE8C;     /* nord14 */
-  --lamp-bad:#BF616A;    /* nord11 */
-  --off:#4C566A;         /* nord3 */
-  --bar:#434C5E;         /* nord2 */
-  --photo-bg:#2E3440;    /* nord0 */
-  --zone-hover:rgba(136,192,208,.30);
-  --zone-hit:rgba(163,190,140,.45);
-  --zone-miss:rgba(191,97,106,.50);
-  --zone-pulse:rgba(235,203,139,.25);
+  /* Tema oscuro azul marino (Nord Polar Night + acentos Frost/Aurora). Es el modo por defecto. */
+  color-scheme:dark;
+  --bg:#2E3440;          /* nord0: fondo general */
+  --card:#3B4252;        /* nord1: paneles */
+  --card-2:#434C5E;      /* nord2: superficies interactivas */
+  --line:#4C566A;        /* nord3: bordes */
+  --fg:#ECEFF4;          /* nord6: texto principal */
+  --muted:#D8DEE9;       /* nord4: texto secundario */
   --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;
   --r:8px;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
   --mono:ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
-  box-sizing:border-box;
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    color-scheme:dark;
-    --bg:#2E3440;        /* nord0 */
-    --card:#3B4252;      /* nord1 */
-    --fg:#ECEFF4;        /* nord6 */
-    --muted:#D8DEE9;     /* nord4 */
-    --line:#434C5E;      /* nord2 */
-    --rack:#242933;      /* nord0 oscurecido, para que el panel destaque sobre la tarjeta */
-    --rack-fg:#ECEFF4;
-    --rack-muted:#D8DEE9;
-    --btn:#434C5E;       /* nord2 */
-    --accent:#88C0D0;
-    --accent-ink:#2E3440;
-    --focus:#88C0D0;
-    --ok:#A3BE8C;
-    --bad:#E0868E;       /* nord11 aclarado */
-    --lamp-ok:#A3BE8C;
-    --lamp-bad:#BF616A;
-    --off:#4C566A;
-    --bar:#434C5E;
-    --photo-bg:#242933;
-    --zone-hover:rgba(136,192,208,.32);
-    --zone-hit:rgba(163,190,140,.40);
-    --zone-miss:rgba(191,97,106,.50);
-    --zone-pulse:rgba(235,203,139,.22);
-  }
-}
-:root[data-theme="dark"]{
-  color-scheme:dark;
-  --bg:#2E3440;
-  --card:#3B4252;
-  --fg:#ECEFF4;
-  --muted:#D8DEE9;
-  --line:#434C5E;
-  --rack:#242933;
+  --rack:#242933;        /* panel de estado, más oscuro que las tarjetas */
   --rack-fg:#ECEFF4;
   --rack-muted:#D8DEE9;
   --btn:#434C5E;
-  --accent:#88C0D0;
+  --accent:#88C0D0;      /* nord8: interacción y énfasis */
   --accent-ink:#2E3440;
   --focus:#88C0D0;
-  --ok:#A3BE8C;
-  --bad:#E0868E;
+  --ok:#A3BE8C;          /* nord14: verificación correcta */
+  --bad:#E0868E;         /* nord11 aclarado para texto legible */
+  --warn:#EBCB8B;        /* nord13: advertencias */
   --lamp-ok:#A3BE8C;
   --lamp-bad:#BF616A;
   --off:#4C566A;
@@ -96,6 +43,9 @@
   --zone-miss:rgba(191,97,106,.50);
   --zone-pulse:rgba(235,203,139,.22);
 }
+/* Modo claro: solo si se activa con data-theme="light"; el tema oscuro es el predeterminado. */
+:root[data-theme="light"]{color-scheme:light;--bg:#ECEFF4;--card:#E5E9F0;--card-2:#D8DEE9;--line:#D8DEE9;--fg:#2E3440;--muted:#4C566A;--rack:#3B4252;--rack-fg:#ECEFF4;--rack-muted:#D8DEE9;--btn:#E5E9F0;--accent:#88C0D0;--accent-ink:#2E3440;--focus:#5E81AC;--ok:#4F6B3A;--bad:#A3414A;--warn:#EBCB8B;--lamp-ok:#A3BE8C;--lamp-bad:#BF616A;--off:#4C566A;--bar:#434C5E;--photo-bg:#2E3440;--zone-hover:rgba(136,192,208,.30);--zone-hit:rgba(163,190,140,.45);--zone-miss:rgba(191,97,106,.50);--zone-pulse:rgba(235,203,139,.25);}
+
 
 *{box-sizing:border-box}
 html{scroll-padding-top:var(--s4)}
@@ -195,6 +145,8 @@ svg.mapa .z.pulse rect{fill:var(--zone-pulse);stroke:var(--warn);stroke-width:3}
 .sw-miss{background:var(--zone-miss)}
 .info{font-size:16px;min-height:48px}
 .info-d{margin-top:var(--s1)}
+.info button{display:block;margin-top:var(--s3);font:600 15px var(--sans);min-height:44px;padding:var(--s2) var(--s4);border:1px solid var(--accent);border-radius:var(--r);background:var(--btn);color:var(--fg);cursor:pointer}
+.info button:hover{background:var(--card-2)}
 .credit{font-size:13px;line-height:1.5;color:var(--muted);margin-top:var(--s3);padding-top:var(--s3);border-top:1px solid var(--line)}
 .credit a{color:inherit;text-decoration-thickness:1px;text-underline-offset:3px}
 
@@ -225,6 +177,18 @@ svg.mapa .z.pulse rect{fill:var(--zone-pulse);stroke:var(--warn);stroke-width:3}
   .card{padding:var(--s4)}
   .modes .qScore{width:100%;margin-left:0}
 }
+/* Mecánicas: pistas, avisos y desglose de puntuación */
+.aviso{color:var(--warn);font-weight:700}
+.pista{border:1px dashed var(--accent);background:transparent;color:var(--accent);margin-top:12px;min-height:44px;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:600}
+.pista:disabled{opacity:.5;cursor:default;border-style:solid}
+.pista:not(:disabled):hover{background:var(--card-2)}
+.desglose{list-style:none;margin:6px 0 8px;padding:0;display:grid;gap:2px;font-size:13px;color:var(--muted)}
+.desglose li{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:2px 0}
+.desglose .val{font-family:ui-monospace,Menlo,Consolas,monospace}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+.rep,.verif-box{margin-top:var(--s3)}
+.verif-box{border-top:1px solid var(--line);padding-top:var(--s2)}
 </style>
 </head>
 <body>
