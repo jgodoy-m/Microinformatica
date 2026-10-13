@@ -14,6 +14,8 @@ const botonesModo = document.querySelectorAll('[data-modo]');
 const contenedor = $('escena');
 const bandeja = $('bandeja');
 const fantasma = $('fantasma');
+const teclado = $('teclado');
+const contenedorHuecos = $('huecos');
 
 const TDP_GPU = PIEZAS.find((p) => p.kind === 'gpu').tdp;
 
@@ -708,6 +710,68 @@ function specDe(p) {
   return '';
 }
 
+// ---------- Teclado ----------
+// Tab hasta una pieza, Intro para elegirla y después el hueco. Esc cancela.
+let seleccion = null;
+
+function objetivosDe(item) {
+  if (item.tipo === 'cable') {
+    return Object.keys(PORTS).filter(puertoVisible).map((pid) => {
+      const r = puertoRect(pid);
+      return { etiqueta: PORTS[pid].etiqueta, x: r.x, y: r.y };
+    });
+  }
+  const p = pieza(item.id);
+  return Object.entries(SLOTS)
+    .filter(([, s]) => s.accepts.includes(p.kind))
+    .map(([, s]) => ({ etiqueta: s.nombre, x: s.x, y: s.y }));
+}
+
+function marcarSeleccion() {
+  bandeja.querySelectorAll('.ficha').forEach((el) => {
+    el.setAttribute('aria-pressed', String(!!seleccion && el.dataset.id === seleccion.id));
+  });
+}
+
+function pintarHuecos() {
+  teclado.hidden = !seleccion;
+  contenedorHuecos.innerHTML = '';
+  if (!seleccion) return;
+  for (const o of objetivosDe(seleccion)) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'boton';
+    b.textContent = o.etiqueta;
+    b.addEventListener('click', () => colocarConTeclado(o));
+    contenedorHuecos.appendChild(b);
+  }
+}
+
+function colocarConTeclado(o) {
+  const item = seleccion;
+  seleccion = null;
+  if (item.tipo === 'cable') intentarConectar(cable(item.id), o.x, o.y, [SALIDA_CABLE[item.id]]);
+  else intentarColocar(pieza(item.id), o.x, o.y);
+  pintarEscena();
+}
+
+bandeja.addEventListener('click', (e) => {
+  if (e.detail !== 0) return; // solo teclado: los clics de ratón se gestionan con el arrastre
+  const el = e.target.closest('.ficha');
+  if (!el) return;
+  seleccion = seleccion?.id === el.dataset.id ? null : { id: el.dataset.id, tipo: el.dataset.tipo };
+  pintarHuecos();
+  marcarSeleccion();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && seleccion) {
+    seleccion = null;
+    pintarHuecos();
+    marcarSeleccion();
+  }
+});
+
 // ---------- Bandeja ----------
 // Desplegables de la bandeja: uno por tipo de componente.
 const GRUPOS = {
@@ -750,6 +814,7 @@ function pintarFicha(it, contenedorFichas) {
     el.className = 'ficha';
     el.dataset.id = it.id;
     el.dataset.tipo = it.tipo;
+    el.setAttribute('aria-pressed', String(!!seleccion && seleccion.id === it.id));
     const foto = it.foto ? `<img src="fotos/${it.id}.png" alt="" loading="lazy">` : '';
     const dato = esFacil() && it.spec ? `<small>${it.spec}</small>` : '';
     const nombre = esFacil() ? it.corto : NOMBRE_GENERICO[it.kind];

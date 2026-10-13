@@ -186,6 +186,9 @@
     }
     .ficha:active { cursor: grabbing; }
     .ficha:hover { border-color: var(--accent); }
+    .ficha[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+    .huecos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .huecos .boton { min-height: 40px; }
     .ficha i {
       flex: none;
       width: 14px;
@@ -297,7 +300,12 @@
       </div>
       <h2 class="titulo">Registro</h2>
       <ul id="log" class="log" aria-live="polite"></ul>
-      <p class="ayuda">Arrastra cada pieza de la bandeja al hueco que le corresponde en el chasis. Los cables se conectan arrastrándolos a su conector.</p>
+      <section class="teclado" id="teclado" aria-label="Colocar con teclado" hidden>
+        <p class="obj" style="font-size:15px;margin:0">Pieza seleccionada: colócala en</p>
+        <div class="huecos" id="huecos"></div>
+        <p class="ayuda">Esc cancela la selección.</p>
+      </section>
+      <p class="ayuda">Arrastra cada pieza de la bandeja al hueco que le corresponde en el chasis. Los cables se conectan arrastrándolos a su conector. Con teclado: Tab hasta una pieza, Intro para elegirla y después el hueco.</p>
     </aside>
   </main>
 
