@@ -899,7 +899,7 @@
     .practice-card h3 { margin: 6px 0 0; font-size: 22px; font-weight: 700; color: var(--text); }
     .practice-card p { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.5; max-width: 300px; }
     .practice-link { margin-top: auto; color: var(--acento); font-weight: 600; font-size: 16px; }
-    .practice-deco { position: absolute; right: 16px; bottom: 16px; width: 130px; height: auto; fill: none; stroke: var(--acento); stroke-width: 2; opacity: .18; pointer-events: none; }
+    .practice-deco { position: absolute; right: 16px; bottom: 16px; width: 96px; height: auto; fill: none; stroke: var(--acento); stroke-width: 2; opacity: .18; pointer-events: none; }
     .practice-card p { position: relative; }
 
     .topics { padding: 48px 0 72px; }
@@ -957,6 +957,24 @@
       .hero-description { font-size: 17px; }
       .btn-primario, .btn-secundario { width: 100%; justify-content: center; }
     }
+    /* Modo claro: el hero conserva su fondo oscuro, así que su texto va en claro; el resto usa tonos Nord 10 legibles */
+    html[data-theme="light"] .hero {
+      --text: #ECEFF4;
+      --muted: #D8DEE9;
+      --border: #596579;
+      --link: #88C0D0;
+      background: linear-gradient(180deg, #041524 0%, #0c2034 62%, #10253b 100%);
+    }
+    html[data-theme="light"] .btn-simulador { color: #3B5F8A; border-color: #5E81AC; }
+    html[data-theme="light"] .btn-simulador:hover { background: rgba(94, 129, 172, .12); }
+    html[data-theme="light"] .header-nav a.is-active { color: #3B5F8A; }
+    html[data-theme="light"] .header-nav a.is-active::after { background: #5E81AC; }
+    html[data-theme="light"] .seccion-cabecera h2::before { background: #5E81AC; }
+    html[data-theme="light"] .enlace-seccion,
+    html[data-theme="light"] .enlace-apuntes { color: #3B5F8A; }
+    html[data-theme="light"] .practice-card.acento-cian { --acento: #3B6EA0; }
+    html[data-theme="light"] .practice-card.acento-verde { --acento: #4C7A3E; }
+    html[data-theme="light"] .practice-card.acento-violeta { --acento: #7B4F95; }
 </style>
 </head>
 
