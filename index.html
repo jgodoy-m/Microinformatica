@@ -1,0 +1,1030 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="Aprende a diagnosticar averías y reconocer conectores de una placa base. Temario interactivo de montaje y reparación de sistemas microinformáticos.">
+  <title>Microinformática | Temario interactivo</title>
+
+  <script>
+    (() => {
+      try {
+        const saved = localStorage.getItem("temario-tema");
+        if (saved === "dark" || saved === "light") {
+          document.documentElement.dataset.theme = saved;
+          return;
+        }
+      } catch (_) {}
+
+      document.documentElement.dataset.theme =
+        matchMedia("(prefers-color-scheme: light)").matches
+          ? "light"
+          : "dark";
+    })();
+  </script>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #2E3440;
+      --surface: #3B4252;
+      --surface-hover: #434C5E;
+      --text: #ECEFF4;
+      --muted: #D8DEE9;
+      --border: #596579;
+      --accent: #88C0D0;
+      --accent-text: #24313A;
+      --focus: #88C0D0;
+      --success: #A3BE8C;
+      --warning: #EBCB8B;
+      --content: 1080px;
+    }
+
+    html[data-theme="light"] {
+      color-scheme: light;
+      --bg: #ECEFF4;
+      --surface: #E5E9F0;
+      --surface-hover: #D8DEE9;
+      --text: #2E3440;
+      --muted: #434C5E;
+      --border: #A0AAB9;
+      --accent: #5E81AC;
+      --accent-text: #FFFFFF;
+      --focus: #5E81AC;
+      --success: #426B35;
+      --warning: #76530B;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-width: 320px;
+      scroll-behavior: smooth;
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: inherit;
+      text-underline-offset: 4px;
+      text-decoration-thickness: 1px;
+    }
+
+    a:hover {
+      color: var(--accent);
+    }
+
+    a:focus-visible,
+    button:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 4px;
+      border-radius: 4px;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .container {
+      width: min(var(--content), calc(100% - 48px));
+      margin-inline: auto;
+    }
+
+    /* Cabecera */
+
+    .header {
+      position: relative;
+      z-index: 2;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-inner {
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 11px;
+      color: var(--text);
+      font-weight: 750;
+      font-size: 1.05rem;
+      letter-spacing: -0.035em;
+      text-decoration: none;
+    }
+
+    .brand-mark {
+      width: 27px;
+      height: 27px;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+    }
+
+    .header-link {
+      font-size: 0.875rem;
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .header-link:hover {
+      color: var(--accent);
+    }
+
+    .theme-toggle {
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .theme-toggle:hover {
+      background: var(--surface);
+      border-color: var(--accent);
+    }
+
+    .theme-toggle svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .moon {
+      display: none;
+    }
+
+    html[data-theme="light"] .sun {
+      display: none;
+    }
+
+    html[data-theme="light"] .moon {
+      display: block;
+    }
+
+    /* Hero */
+
+    .hero {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .hero-inner {
+      min-height: 490px;
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      align-items: center;
+      gap: 32px;
+      padding-block: 60px;
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 1;
+      padding-block: 12px;
+    }
+
+    .hero h1 {
+      max-width: 560px;
+      margin: 0;
+      font-size: clamp(2.8rem, 5.2vw, 4.4rem);
+      line-height: 1.04;
+      letter-spacing: -0.065em;
+      font-weight: 780;
+    }
+
+    .hero h1 span {
+      color: var(--accent);
+    }
+
+    .hero-description {
+      max-width: 420px;
+      margin: 22px 0 0;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      margin-top: 30px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .primary-button {
+      min-height: 50px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 20px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      background: var(--accent);
+      color: var(--accent-text);
+      font-weight: 750;
+      text-decoration: none;
+      transition: background-color 150ms ease, border-color 150ms ease;
+    }
+
+    .primary-button:hover {
+      background: var(--text);
+      border-color: var(--text);
+      color: var(--bg);
+    }
+
+    .primary-button svg {
+      width: 19px;
+      height: 19px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .secondary-link {
+      font-size: 0.9rem;
+      color: var(--muted);
+      text-decoration: underline;
+    }
+
+    .hero-image-wrap {
+      position: relative;
+      min-width: 0;
+    }
+
+    .hero-image {
+      position: relative;
+      display: block;
+      width: 100%;
+      aspect-ratio: 1 / 0.92;
+      object-fit: cover;
+      object-position: center;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+
+    /* Temas */
+
+    .topics {
+      padding-block: 48px 58px;
+    }
+
+    .section-heading {
+      margin-bottom: 22px;
+    }
+
+    .section-heading h2 {
+      margin: 0;
+      font-size: clamp(1.65rem, 3vw, 2rem);
+      line-height: 1.2;
+      letter-spacing: -0.045em;
+    }
+
+    .section-heading p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .topic-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .topic {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 20px;
+      padding: 18px 20px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      transition: border-color 150ms ease, background-color 150ms ease;
+    }
+
+    .topic.available {
+      border-color: var(--accent);
+    }
+
+    .topic:hover {
+      background: var(--surface-hover);
+    }
+
+    .topic-main {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: 16px;
+    }
+
+    .topic-icon {
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      color: var(--accent-text);
+      background: var(--accent);
+      border-radius: 8px;
+    }
+
+    .topic-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .topic-icon.muted-icon {
+      color: var(--text);
+      background: #596579;
+    }
+
+    html[data-theme="light"] .topic-icon.muted-icon {
+      color: #FFFFFF;
+      background: #596579;
+    }
+
+    .topic h3 {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.4;
+      font-weight: 700;
+    }
+
+    .topic p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    .topic-end {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 27px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 0.76rem;
+      line-height: 1.3;
+      white-space: nowrap;
+      font-weight: 700;
+    }
+
+    .status.available {
+      background: var(--success);
+      color: #24313A;
+    }
+
+    .status.upcoming {
+      background: var(--warning);
+      color: #3B3020;
+    }
+
+    .topic-arrow {
+      width: 20px;
+      height: 20px;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .topic-arrow svg {
+      width: 100%;
+      height: 100%;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .pdf-link {
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .pdf-link:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .topic-end {
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .topic-link {
+      display: block;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .topic-link:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 5px;
+      border-radius: 4px;
+    }
+
+    /* Cómo funciona */
+
+    .how {
+      padding-block: 0 60px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0;
+      margin: 0;
+      padding: 24px 0;
+      list-style: none;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .step {
+      min-width: 0;
+      padding: 0 24px;
+      border-right: 1px solid var(--border);
+    }
+
+    .step:first-child {
+      padding-left: 0;
+    }
+
+    .step:last-child {
+      padding-right: 0;
+      border-right: 0;
+    }
+
+    .step-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .step-number {
+      width: 39px;
+      height: 39px;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--accent);
+      color: var(--accent-text);
+      font-size: 0.875rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .step h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .step p {
+      margin: 0;
+      padding-left: 51px;
+      color: var(--muted);
+      font-size: 0.825rem;
+      line-height: 1.55;
+    }
+
+    /* Pie */
+
+    .footer {
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-inner {
+      min-height: 84px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+      padding-block: 22px;
+    }
+
+    .footer-title {
+      margin: 0 0 4px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .credits {
+      max-width: 740px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.75rem;
+      line-height: 1.6;
+    }
+
+    .credits a {
+      color: var(--muted);
+    }
+
+    .credits a:hover {
+      color: var(--accent);
+    }
+
+    .back-top {
+      flex-shrink: 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-decoration: none;
+    }
+
+    .btn-apuntes {
+      display: inline-flex;
+      align-items: center;
+      min-height: 40px;
+      padding: 8px 14px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      background: var(--accent);
+      color: var(--accent-text);
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn-apuntes:hover {
+      background: var(--text);
+      border-color: var(--text);
+      color: var(--bg);
+    }
+
+    .simulacro-link {
+      display: inline-flex;
+      margin-top: 16px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .hero-image {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: auto;
+      object-fit: contain;
+      border: 0;
+      border-radius: 0;
+      background: none;
+    }
+
+    @media (min-width: 761px) {
+      .hero-inner {
+        padding-block: 54px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .container {
+        width: calc(100% - 32px);
+      }
+
+      .header-inner {
+        min-height: 64px;
+        gap: 12px;
+      }
+
+      .brand {
+        gap: 8px;
+        font-size: 0.95rem;
+      }
+
+      .brand-mark {
+        width: 24px;
+        height: 24px;
+      }
+
+      .header-actions {
+        gap: 12px;
+      }
+
+      .theme-toggle {
+        width: 40px;
+        height: 40px;
+      }
+
+      .hero-inner {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 34px;
+        padding-block: 52px 40px;
+      }
+
+      .hero h1 {
+        max-width: 580px;
+        font-size: clamp(2.65rem, 10vw, 4rem);
+      }
+
+      .hero-description {
+        max-width: 480px;
+        font-size: 1rem;
+      }
+
+      .hero-image-wrap {
+        max-width: 600px;
+      }
+
+      .hero-image {
+        aspect-ratio: 1.25 / 1;
+      }
+
+      .topics {
+        padding-block: 40px 48px;
+      }
+
+      .topic {
+        padding: 16px;
+        gap: 12px;
+      }
+
+      .topic-main {
+        gap: 12px;
+      }
+
+      .topic-icon {
+        width: 42px;
+        height: 42px;
+      }
+
+      .steps {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 22px;
+        padding-block: 24px;
+      }
+
+      .step,
+      .step:first-child,
+      .step:last-child {
+        padding: 0;
+        border-right: 0;
+      }
+
+      .step p {
+        padding-left: 51px;
+      }
+
+      .how {
+        padding-bottom: 44px;
+      }
+
+      .footer-inner {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 16px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header-link {
+        max-width: 85px;
+        font-size: 0.8rem;
+        line-height: 1.35;
+      }
+
+      .hero h1 {
+        font-size: clamp(2.45rem, 10.5vw, 3.2rem);
+      }
+
+      .hero-actions {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .primary-button {
+        width: 100%;
+      }
+
+      .secondary-link {
+        align-self: flex-start;
+      }
+
+      .topic {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+      }
+
+      .topic-end {
+        padding-left: 54px;
+        justify-content: space-between;
+      }
+
+      .topic p {
+        font-size: 0.825rem;
+      }
+
+      .topic h3 {
+        font-size: 0.95rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      *,
+      *::before,
+      *::after {
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="header" id="inicio">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="Microinformática, inicio">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <rect x="7" y="7" width="18" height="18" rx="3"
+                fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="M12 12h8v8h-8zM12 2v3M20 2v3M12 27v3M20 27v3M2 12h3M2 20h3M27 12h3M27 20h3"
+                fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round"/>
+        </svg>
+        <span>Microinformática</span>
+      </a>
+
+      <div class="header-actions">
+        <a class="header-link" href="averias.html">Ir al simulador <span aria-hidden="true">→</span></a>
+
+        <button
+          class="theme-toggle"
+          id="theme-toggle"
+          type="button"
+          aria-label="Cambiar al tema claro"
+          title="Cambiar al tema claro"
+        >
+          <svg class="sun" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/>
+          </svg>
+          <svg class="moon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="container hero-inner">
+        <div class="hero-copy">
+          <h1 id="hero-title">
+            Aprende a diagnosticar y reparar
+            <span>sistemas microinformáticos.</span>
+          </h1>
+
+          <p class="hero-description">
+            Practica con casos basados en averías reales de una placa base, realiza pruebas
+            y aprende a identificar sus conectores.
+          </p>
+        </div>
+
+        <div class="hero-image-wrap">
+          <img
+            class="hero-image"
+            src="placa-recorte.png"
+            alt="Placa base ATX ASRock A790GXH vista en diagonal, con socket AM3, ranuras de memoria, PCIe y conectores SATA."
+            width="1553"
+            height="871"
+          >
+        </div>
+      </div>
+    </section>
+
+    <section class="topics" id="temas" aria-labelledby="topics-title">
+      <div class="container">
+        <div class="section-heading">
+          <h2 id="topics-title">Temario</h2>
+          <p>Cada bloque abre sus apuntes en PDF, para leerlos o descargarlos.</p>
+          <a class="btn-apuntes simulacro-link" href="examen.html">Simulacro de examen</a>
+        </div>
+
+        <ul class="topic-list">
+          <li class="topic available">
+            <div class="topic-main">
+              <span class="topic-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 10-13h-7z"/></svg></span>
+              <div>
+                <h3>La fuente de alimentación</h3>
+                <p>S07 · Voltajes, conectores, 80 Plus y señales de fallo.</p>
+              </div>
+            </div>
+            <div class="topic-end">
+              <a class="btn-apuntes" href="apuntes/ver-s07.html">Abrir apuntes<span class="sr-only"> de La fuente de alimentación</span></a>
+            </div>
+          </li>
+
+          <li class="topic available">
+            <div class="topic-main">
+              <span class="topic-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h10v10H7z"/></svg></span>
+              <div>
+                <h3>El chasis</h3>
+                <p>S08 · Tipos de chasis, flujo de aire, instalación de la placa y cable management.</p>
+              </div>
+            </div>
+            <div class="topic-end">
+              <a class="btn-apuntes" href="apuntes/ver-s08.html">Abrir apuntes<span class="sr-only"> de El chasis</span></a>
+            </div>
+          </li>
+
+          <li class="topic available">
+            <div class="topic-main">
+              <span class="topic-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M7 12h2M11 12h2M15 12h2"/></svg></span>
+              <div>
+                <h3>Tarjetas de expansión y OEM frente a RETAIL</h3>
+                <p>S09 · GPU, slots PCIe, otras tarjetas y formatos de compra.</p>
+              </div>
+            </div>
+            <div class="topic-end">
+              <a class="btn-apuntes" href="apuntes/ver-s09.html">Abrir apuntes<span class="sr-only"> de Tarjetas de expansión y OEM frente a RETAIL</span></a>
+            </div>
+          </li>
+
+          <li class="topic available">
+            <div class="topic-main">
+              <span class="topic-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span>
+              <div>
+                <h3>Ampliaciones de equipo</h3>
+                <p>S11 · Memoria, almacenamiento y compatibilidad de CPU, GPU, fuente y refrigeración.</p>
+              </div>
+            </div>
+            <div class="topic-end">
+              <a class="btn-apuntes" href="apuntes/ver-s11.html">Abrir apuntes<span class="sr-only"> de Ampliaciones de equipo</span></a>
+            </div>
+          </li>
+
+          <li class="topic available">
+            <div class="topic-main">
+              <span class="topic-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2M10 10h4v4h-4z"/></svg></span>
+              <div>
+                <h3>Diagnóstico guiado de averías</h3>
+                <p>S12 · Método en seis pasos y práctica en taller.</p>
+              </div>
+            </div>
+            <div class="topic-end">
+              <a class="btn-apuntes" href="apuntes/ver-s12.html">Abrir apuntes<span class="sr-only"> de Diagnóstico guiado de averías</span></a>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="how" aria-labelledby="how-title">
+      <div class="container">
+        <div class="section-heading">
+          <h2 id="how-title">Cómo funciona</h2>
+          <p>Un proceso sencillo, paso a paso.</p>
+        </div>
+
+        <ol class="steps">
+          <li class="step">
+            <div class="step-top">
+              <span class="step-number">01</span>
+              <h3>Diagnostica</h3>
+            </div>
+            <p>Analiza los síntomas y decide qué pruebas realizar.</p>
+          </li>
+
+          <li class="step">
+            <div class="step-top">
+              <span class="step-number">02</span>
+              <h3>Mide</h3>
+            </div>
+            <p>Realiza comprobaciones e interpreta los valores.</p>
+          </li>
+
+          <li class="step">
+            <div class="step-top">
+              <span class="step-number">03</span>
+              <h3>Explica</h3>
+            </div>
+            <p>Consulta las soluciones y revisa tus errores.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>
+        <p class="footer-title">Microinformática · Formación Profesional</p>
+        <p class="credits">
+          Foto de cabecera: Evan-Amos, Wikimedia Commons, <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="license noopener noreferrer">CC BY-SA 3.0</a>. Recorte sobre fondo transparente, con la misma licencia.
+          Foto del mapa del simulador: PantheraLeo1359531, Wikimedia Commons, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="license noopener noreferrer">CC BY 4.0</a>.
+        </p>
+      </div>
+
+      <a class="back-top" href="#inicio">Volver arriba ↑</a>
+    </div>
+  </footer>
+
+  <script>
+    (() => {
+      const root = document.documentElement;
+      const button = document.getElementById("theme-toggle");
+
+      function updateThemeButton() {
+        const dark = root.dataset.theme === "dark";
+        const label = dark
+          ? "Cambiar al tema claro"
+          : "Cambiar al tema oscuro";
+
+        button.setAttribute("aria-label", label);
+        button.setAttribute("title", label);
+      }
+
+      button.addEventListener("click", () => {
+        const next = root.dataset.theme === "dark" ? "light" : "dark";
+        root.dataset.theme = next;
+
+        try {
+          localStorage.setItem("temario-tema", next);
+        } catch (_) {}
+
+        updateThemeButton();
+      });
+
+      updateThemeButton();
+    })();
+  </script>
+</body>
+</html>
+
+</body></html>
