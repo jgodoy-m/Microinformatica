@@ -316,16 +316,22 @@ function disipador(w, h, d, vertical) {
 
 // ---------- Modelos 3D de las piezas (modelos/*.glb, generados con Blender) ----------
 const MODELOS = {
+  // Modelos hechos a partir de las fotos (generar_modelos_foto.py), por id de pieza.
+  gpu: 'modelos/gpu.glb',
+  'gpu-blanca': 'modelos/gpu-blanca.glb',
+  'gpu-negra': 'modelos/gpu-negra.glb',
   cpu: 'modelos/cpu.glb',
+  'cpu-intel': 'modelos/cpu-intel.glb',
+  // Modelos geométricos por tipo (generar_modelos.py).
   'ram-ddr4': 'modelos/ram-ddr4.glb',
   'ram-ddr5': 'modelos/ram-ddr5.glb',
-  gpu: 'modelos/gpu.glb',
   nvme: 'modelos/nvme.glb',
   psu: 'modelos/psu.glb'
 };
 const plantillas = {};
 // Clave del modelo de una pieza, o null si no tiene modelo 3D.
 const claveModelo = (p) => {
+  if (MODELOS[p.id]) return p.id;
   if (p.kind === 'ram') return p.gen === 'DDR5' ? 'ram-ddr5' : 'ram-ddr4';
   return MODELOS[p.kind] ? p.kind : null;
 };
@@ -487,11 +493,6 @@ function construirPiezaGlb(p, g, clave) {
   g.add(modelo);
 
   // Etiquetas y conectores que dependen de la pieza concreta (texto y posiciones del juego).
-  if (p.kind === 'cpu') {
-    const etiqueta = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 3.0), new THREE.MeshStandardMaterial({ map: texturaTexto(p.socket, 256, 256, '#A9B3C2', '#2E3440'), metalness: 0.4, roughness: 0.4 }));
-    etiqueta.position.set(0, 0, 0.305);
-    g.add(etiqueta);
-  }
   if (p.kind === 'nvme') {
     const etiqueta = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1.6), new THREE.MeshStandardMaterial({ map: texturaTexto('NVMe M.2', 512, 220, '#E5E9F0', '#2E3440'), roughness: 0.6 }));
     etiqueta.position.set(1.4, 0, 0.14);

@@ -18,3 +18,5 @@ Todas las imágenes son recortes (fondo quitado, solo el componente) de fotos de
 ## Modelos 3D (juego/modelos/)
 
 Modelos de CPU, RAM, GPU, SSD y fuente generados por el equipo con Blender a partir de medidas aproximadas (script generar_modelos.py). No usan fuentes externas. La biblioteca GLTFLoader de three.js (juego/vendor/three/loaders/) es MIT, como el resto de three.js.
+
+Los modelos gpu.glb, gpu-blanca.glb, gpu-negra.glb, cpu.glb y cpu-intel.glb salen de extruir la silueta de las fotos recortadas de arriba (script juego/modelos/generar_modelos_foto.py), con la foto como textura de la cara frontal. Licencia de Pexels, como las fotos.
