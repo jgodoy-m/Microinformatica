@@ -1,4 +1,3 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <!DOCTYPE html>
 <html lang="es" data-theme="dark">
 <head>
@@ -7,6 +6,7 @@
   <meta name="color-scheme" content="dark light">
   <meta name="description" content="Aprende a diagnosticar averías y reconocer conectores de una placa base. Temario interactivo de montaje y reparación de sistemas microinformáticos.">
   <title>Microinformática | Temario interactivo</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20rx%3D%276%27%20fill%3D%27%232E3440%27%2F%3E%3Cg%20fill%3D%27none%27%20stroke%3D%27%2388C0D0%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%3E%3Crect%20x%3D%277%27%20y%3D%277%27%20width%3D%2718%27%20height%3D%2718%27%20rx%3D%273%27%2F%3E%3Cpath%20d%3D%27M12%2012h8v8h-8zM12%202v3M20%202v3M12%2027v3M20%2027v3M2%2012h3M2%2020h3M27%2012h3M27%2020h3%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
 
   <script>
     (() => {
@@ -40,6 +40,7 @@
       --success: #A3BE8C;
       --warning: #EBCB8B;
       --content: 1080px;
+      --link: #88C0D0;
     }
 
     html[data-theme="light"] {
@@ -50,11 +51,12 @@
       --text: #2E3440;
       --muted: #434C5E;
       --border: #A0AAB9;
-      --accent: #5E81AC;
+      --accent: #4F75A0;
       --accent-text: #FFFFFF;
-      --focus: #5E81AC;
+      --focus: #4F75A0;
       --success: #426B35;
       --warning: #76530B;
+      --link: #3B5F8A;
     }
 
     *,
@@ -150,6 +152,7 @@
       font-size: 0.875rem;
       color: var(--muted);
       text-decoration: none;
+      white-space: nowrap;
     }
 
     .header-link:hover {
@@ -486,70 +489,123 @@
       border-radius: 4px;
     }
 
-    /* Cómo funciona */
+    /* Práctica */
 
-    .how {
-      padding-block: 0 60px;
+    .practice {
+      padding-block: 56px 0;
     }
 
-    .steps {
+    .practice-inner {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0;
-      margin: 0;
-      padding: 24px 0;
-      list-style: none;
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .step {
-      min-width: 0;
-      padding: 0 24px;
-      border-right: 1px solid var(--border);
-    }
-
-    .step:first-child {
-      padding-left: 0;
-    }
-
-    .step:last-child {
-      padding-right: 0;
-      border-right: 0;
-    }
-
-    .step-top {
-      display: flex;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 24px;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 8px;
     }
 
-    .step-number {
-      width: 39px;
-      height: 39px;
-      flex-shrink: 0;
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--link);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .practice-intro h2 {
+      margin: 0;
+      font-size: clamp(1.5rem, 2.6vw, 1.9rem);
+      line-height: 1.2;
+      letter-spacing: -0.04em;
+    }
+
+    .practice-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .practice-card {
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      text-decoration: none;
+      transition: background-color 150ms ease;
+    }
+
+    .practice-card:hover {
+      background: var(--surface-hover);
+      color: var(--text);
+    }
+
+    .practice-card:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 5px;
+      border-radius: 8px;
+    }
+
+    .practice-card h3 {
+      margin: 0 0 4px;
+      font-size: 1rem;
+      line-height: 1.3;
+    }
+
+    .practice-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    .practice-icon {
+      width: 48px;
+      height: 48px;
       display: grid;
       place-items: center;
-      border-radius: 50%;
+      border-radius: 8px;
       background: var(--accent);
       color: var(--accent-text);
-      font-size: 0.875rem;
-      font-weight: 800;
-      font-variant-numeric: tabular-nums;
     }
 
-    .step h3 {
-      margin: 0;
-      font-size: 1rem;
+    .practice-icon svg,
+    .practice-arrow svg {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
-    .step p {
-      margin: 0;
-      padding-left: 51px;
-      color: var(--muted);
-      font-size: 0.825rem;
-      line-height: 1.55;
+    .practice-arrow {
+      width: 20px;
+      height: 20px;
+      color: var(--link);
+    }
+
+    .practice-arrow svg {
+      width: 100%;
+      height: 100%;
+      stroke-width: 2;
+    }
+
+    .topic-action {
+      color: var(--link);
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .topic-action:hover {
+      color: var(--link);
+      text-decoration: underline;
     }
 
     /* Pie */
@@ -594,32 +650,6 @@
       color: var(--muted);
       font-size: 0.8rem;
       text-decoration: none;
-    }
-
-    .btn-apuntes {
-      display: inline-flex;
-      align-items: center;
-      min-height: 40px;
-      padding: 8px 14px;
-      border: 1px solid var(--accent);
-      border-radius: 8px;
-      background: var(--accent);
-      color: var(--accent-text);
-      font-size: 0.9rem;
-      font-weight: 700;
-      text-decoration: none;
-      white-space: nowrap;
-    }
-
-    .btn-apuntes:hover {
-      background: var(--text);
-      border-color: var(--text);
-      color: var(--bg);
-    }
-
-    .simulacro-link {
-      display: inline-flex;
-      margin-top: 16px;
     }
 
     .sr-only {
@@ -673,8 +703,8 @@
       }
 
       .theme-toggle {
-        width: 40px;
-        height: 40px;
+        width: 44px;
+        height: 44px;
       }
 
       .hero-inner {
@@ -705,6 +735,15 @@
         padding-block: 40px 48px;
       }
 
+      .practice-inner {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
+      }
+
+      .practice-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
       .topic {
         padding: 16px;
         gap: 12px;
@@ -719,27 +758,6 @@
         height: 42px;
       }
 
-      .steps {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 22px;
-        padding-block: 24px;
-      }
-
-      .step,
-      .step:first-child,
-      .step:last-child {
-        padding: 0;
-        border-right: 0;
-      }
-
-      .step p {
-        padding-left: 51px;
-      }
-
-      .how {
-        padding-bottom: 44px;
-      }
-
       .footer-inner {
         align-items: flex-start;
         flex-direction: column;
@@ -748,12 +766,6 @@
     }
 
     @media (max-width: 480px) {
-      .header-link {
-        max-width: 85px;
-        font-size: 0.8rem;
-        line-height: 1.35;
-      }
-
       .hero h1 {
         font-size: clamp(2.45rem, 10.5vw, 3.2rem);
       }
@@ -820,7 +832,7 @@
       </a>
 
       <div class="header-actions">
-        <a class="header-link" href="averias.html">Ir al simulador <span aria-hidden="true">→</span></a>
+        <a class="header-link" href="averias.html">Simulador <span aria-hidden="true">→</span></a>
 
         <button
           class="theme-toggle"
@@ -854,16 +866,50 @@
             Practica con casos basados en averías reales de una placa base, realiza pruebas
             y aprende a identificar sus conectores.
           </p>
+
+          <div class="hero-actions">
+            <a class="primary-button" href="averias.html">Practicar averías</a>
+            <a class="secondary-link" href="#temas">Ver temario</a>
+          </div>
         </div>
 
         <div class="hero-image-wrap">
           <img
             class="hero-image"
-            src="placa-recorte.png"
-            alt="Placa base ATX ASRock A790GXH vista en diagonal, con socket AM3, ranuras de memoria, PCIe y conectores SATA."
-            width="1553"
-            height="871"
+            src="hero-placa.webp"
+            alt="Placa base de ordenador con zócalo de CPU, ranuras de memoria azules y conectores traseros, vista en diagonal."
+            width="1500"
+            height="1000"
           >
+        </div>
+      </div>
+    </section>
+
+    <section class="practice" aria-labelledby="practice-title">
+      <div class="container practice-inner">
+        <div class="practice-intro">
+          <p class="eyebrow">Práctica</p>
+          <h2 id="practice-title">Pon a prueba lo que aprendes</h2>
+        </div>
+
+        <div class="practice-grid">
+          <a class="practice-card" href="averias.html">
+            <span class="practice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+            <div>
+              <h3>Simulador de averías</h3>
+              <p>Diagnostica 5 averías, realiza pruebas y compara tu diagnóstico con la causa real.</p>
+            </div>
+            <span class="practice-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          </a>
+
+          <a class="practice-card" href="examen.html">
+            <span class="practice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16l2 2 3-3"/></svg></span>
+            <div>
+              <h3>Simulacro de examen</h3>
+              <p>Comprueba lo que has aprendido con un test tipo examen. 51 preguntas de todos los apuntes.</p>
+            </div>
+            <span class="practice-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          </a>
         </div>
       </div>
     </section>
@@ -873,7 +919,6 @@
         <div class="section-heading">
           <h2 id="topics-title">Temario</h2>
           <p>Cada bloque abre sus apuntes en PDF, para leerlos o descargarlos.</p>
-          <a class="btn-apuntes simulacro-link" href="examen.html">Simulacro de examen</a>
         </div>
 
         <ul class="topic-list">
@@ -886,7 +931,7 @@
               </div>
             </div>
             <div class="topic-end">
-              <a class="btn-apuntes" href="apuntes/ver-s07.html">Abrir apuntes<span class="sr-only"> de La fuente de alimentación</span></a>
+              <a class="topic-action" href="apuntes/ver-s07.html">Abrir apuntes<span class="sr-only"> de La fuente de alimentación</span></a>
             </div>
           </li>
 
@@ -899,7 +944,7 @@
               </div>
             </div>
             <div class="topic-end">
-              <a class="btn-apuntes" href="apuntes/ver-s08.html">Abrir apuntes<span class="sr-only"> de El chasis</span></a>
+              <a class="topic-action" href="apuntes/ver-s08.html">Abrir apuntes<span class="sr-only"> de El chasis</span></a>
             </div>
           </li>
 
@@ -912,7 +957,7 @@
               </div>
             </div>
             <div class="topic-end">
-              <a class="btn-apuntes" href="apuntes/ver-s09.html">Abrir apuntes<span class="sr-only"> de Tarjetas de expansión y OEM frente a RETAIL</span></a>
+              <a class="topic-action" href="apuntes/ver-s09.html">Abrir apuntes<span class="sr-only"> de Tarjetas de expansión y OEM frente a RETAIL</span></a>
             </div>
           </li>
 
@@ -925,7 +970,7 @@
               </div>
             </div>
             <div class="topic-end">
-              <a class="btn-apuntes" href="apuntes/ver-s11.html">Abrir apuntes<span class="sr-only"> de Ampliaciones de equipo</span></a>
+              <a class="topic-action" href="apuntes/ver-s11.html">Abrir apuntes<span class="sr-only"> de Ampliaciones de equipo</span></a>
             </div>
           </li>
 
@@ -938,45 +983,10 @@
               </div>
             </div>
             <div class="topic-end">
-              <a class="btn-apuntes" href="apuntes/ver-s12.html">Abrir apuntes<span class="sr-only"> de Diagnóstico guiado de averías</span></a>
+              <a class="topic-action" href="apuntes/ver-s12.html">Abrir apuntes<span class="sr-only"> de Diagnóstico guiado de averías</span></a>
             </div>
           </li>
         </ul>
-      </div>
-    </section>
-
-    <section class="how" aria-labelledby="how-title">
-      <div class="container">
-        <div class="section-heading">
-          <h2 id="how-title">Cómo funciona</h2>
-          <p>Un proceso sencillo, paso a paso.</p>
-        </div>
-
-        <ol class="steps">
-          <li class="step">
-            <div class="step-top">
-              <span class="step-number">01</span>
-              <h3>Diagnostica</h3>
-            </div>
-            <p>Analiza los síntomas y decide qué pruebas realizar.</p>
-          </li>
-
-          <li class="step">
-            <div class="step-top">
-              <span class="step-number">02</span>
-              <h3>Mide</h3>
-            </div>
-            <p>Realiza comprobaciones e interpreta los valores.</p>
-          </li>
-
-          <li class="step">
-            <div class="step-top">
-              <span class="step-number">03</span>
-              <h3>Explica</h3>
-            </div>
-            <p>Consulta las soluciones y revisa tus errores.</p>
-          </li>
-        </ol>
       </div>
     </section>
   </main>
@@ -986,7 +996,7 @@
       <div>
         <p class="footer-title">Microinformática · Formación Profesional</p>
         <p class="credits">
-          Foto de cabecera: Evan-Amos, Wikimedia Commons, <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="license noopener noreferrer">CC BY-SA 3.0</a>. Recorte sobre fondo transparente, con la misma licencia.
+          Imagen de cabecera generada con IA.
           Foto del mapa del simulador: PantheraLeo1359531, Wikimedia Commons, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="license noopener noreferrer">CC BY 4.0</a>.
         </p>
       </div>
@@ -1026,5 +1036,3 @@
   </script>
 </body>
 </html>
-
-</body></html>

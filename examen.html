@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark light">
 <title>Simulacro de examen · Microinformática</title>
+  <meta name="description" content="Simulacro de examen con preguntas al azar de los apuntes de fuente, chasis, tarjetas, ampliaciones y diagnóstico.">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20rx%3D%276%27%20fill%3D%27%232E3440%27%2F%3E%3Cg%20fill%3D%27none%27%20stroke%3D%27%2388C0D0%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%3E%3Crect%20x%3D%277%27%20y%3D%277%27%20width%3D%2718%27%20height%3D%2718%27%20rx%3D%273%27%2F%3E%3Cpath%20d%3D%27M12%2012h8v8h-8zM12%202v3M20%202v3M12%2027v3M20%2027v3M2%2012h3M2%2020h3M27%2012h3M27%2020h3%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
 <script>
   (() => {
     try {
@@ -39,9 +41,9 @@ button{font:inherit}
 
 .wrap{width:min(var(--content),calc(100% - 32px));margin:0 auto;padding:var(--s4) 0 var(--s6)}
 .barra{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);padding-bottom:var(--s3);border-bottom:1px solid var(--border);margin-bottom:var(--s5)}
-.barra a{font-size:14px;color:var(--muted);text-decoration:none}
+.barra a{font-size:14px;color:var(--muted);text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
 .barra a:hover{color:var(--accent)}
-.tema-btn{display:inline-grid;place-items:center;width:40px;height:40px;padding:0;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--text);cursor:pointer}
+.tema-btn{display:inline-grid;place-items:center;width:44px;height:44px;padding:0;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--text);cursor:pointer}
 .tema-btn:hover{border-color:var(--accent)}
 .tema-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 html[data-theme="light"] .sun{display:none}
@@ -49,6 +51,7 @@ html:not([data-theme="light"]) .moon{display:none}
 
 h1{font-size:clamp(28px,5vw,40px);line-height:1.1;font-weight:700;letter-spacing:-.02em;margin:0 0 var(--s2)}
 h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
+.titulo-grande{font-size:clamp(28px,5vw,40px);line-height:1.1;font-weight:700;letter-spacing:-.02em;margin:0 0 var(--s2)}
 .intro{color:var(--muted);max-width:60ch;margin:0 0 var(--s5)}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:var(--s5);margin-bottom:var(--s4)}
 .label{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 var(--s2)}
@@ -144,7 +147,7 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
     <div class="barra-progreso"><b id="barra"></b></div>
     <div class="card">
       <span class="fuente" id="fuente"></span>
-      <p class="pregunta" id="pregunta"></p>
+      <h2 class="pregunta" id="pregunta"></h2>
       <div id="opciones" role="group" aria-label="Opciones de respuesta"></div>
       <div class="feedback" id="feedback" hidden></div>
       <div class="acciones">
@@ -157,7 +160,7 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
 
   <!-- Resultado -->
   <section id="resultado" hidden>
-    <h1>Resultado</h1>
+    <h2 class="titulo-grande">Resultado</h2>
     <div class="card">
       <div class="marcador"><span id="nota"></span><small id="porcentaje"></small></div>
       <p class="intro" id="mensaje" style="margin:var(--s3) 0 0"></p>
