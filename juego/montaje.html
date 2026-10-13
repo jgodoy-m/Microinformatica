@@ -28,277 +28,364 @@
     }
   </script>
   <style>
+    /* Paleta Nord. Modo oscuro por defecto; el modo claro usa los mismos colores en otro orden. */
     :root {
       color-scheme: dark;
       --bg: #2E3440;
-      --surface: #3B4252;
-      --surface-2: #434C5E;
+      --panel: #3B4252;
+      --panel-2: #434C5E;
       --text: #ECEFF4;
       --muted: #D8DEE9;
-      --border: #596579;
+      --line: #4C566A;
       --accent: #88C0D0;
-      --accent-text: #24313A;
+      --accent-2: #81A1C1;
+      --on-accent: #2E3440;
       --ok: #A3BE8C;
-      --bad: #E0868E;
       --warn: #EBCB8B;
+      --bad: #BF616A;
+      --alt: #B48EAD;
+      --focus: #88C0D0;
+      --pista: #B48EAD;
     }
     html[data-theme="light"] {
       color-scheme: light;
       --bg: #ECEFF4;
-      --surface: #E5E9F0;
-      --surface-2: #D8DEE9;
+      --panel: #E5E9F0;
+      --panel-2: #D8DEE9;
       --text: #2E3440;
       --muted: #434C5E;
-      --border: #A0AAB9;
+      --line: color-mix(in srgb, #4C566A 35%, #ECEFF4);
       --accent: #5E81AC;
-      --accent-text: #FFFFFF;
-      --ok: #426B35;
-      --bad: #A3414A;
-      --warn: #76530B;
+      --accent-2: #81A1C1;
+      --on-accent: #ECEFF4;
+      --ok: #A3BE8C;
+      --warn: #EBCB8B;
+      --bad: #BF616A;
+      --alt: #B48EAD;
+      --focus: #5E81AC;
+      --pista: #8F6A8C;
     }
+
     *, *::before, *::after { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    h1, h2, h3, p, ol, ul, dl, dd { margin: 0; }
+    :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+    button { font: inherit; color: inherit; }
+    [hidden] { display: none !important; }
+
+    header.cabecera {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      max-width: 1480px; margin: 0 auto; padding: 10px 16px; border-bottom: 1px solid var(--line);
     }
-    :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
+    .cabecera h1 { font-size: 17px; font-weight: 700; }
+    .cabecera a { color: var(--muted); text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
+    .cabecera a:hover { color: var(--accent); }
+
+    .boton {
+      min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line);
+      background: var(--panel-2); color: var(--text); cursor: pointer; font-weight: 600;
     }
-    header h1 { margin: 0; font-size: 18px; }
-    header a { color: var(--muted); text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
-    header a:hover { color: var(--accent); }
-    .layout {
+    .boton:hover { border-color: var(--accent); }
+    .boton[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+    .boton.primario { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+    .boton:disabled { opacity: .5; cursor: not-allowed; }
+    .boton.icono { width: 44px; padding: 0; display: inline-grid; place-items: center; font-size: 18px; }
+
+    .pagina {
       display: grid;
-      grid-template-columns: 260px minmax(0, 1fr) 300px;
+      grid-template-columns: 280px minmax(0, 1fr) 320px;
+      grid-template-rows: auto auto auto;
       gap: 16px;
-      max-width: 1280px;
+      max-width: 1480px;
       margin: 0 auto;
       padding: 16px;
+      align-items: start;
     }
-    .bandeja-col {
-      position: sticky;
-      top: 16px;
-      align-self: start;
-      max-height: calc(100vh - 32px);
-      overflow-y: auto;
-      min-width: 0;
+
+    /* Inventario */
+    .inventario { grid-column: 1; grid-row: 1 / span 3; display: grid; gap: 12px; align-content: start; min-width: 0; }
+    .tarjeta {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; min-width: 0;
     }
-    .modos { display: flex; gap: 8px; margin-bottom: 12px; }
-    .modos .boton { flex: 1; }
-    .modos .boton[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
-    .espec { margin: 0 0 14px; padding-left: 18px; font-size: 14px; color: var(--muted); }
-    .espec li { margin-bottom: 3px; }
-    .ficha small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .ficha .texto { display: flex; flex-direction: column; min-width: 0; }
-    /* Escritorio pequeño: la bandeja pasa debajo de la escena, como antes. */
-    @media (max-width: 1180px) {
-      .layout { grid-template-columns: minmax(0, 1fr) 300px; }
-      .bandeja-col { grid-column: 1 / -1; position: static; max-height: none; order: 2; }
-      .escena-wrap { order: 1; }
-    }
-    @media (max-width: 900px) {
-      .layout { grid-template-columns: minmax(0, 1fr); }
-      .panel { order: 3; }
-    }
-    .escena-wrap { display: grid; gap: 12px; min-width: 0; }
-    #escena {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 4 / 3;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-      background: #2E3440;
-      touch-action: none;
-    }
-    #escena canvas { display: block; width: 100%; height: 100%; }
-    .bandeja {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
-      gap: 8px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px;
-    }
-    .bandeja h2 { grid-column: 1 / -1; margin: 0; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-    .grupo {
-      grid-column: 1 / -1;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--surface-2);
-    }
-    .grupo summary {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      min-height: 44px;
-      padding: 8px 12px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      list-style: none;
-    }
-    .grupo summary::-webkit-details-marker { display: none; }
-    .grupo summary::after {
-      content: "▾";
-      margin-left: 8px;
-      transition: transform .15s;
-    }
-    .grupo:not([open]) summary::after { transform: rotate(-90deg); }
-    .grupo .cuenta {
-      margin-left: auto;
-      font-size: 12px;
-      color: var(--muted);
-    }
-    .grupo-fichas {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: 8px;
-      padding: 0 10px 10px;
-    }
+    .tarjeta > h2 { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .filtros { display: flex; gap: 6px; margin: 10px 0; }
+    .filtros .boton { flex: 1; min-height: 40px; padding: 0 8px; font-size: 14px; }
+    .bandeja { display: grid; gap: 8px; }
     .ficha {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-height: 48px;
-      padding: 8px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--surface-2);
-      color: var(--text);
-      font: inherit;
-      font-size: 13px;
-      text-align: left;
-      cursor: grab;
-      touch-action: none;
-      user-select: none;
+      display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 10px;
+      min-height: 56px; padding: 5px 10px 5px 5px; border: 1px solid var(--line); border-radius: 10px;
+      background: var(--panel-2); color: var(--text); text-align: left; cursor: grab;
+      touch-action: none; user-select: none; position: relative;
     }
-    .ficha:active { cursor: grabbing; }
     .ficha:hover { border-color: var(--accent); }
-    .ficha i {
-      flex: none;
-      width: 14px;
-      height: 14px;
-      border-radius: 3px;
-      border: 1px solid rgba(0, 0, 0, .35);
+    .ficha.seleccionada { border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent); }
+    .ficha[aria-disabled="true"] { cursor: default; opacity: .6; }
+    .ficha[aria-disabled="true"]:hover { border-color: var(--line); }
+    .ficha .miniatura {
+      width: 52px; height: 44px; border-radius: 8px; overflow: hidden; display: grid; place-items: center;
+      background: var(--bg); border: 1px solid var(--line);
     }
-    .ficha[aria-disabled="true"] { opacity: .4; cursor: default; }
-    .miniatura {
-      position: relative;
-      flex: none;
-      width: 44px;
-      height: 44px;
-      border-radius: 6px;
-      background: var(--surface);
-      overflow: hidden;
+    .ficha .miniatura img { width: 100%; height: 100%; object-fit: contain; }
+    .ficha .miniatura img.icono { padding: 4px; }
+    .ficha .texto { display: flex; flex-direction: column; min-width: 0; font-size: 14px; font-weight: 600; }
+    .ficha .texto small { font-size: 12px; font-weight: 400; color: var(--muted); }
+    .ficha .marca { font-style: normal; font-size: 12px; font-weight: 700; color: var(--accent); }
+    .ficha .estado { font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+    .ficha .estado::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+    .ficha[data-estado="pendiente"] .estado::before { background: var(--line); }
+    .ficha[data-estado="instalado"] .estado::before { background: var(--accent); }
+    .ficha .flecha { position: absolute; right: 6px; bottom: 4px; font-size: 12px; color: var(--muted); }
+    .ficha .texto { margin-right: 0; }
+
+    /* Escena */
+    .escena-wrap { grid-column: 2; grid-row: 1; min-width: 0; }
+    #escena {
+      position: relative; width: 100%; aspect-ratio: 4 / 3; border: 1px solid var(--line); border-radius: 14px;
+      overflow: hidden; background: #2E3440; touch-action: none;
     }
-    .miniatura img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 3px; }
-    .ficha.destacar {
-      border-color: var(--warn);
-      box-shadow: 0 0 0 2px var(--warn);
+    #escena:fullscreen { aspect-ratio: auto; height: 100vh; border-radius: 0; }
+    #escena canvas { display: block; width: 100%; height: 100%; }
+    .ayuda-escena {
+      margin: 0 0 8px; font-size: 13px; color: var(--muted);
+      background: color-mix(in srgb, var(--panel) 85%, transparent); border: 1px solid var(--line);
+      border-radius: 10px; padding: 8px 12px; font-size: 13px;
     }
-    #fantasma {
-      position: fixed;
-      left: 0;
-      top: 0;
-      z-index: 10;
-      pointer-events: none;
-      padding: 6px 10px;
-      border-radius: 8px;
-      background: var(--accent);
-      color: var(--accent-text);
-      font-size: 13px;
-      font-weight: 700;
-      transform: translate(-50%, -50%);
-      display: none;
+    .controles-camara {
+      position: absolute; top: 12px; right: 12px; display: flex; gap: 6px;
+      background: color-mix(in srgb, var(--panel) 85%, transparent); border: 1px solid var(--line); border-radius: 12px; padding: 4px;
     }
-    .panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 16px;
-      align-self: start;
+    .controles-camara .boton { min-height: 40px; width: 40px; padding: 0; display: grid; place-items: center; font-size: 18px; border: 0; background: transparent; }
+    .controles-camara .boton:hover { background: var(--panel-2); }
+    #escena .fantasma-tip { display: none; }
+
+    /* Lateral derecho */
+    .lateral { grid-column: 3; grid-row: 1 / span 2; display: grid; gap: 16px; min-width: 0; align-content: start; }
+    .cabecera-tarjeta { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    .nivel { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--ok); color: var(--bg); }
+    .nivel[data-nivel="dificil"] { background: var(--warn); }
+    .confirmacion { border-color: var(--accent); }
+    .montadas-lista { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+    .montadas-lista .boton { width: 100%; text-align: left; min-height: 40px; font-size: 14px; }
+    .modos { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+    .modos .boton { min-height: 40px; }
+    .modos .boton[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+    .cliente { margin: 10px 0; padding: 8px 10px; border-left: 3px solid var(--accent); color: var(--muted); font-size: 14px; }
+    .espec { list-style: none; padding: 0; display: grid; gap: 0; font-size: 14px; }
+    .espec li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .espec li:last-child { border-bottom: 0; }
+    .espec span:first-child { color: var(--muted); }
+    .espec span:last-child { font-weight: 600; text-align: right; }
+    #seleccion { border-color: var(--accent); }
+    #seleccion:focus { outline: none; }
+    #seleccion h3 { font-size: 15px; margin-bottom: 4px; }
+    .destinos { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 6px; }
+    .destino { width: 100%; text-align: left; min-height: 44px; font-size: 14px; }
+    .destino[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); font-weight: 700; }
+    .motivo { min-height: 1.4em; font-size: 14px; }
+    .acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .ayuda { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+    .pasos { list-style: none; padding: 0 6px 0 0; margin-top: 10px; display: grid; gap: 2px; max-height: 300px; overflow-y: auto; }
+    .pasos li { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 6px 0; font-size: 14px; }
+    .pasos .num {
+      width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px;
+      border: 2px solid var(--line); color: var(--muted);
     }
-    .pedido-sel { display: grid; gap: 4px; margin-bottom: 10px; font-size: 13px; color: var(--muted); }
-    .pedido-sel select { font: inherit; min-height: 40px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); padding: 4px 8px; }
-    .cliente { margin: 0 0 14px; padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--surface-2); border-radius: 6px; font-size: 14px; font-style: italic; }
-    .obj { margin: 0 0 6px; font-weight: 700; font-size: 17px; }
-    .prog { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
-    .acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-    button.boton {
-      font: inherit;
-      min-height: 44px;
-      padding: 8px 14px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: var(--surface-2);
-      color: var(--text);
-      cursor: pointer;
-    }
-    button.boton:hover { border-color: var(--accent); }
-    button.primario { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
-    h2.titulo { font-size: 14px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-    .log {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      max-height: 340px;
-      overflow: auto;
-      font-size: 14px;
-    }
-    .log li { padding: 8px 0; border-bottom: 1px solid var(--border); }
-    .log .bad { color: var(--bad); }
-    .log .ok { color: var(--ok); }
+    .pasos li[data-estado="hecho"] .num { background: var(--ok); border-color: var(--ok); color: var(--bg); }
+    .pasos li[data-estado="actual"] .num { border-color: var(--accent); color: var(--accent); }
+    .pasos li[data-estado="actual"] { font-weight: 600; background: color-mix(in srgb, var(--accent) 14%, transparent); border-radius: 8px; padding-inline: 6px; }
+    .pasos li[data-estado="hecho"] { color: var(--muted); }
+    .pasos .etiqueta-paso { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .pista-caja { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+    .pista-caja h3 { font-size: 13px; font-weight: 700; color: var(--pista); margin-bottom: 2px; }
+    .pista { min-height: 1.4em; font-size: 14px; color: var(--text); }
+    .pista-caja .acciones { margin-top: 8px; align-items: center; }
+    .pista-caja small { color: var(--muted); }
+    .registro { min-width: 0; }
+    .registro[open] .log { margin-top: 8px; }
+    .registro summary { cursor: pointer; font-weight: 700; min-height: 36px; display: flex; align-items: center; }
+    .log { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 4px; font-size: 14px; max-height: 260px; overflow: auto; }
+    .log li { padding: 6px 0; border-bottom: 1px solid var(--line); }
+    /* El error se marca también con un símbolo y no solo con el color. */
+    .log .bad { color: var(--bad); font-weight: 600; }
+    .log .bad::before { content: "✖ "; }
+    .log .ok::before { content: "✔ "; }
+    .log .ok { color: var(--ok); font-weight: 600; }
     .log .info { color: var(--muted); }
-    .ayuda { font-size: 13px; color: var(--muted); margin: 12px 0 0; }
+
+    /* Barra inferior */
+    .centro { grid-column: 2; grid-row: 2; display: grid; gap: 16px; align-content: start; min-width: 0; }
+    .estado-montaje { min-width: 0; }
+    .etapas { list-style: none; padding: 0; margin-top: 12px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .etapas li { display: grid; justify-items: center; gap: 6px; text-align: center; font-size: 13px; }
+    .etapas .circulo {
+      width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 700;
+      border: 2px solid var(--line); color: var(--muted); background: var(--bg);
+    }
+    .etapas li[data-estado="hecho"] .circulo { background: var(--ok); border-color: var(--ok); color: var(--bg); }
+    .etapas li[data-estado="actual"] .circulo { border-color: var(--accent); color: var(--accent); }
+    .etapas li[data-estado="actual"] .etiqueta { font-weight: 700; }
+    .etapas .etiqueta { font-weight: 600; }
+    .etapas .estado-etapa { font-size: 12px; color: var(--muted); }
+    .etapas .explica { font-size: 12px; color: var(--muted); line-height: 1.4; }
+    .acciones-montaje { grid-column: 3; grid-row: 3; min-width: 0; display: grid; gap: 12px; }
+    .mensaje { font-size: 14px; min-height: 2.8em; }
+    .mensaje strong { display: block; margin-bottom: 2px; }
+    .mensaje .aviso { color: var(--bad); font-weight: 600; }
+    .mensaje .aviso::before { content: "✖ "; }
+    .botones { display: flex; gap: 10px; flex-wrap: wrap; }
+    .botones .boton { flex: 1 1 140px; min-height: 48px; }
+
+    /* Escritorio: la escena ocupa más altura y el inventario se queda a la vista. */
+    @media (min-width: 1101px) {
+      #escena { aspect-ratio: auto; height: clamp(480px, calc(100vh - 150px), 780px); }
+      .centro { align-self: stretch; grid-template-rows: auto minmax(0, 1fr); }
+      .registro { display: flex; flex-direction: column; min-height: 0; }
+      .registro .log { flex: 1; min-height: 120px; max-height: none; overflow-y: auto; }
+    }
+    /* Escritorio: el inventario se queda a la vista y se desplaza por dentro. */
+    @media (min-width: 1101px) {
+      .inventario { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; }
+    }
+
+    /* Anchos menores: la escena va primero y el resto apila. */
+    @media (max-width: 1100px) {
+      .pagina { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+      .escena-wrap, .centro, .acciones-montaje, .lateral, .inventario { grid-column: 1; grid-row: auto; }
+      .escena-wrap { order: 1; }
+      .centro { order: 2; }
+      .acciones-montaje { order: 3; }
+      .lateral { order: 4; }
+      .inventario { order: 5; }
+    }
+    @media (max-width: 480px) {
+      .pagina { padding: 12px; gap: 12px; }
+      /* Una columna: la explicación ocupa todo el ancho (en dos columnas quedaba en ~60 px y ocupaba 10-15 líneas). */
+      .etapas { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+      .etapas li { grid-template-columns: 34px minmax(0, 1fr) auto; grid-template-rows: auto auto; justify-items: start; align-items: center; text-align: left; column-gap: 8px; row-gap: 2px; }
+      .etapas .circulo { width: 34px; height: 34px; grid-column: 1; grid-row: 1 / span 2; }
+      .etapas .etiqueta { grid-column: 2; grid-row: 1; }
+      .etapas .estado-etapa { grid-column: 3; grid-row: 1; justify-self: end; }
+      .etapas .explica { grid-column: 2 / -1; grid-row: 2; }
+      .ayuda-escena { font-size: 12px; max-width: calc(100% - 24px); top: 56px; left: 10px; }
+      .controles-camara { top: 8px; right: 8px; }
+      .ficha { grid-template-columns: 48px minmax(0, 1fr) auto; }
+      .ficha .miniatura { width: 48px; height: 42px; }
+    }
   </style>
 </head>
 <body>
-  <header>
+  <header class="cabecera">
     <a href="../index.html">← Temario</a>
     <h1>Montaje del equipo</h1>
-    <button id="tema" class="boton" type="button" aria-label="Cambiar tema">Tema</button>
+    <button id="tema" class="boton icono" type="button" aria-label="Cambiar tema">◐</button>
   </header>
 
-  <main class="layout">
-    <aside class="bandeja-col" aria-label="Piezas y cables">
-      <div id="bandeja" class="bandeja">
-        <h2>Piezas y cables</h2>
+  <main class="pagina">
+    <aside class="inventario tarjeta" aria-label="Componentes disponibles">
+      <h2>Componentes</h2>
+      <div class="filtros" role="group" aria-label="Filtrar componentes">
+        <button type="button" class="boton" data-filtro="todos" aria-pressed="true">Todos</button>
+        <button type="button" class="boton" data-filtro="hardware" aria-pressed="false">Hardware</button>
+        <button type="button" class="boton" data-filtro="cables" aria-pressed="false">Cables</button>
       </div>
+      <div id="bandeja" class="bandeja"></div>
     </aside>
 
     <section class="escena-wrap" aria-label="Escena de montaje">
-      <div id="escena" role="img" aria-label="Chasis abierto con placa base y componentes en 3D"></div>
+      <p class="ayuda-escena">Arrastra los componentes o selecciónalos con el teclado.</p>
+      <div id="escena" role="img" aria-label="Chasis abierto con placa base y componentes en 3D">
+        <div class="controles-camara" role="group" aria-label="Controles de cámara">
+          <button id="camara-reset" class="boton" type="button" aria-label="Restablecer la vista" title="Restablecer la vista">⌖</button>
+          <button id="zoom-mas" class="boton" type="button" aria-label="Acercar" title="Acercar">+</button>
+          <button id="zoom-menos" class="boton" type="button" aria-label="Alejar" title="Alejar">−</button>
+          <button id="pantalla" class="boton" type="button" aria-label="Pantalla completa" title="Pantalla completa">⛶</button>
+        </div>
+      </div>
     </section>
 
-    <aside class="panel">
-      <div class="modos" role="group" aria-label="Dificultad">
-        <button type="button" class="boton" data-modo="facil" aria-pressed="true">Fácil</button>
-        <button type="button" class="boton" data-modo="dificil" aria-pressed="false">Difícil</button>
+    <div class="lateral">
+      <section id="seleccion" class="tarjeta" aria-labelledby="seleccion-titulo" hidden>
+        <h3 id="seleccion-titulo" tabindex="-1"></h3>
+        <p class="ayuda">Elige el destino de la lista y confirma. Esc cancela.</p>
+        <ul id="destinos" class="destinos"></ul>
+        <p id="seleccion-motivo" class="motivo" aria-live="polite"></p>
+        <div class="acciones">
+          <button id="confirmar" class="boton primario" type="button" disabled>Confirmar colocación</button>
+          <button id="cancelar" class="boton" type="button">Cancelar</button>
+        </div>
+      </section>
+
+      <section id="confirmar-modo" class="tarjeta confirmacion" aria-labelledby="confirmar-modo-titulo" hidden>
+        <h3 id="confirmar-modo-titulo" tabindex="-1">Cambiar de dificultad</h3>
+        <p id="confirmar-modo-texto" class="ayuda"></p>
+        <div class="acciones">
+          <button id="modo-confirmar" class="boton primario" type="button">Cambiar y reiniciar el pedido</button>
+          <button id="modo-cancelar" class="boton" type="button">Cancelar</button>
+        </div>
+      </section>
+
+      <section id="confirmar-retirada" class="tarjeta confirmacion" aria-labelledby="retirada-titulo" hidden>
+        <h3 id="retirada-titulo" tabindex="-1">Confirmar retirada</h3>
+        <p id="retirada-texto" class="ayuda"></p>
+        <div class="acciones">
+          <button id="retirada-confirmar" class="boton primario" type="button">Retirar todo</button>
+          <button id="retirada-cancelar" class="boton" type="button">Cancelar</button>
+        </div>
+      </section>
+
+      <section class="tarjeta" aria-labelledby="pedido-titulo">
+        <div class="cabecera-tarjeta">
+          <h2 id="pedido-titulo">Pedido actual</h2>
+          <span id="nivel" class="nivel" data-nivel="facil">Nivel fácil</span>
+        </div>
+        <div class="modos" role="group" aria-label="Dificultad">
+          <button type="button" class="boton" data-modo="facil" aria-pressed="true">Fácil</button>
+          <button type="button" class="boton" data-modo="dificil" aria-pressed="false">Difícil</button>
+        </div>
+        <p id="cliente" class="cliente"></p>
+        <ul id="especificaciones" class="espec" aria-label="Especificaciones del pedido"></ul>
+      </section>
+
+      <section class="tarjeta" aria-labelledby="instrucciones-titulo">
+        <div class="cabecera-tarjeta">
+          <h2 id="instrucciones-titulo">Instrucciones</h2>
+          <p id="progreso" class="ayuda"></p>
+        </div>
+        <ol id="pasos" class="pasos"></ol>
+        <div class="pista-caja">
+          <h3>Pista</h3>
+          <p id="pista-texto" class="pista" aria-live="polite">Pide una pista si no sabes qué comprobar.</p>
+          <div class="acciones">
+            <button id="pista" class="boton" type="button">Pedir pista</button>
+            <small id="pista-contador"></small>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="centro">
+      <section class="tarjeta estado-montaje" aria-labelledby="estado-titulo">
+        <h2 id="estado-titulo">Estado del montaje</h2>
+        <ol id="etapas" class="etapas"></ol>
+      </section>
+      <details class="tarjeta montadas" open>
+        <summary>Piezas montadas</summary>
+        <ul id="lista-montadas" class="montadas-lista"></ul>
+      </details>
+      <details class="tarjeta registro" open>
+        <summary>Registro de la partida</summary>
+        <ul id="log" class="log" aria-live="polite"></ul>
+      </details>
+    </div>
+
+    <section class="acciones-montaje tarjeta" aria-label="Mensaje y acciones">
+      <p id="mensaje" class="mensaje" aria-live="polite" tabindex="-1"></p>
+      <div class="botones">
+        <button id="reiniciar" class="boton" type="button">Reiniciar</button>
+        <button id="encender" class="boton primario" type="button">Encender equipo</button>
       </div>
-      <p class="cliente" id="cliente"></p>
-      <ul class="espec" id="especificaciones" aria-label="Especificaciones del cliente"></ul>
-      <p class="obj" id="objetivo"></p>
-      <p class="prog" id="progreso"></p>
-      <div class="acciones">
-        <button id="encender" class="boton primario" type="button">Encender el equipo</button>
-        <button id="reiniciar" class="boton" type="button">Empezar de nuevo</button>
-      </div>
-      <h2 class="titulo">Registro</h2>
-      <ul id="log" class="log" aria-live="polite"></ul>
-      <p class="ayuda">Arrastra cada pieza de la bandeja al hueco que le corresponde en el chasis. Los cables se conectan arrastrándolos a su conector.</p>
-    </aside>
+    </section>
   </main>
 
   <div id="fantasma"></div>

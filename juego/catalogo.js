@@ -12,6 +12,8 @@
 //   - Un módulo de RAM solo encaja si la placa tiene la misma generación (DDR4 / DDR5).
 //   - La fuente debe dar al menos (TDP CPU + TDP GPU + 100 W) × 1,3.
 
+import { potenciaNecesaria } from './reglas.js';
+
 export const PIEZAS = [
   // Cajas: definen el aspecto del chasis y si lleva iluminación RGB.
   { id: 'caja-cristal-rgb', kind: 'caja', nombre: 'Torre de cristal con RGB', corto: 'Caja cristal RGB', cristal: true, rgb: true, color: '#2E3440', sinFoto: true },
@@ -96,7 +98,7 @@ export const PEDIDOS_FIJOS = [
   {
     id: 'am5',
     titulo: 'Pedido 3 · AM5 con DDR5',
-    cliente: '«Quiero un equipo AM5 con DDR5 y una fuente que aguante una gráfica potente.»',
+    cliente: '«Quiero un equipo AM5 con DDR5 y una fuente con margen suficiente para todo el equipo.»',
     piezas: { caja: 'caja-cristal', board: 'board-am5', cpu: 'cpu-am5', ram: ['ram-x', 'ram-x2'], gpu: 'gpu', nvme: 'nvme', psu: 'psu' }
   }
 ];
@@ -120,7 +122,7 @@ export function generarPedidos(n, semilla) {
     const board = elegir(plataforma.placas);
     const cpu = elegir(plataforma.cpus);
     const gpu = elegir(GPUS);
-    const necesario = Math.ceil((pieza(cpu).tdp + pieza(gpu).tdp + 100) * 1.3);
+    const necesario = potenciaNecesaria(pieza(cpu).tdp, pieza(gpu).tdp);
     const fuentes = PSUS.filter((id) => pieza(id).watts >= necesario);
     const psu = elegir(fuentes);
     const caja = elegir(CAJAS);
@@ -129,8 +131,10 @@ export function generarPedidos(n, semilla) {
     const numero = PEDIDOS_FIJOS.length + i + 1;
     pedidos.push({
       id: `aleatorio-${i + 1}`,
-      titulo: `Pedido ${numero} · ${plataforma.nombre} con ${pieza(gpu).corto}`,
-      cliente: `«Necesito un equipo para ${uso}, con ${TEXTO_GPU[gpu]} y ${pieza(caja).nombre.toLowerCase().replace('rgb', 'RGB')}, ${luz}.»`,
+      // Mismo nombre que la bandeja: el título describe la gráfica real del pedido (se elige antes de titularlo).
+      titulo: `Pedido ${numero} · ${plataforma.nombre} · ${pieza(gpu).nombre}`,
+      // Se describe la caja por sus atributos (no por su nombre de catálogo): el alumno debe interpretarlos.
+      cliente: `«Necesito un equipo para ${uso}, con ${TEXTO_GPU[gpu]} y ${pieza(caja).cristal ? 'una caja con cristal lateral' : 'una caja metálica'}, ${luz}.»`,
       piezas: { caja, board, cpu, ram: [...plataforma.ram], gpu, nvme: 'nvme', psu }
     });
   }
