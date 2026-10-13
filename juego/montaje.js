@@ -8,7 +8,6 @@ const logEl = $('log');
 const objEl = $('objetivo');
 const progEl = $('progreso');
 const clienteEl = $('cliente');
-const selectPedido = $('pedido');
 const especEl = $('especificaciones');
 const botonesModo = document.querySelectorAll('[data-modo]');
 const contenedor = $('escena');
@@ -601,7 +600,7 @@ function intentarColocar(p, x, y) {
     nvme: 'SSD NVMe en la ranura M.2.',
     psu: `Fuente de ${p.watts} W: suficiente para los ${potenciaNecesaria()} W que necesita el equipo.`
   };
-  ok(mensajes[p.kind]);
+  ok(esFacil() ? mensajes[p.kind] : 'Pieza colocada.');
 }
 
 function intentarConectar(c, x, y, ruta) {
@@ -617,7 +616,7 @@ function intentarConectar(c, x, y, ruta) {
     return fallo(`${c.nombre} mide ${Math.round(largo)} cm de recorrido y el máximo es ${c.longitudMax} cm. Trázalo más directo entre la fuente y el conector.`, 'Ese cable no llega al conector.');
   }
   S.plugged[c.id] = { port: pid, ruta };
-  ok(`${c.nombre} conectado (${Math.round(largo)} cm de ${c.longitudMax} cm).`);
+  ok(esFacil() ? `${c.nombre} conectado (${Math.round(largo)} cm de ${c.longitudMax} cm).` : 'Cable conectado.');
 }
 
 // Pasos del pedido en curso (el texto depende de las piezas que pide el cliente).
@@ -662,12 +661,16 @@ function cargarPedido(id) {
   entradas = [];
   clienteEl.textContent = pedido().cliente;
   especEl.innerHTML = especificaciones().map((t) => `<li>${t}</li>`).join('');
+  especEl.hidden = !esFacil();
   pintarEscena();
-  log('info', `Montaje nuevo: ${pedido().titulo}. Empieza eligiendo la caja y arrastrándola al chasis.`);
+  log('info', esFacil()
+    ? `Montaje nuevo: ${pedido().titulo}. Empieza eligiendo la caja y arrastrándola al chasis.`
+    : 'Montaje nuevo. Lee lo que pide el cliente y monta el equipo.');
 }
 
+// Pedido al azar: no se puede elegir.
 function reiniciar() {
-  cargarPedido(selectPedido.value);
+  cargarPedido(PEDIDOS[Math.floor(Math.random() * PEDIDOS.length)].id);
 }
 
 function pintarPanel() {
@@ -725,6 +728,8 @@ const GRUPOS = {
   cable: 'Cables de alimentación'
 };
 const abiertos = {};
+// Nombres sin datos técnicos, para el modo difícil.
+const NOMBRE_GENERICO = { caja: 'Caja', board: 'Placa base', cpu: 'Procesador', ram: 'Memoria RAM', gpu: 'Tarjeta gráfica', nvme: 'SSD', psu: 'Fuente de alimentación', cable: 'Cable de alimentación' };
 
 function pintarBandeja() {
   bandeja.querySelectorAll('.grupo').forEach((el) => el.remove());
@@ -754,7 +759,8 @@ function pintarFicha(it, contenedorFichas) {
     el.dataset.tipo = it.tipo;
     const foto = it.foto ? `<img src="fotos/${it.id}.png" alt="" loading="lazy">` : '';
     const dato = esFacil() && it.spec ? `<small>${it.spec}</small>` : '';
-    el.innerHTML = `<span class="miniatura">${foto}</span><span class="texto">${it.corto}${dato}</span>`;
+    const nombre = esFacil() ? it.corto : NOMBRE_GENERICO[it.kind];
+    el.innerHTML = `<span class="miniatura">${foto}</span><span class="texto">${nombre}${dato}</span>`;
     // Sin foto (o si falla la carga): la pieza se ve con su color.
     const miniatura = el.querySelector('.miniatura');
     if (!it.foto) miniatura.style.background = it.color;
@@ -884,6 +890,7 @@ function pintarEscena() {
     if (pieza(id).kind === 'board' || pieza(id).kind === 'caja') continue;
     grupoPiezas.add(construirPieza(pieza(id), posicionDe(id)));
   }
+  ledMats.forEach((mat, n) => { mat.userData.desfase = (n * 0.17) % 1; });
   for (const mat of ledMats) mat.emissiveIntensity = S.final ? 2.2 : 0.9;
 
   grupoCables.clear();
@@ -985,6 +992,14 @@ renderer.setAnimationLoop(() => {
   const velocidad = S?.final ? 0.22 : 0.02;
   for (const rotor of fans) rotor.rotation.z -= velocidad;
   const ahora = performance.now();
+  // Luces RGB: cada tira y cada aro cambia de color en un ciclo, con desfase propio.
+  if (rgbActivo) {
+    for (const m of ledMats) {
+      const tono = (ahora / 9000 + (m.userData.desfase ?? 0)) % 1;
+      m.color.setHSL(tono, 1, 0.55);
+      m.emissive.setHSL(tono, 1, 0.55);
+    }
+  }
   if (ahora < destelloHasta) {
     const pulso = 0.5 + 0.4 * Math.sin(ahora / 120);
     for (const m of Object.values(guiaPort)) if (m.visible) m.material.opacity = pulso;
@@ -995,13 +1010,6 @@ renderer.setAnimationLoop(() => {
 // ---------- Inicio ----------
 construirGuias();
 ajustarTamano();
-for (const p of PEDIDOS) {
-  const opcion = document.createElement('option');
-  opcion.value = p.id;
-  opcion.textContent = p.titulo;
-  selectPedido.appendChild(opcion);
-}
-selectPedido.addEventListener('change', reiniciar);
 reiniciar();
 
 $('encender').addEventListener('click', encender);
@@ -1009,7 +1017,7 @@ for (const b of botonesModo) {
   b.addEventListener('click', () => {
     modo = b.dataset.modo;
     for (const o of botonesModo) o.setAttribute('aria-pressed', String(o === b));
-    cargarPedido(selectPedido.value);
+    cargarPedido(S.pedido);
   });
 }
 botonesModo.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.modo === modo)));
