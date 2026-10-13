@@ -557,7 +557,8 @@
     var modo = 'explorar', Q = null, eleccion = 'mixto';
 
     var cr = F.credito;
-    var credito = cr ? '<p class="credit">Foto: <a href="' + cr.autorUrl + '">' + escapar(cr.autor) + '</a>, Wikimedia Commons, licencia <a href="' + cr.licenciaUrl + '">' + escapar(cr.licencia) + '</a>. ' + escapar(cr.nota) + '</p>' : '';
+    /* Crédito: texto libre, o autor y licencia de Wikimedia Commons. */
+    var credito = !cr ? '' : cr.texto ? '<p class="credit">' + escapar(cr.texto) + '</p>' : '<p class="credit">Foto: <a href="' + cr.autorUrl + '">' + escapar(cr.autor) + '</a>, Wikimedia Commons, licencia <a href="' + cr.licenciaUrl + '">' + escapar(cr.licencia) + '</a>. ' + escapar(cr.nota) + '</p>';
 
     raiz.innerHTML =
       '<header class="cabecera-pag"><h1>Quiz de la placa base</h1>' +

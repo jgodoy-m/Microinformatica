@@ -252,8 +252,8 @@ select option:disabled{color:var(--muted)}
   .ultima-fila .pill{grid-column:2;justify-self:start}
   .porque{padding:var(--s2) var(--s4)}
 }
-/* Quiz de la placa: foto en vertical a la izquierda (cabe en la altura de la pantalla) y panel de preguntas a la derecha */
-.mapa-card{display:grid;grid-template-columns:minmax(300px,calc((100vh - 120px) * 1320 / 1620)) minmax(300px,520px);gap:var(--s5);align-items:start;justify-content:start;padding:var(--s4)}
+/* Quiz de la placa: foto a la izquierda (cabe en la altura de la pantalla) y panel de preguntas a la derecha */
+.mapa-card{display:grid;grid-template-columns:minmax(300px,calc((100vh - 120px) * 966 / 928)) minmax(300px,520px);gap:var(--s5);align-items:start;justify-content:start;padding:var(--s4)}
 .mapa-card .map{margin:0;width:100%}
 svg.mapa{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:var(--r);background:var(--photo-bg)}
 svg.mapa .z{cursor:pointer;outline:none}
@@ -299,7 +299,7 @@ svg.mapa .z.miss rect{fill:var(--zone-miss);stroke:var(--lamp-bad);stroke-width:
 .q-op.errada .q-letra{background:var(--lamp-bad);border-color:var(--lamp-bad);color:#ECEFF4}
 .q-fb:empty{display:none}
 .q-fb{display:grid;gap:var(--s2);padding:var(--s3) var(--s4);border-radius:var(--r);border-left:4px solid var(--line);background:var(--card-2)}
-.q-fb.ok{border-left-color:var(--lamp-ok)}
+.q-fb.ok{border-left-color:var(--lamp-ok);color:var(--fg);font-weight:400}
 .q-fb.medio{border-left-color:var(--warn)}
 .q-fb.bad{border-left-color:var(--lamp-bad);color:var(--fg);font-weight:400}
 .q-fb-t{font-weight:700}
@@ -315,7 +315,7 @@ svg.mapa .z.miss rect{fill:var(--zone-miss);stroke:var(--lamp-bad);stroke-width:
 .q-acciones{display:flex;flex-wrap:wrap;gap:var(--s2)}
 @media (max-width:900px){
   .mapa-card{grid-template-columns:minmax(0,1fr)}
-  .mapa-card .map{max-width:520px;justify-self:center}
+  .mapa-card .map{max-width:620px;justify-self:center}
   .mapa-panel{position:static}
 }
 .mapa-raiz .credit{margin-top:var(--s2);padding-top:var(--s2)}
