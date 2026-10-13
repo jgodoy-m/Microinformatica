@@ -221,7 +221,6 @@
       position: relative;
       isolation: isolate;
       overflow: hidden;
-      border-bottom: 1px solid var(--border);
     }
 
     .hero-inner {
@@ -870,7 +869,7 @@
     .btn-primario svg, .btn-secundario svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .btn-primario svg:first-child { fill: currentColor; stroke: none; }
     .btn-primario .flecha { margin-left: 10px; }
-    .btn-primario:hover { filter: brightness(1.06); }
+    .btn-primario:hover { filter: brightness(1.06); color: #000; }
     .btn-secundario { border: 1px solid var(--nord8); color: var(--text); background: rgba(59, 66, 82, .5); }
     .btn-secundario:hover { background: rgba(136, 192, 208, .12); }
     .hero-image-wrap { position: relative; }
@@ -887,7 +886,7 @@
 
     .practice { padding: 40px 0 16px; }
     .practice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
-    .practice-card { position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 12px; min-height: 252px; padding: 26px 26px 24px 30px; border-radius: 16px; border: 1px solid var(--acento); background: linear-gradient(180deg, color-mix(in srgb, var(--acento) 7%, var(--surface)), var(--surface)); color: var(--text); text-decoration: none; transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+    .practice-card { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 12px; min-height: 212px; padding: 26px 26px 24px 30px; border-radius: 16px; border: 1px solid var(--acento); background: linear-gradient(180deg, color-mix(in srgb, var(--acento) 7%, var(--surface)), var(--surface)); color: var(--text); text-decoration: none; transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
     .practice-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--acento); }
     .practice-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,.25); border-color: var(--acento); }
     .practice-card.acento-cian { --acento: var(--nord8); }
