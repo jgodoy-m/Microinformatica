@@ -112,7 +112,7 @@
     .pagina {
       display: grid;
       grid-template-columns: 280px minmax(0, 1fr) 320px;
-      grid-template-rows: auto auto auto;
+      grid-template-rows: auto;
       gap: 16px;
       max-width: 1480px;
       margin: 0 auto;
@@ -121,7 +121,8 @@
     }
 
     /* Inventario */
-    .inventario { grid-column: 1; grid-row: 1 / span 3; display: grid; gap: 12px; align-content: start; min-width: 0; }
+    .columna-izq { grid-column: 1; grid-row: 1; display: grid; gap: 12px; align-content: start; min-width: 0; }
+    .inventario { display: grid; gap: 12px; align-content: start; min-width: 0; }
     .tarjeta {
       background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px; min-width: 0;
       box-shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 8px 24px rgba(0, 0, 0, .18);
@@ -129,7 +130,14 @@
     .tarjeta > h2 { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
     .filtros { display: flex; gap: 6px; margin: 10px 0; }
     .filtros .boton { flex: 1; min-height: 40px; padding: 0 8px; font-size: 14px; border-radius: 999px; }
-    .bandeja { display: grid; gap: 8px; }
+    .bandeja { display: grid; gap: 10px; }
+    .grupo { border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2); }
+    .grupo > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 12px; font-weight: 700; font-size: 14px; list-style: none; }
+    .grupo > summary::-webkit-details-marker { display: none; }
+    .grupo > summary::after { content: "▸"; color: var(--muted); transition: transform .15s; }
+    .grupo[open] > summary::after { transform: rotate(90deg); }
+    .grupo > summary small { margin-left: auto; font-size: 12px; font-weight: 400; color: var(--muted); }
+    .grupo-lista { display: grid; gap: 8px; padding: 0 8px 8px; }
     .ficha {
       display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 10px;
       min-height: 60px; padding: 5px 10px 5px 5px; border: 1px solid var(--line); border-radius: 12px;
@@ -155,7 +163,8 @@
     .ficha .texto { margin-right: 0; }
 
     /* Escena */
-    .escena-wrap { grid-column: 2; grid-row: 1; min-width: 0; }
+    .central { grid-column: 2; grid-row: 1; display: grid; gap: 16px; align-content: start; min-width: 0; }
+    .escena-wrap { min-width: 0; }
     #escena {
       position: relative; width: 100%; aspect-ratio: 4 / 3; border: 1px solid var(--line); border-radius: 14px;
       overflow: hidden; background: var(--bg); touch-action: none;
@@ -176,7 +185,7 @@
     #escena .fantasma-tip { display: none; }
 
     /* Lateral derecho */
-    .lateral { grid-column: 3; grid-row: 1 / span 2; display: grid; gap: 16px; min-width: 0; align-content: start; }
+    .lateral { grid-column: 3; grid-row: 1; display: grid; gap: 16px; min-width: 0; align-content: start; align-self: start; }
     .cabecera-tarjeta { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
     .nivel { font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 999px; background: var(--pill-ok); color: var(--ok-texto); border: 1px solid color-mix(in srgb, var(--ok) 45%, transparent); }
     .nivel[data-nivel="dificil"] { background: rgba(235, 203, 139, .16); color: var(--aviso-texto); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
@@ -233,7 +242,7 @@
     .log .info { color: var(--muted); }
 
     /* Barra inferior */
-    .centro { grid-column: 2; grid-row: 2; display: grid; gap: 16px; align-content: start; min-width: 0; }
+    .centro { display: grid; gap: 16px; align-content: start; min-width: 0; }
     .estado-montaje { min-width: 0; }
     .etapas { list-style: none; padding: 0; margin-top: 12px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
     .etapas li { display: grid; justify-items: center; gap: 6px; text-align: center; font-size: 13px; }
@@ -247,7 +256,7 @@
     .etapas .etiqueta { font-weight: 600; }
     .etapas .estado-etapa { font-size: 12px; color: var(--muted); }
     .etapas .explica { font-size: 12px; color: var(--muted); line-height: 1.4; }
-    .acciones-montaje { min-width: 0; display: grid; gap: 12px; }
+    .acciones-montaje { min-width: 0; display: grid; gap: 12px; align-content: start; }
     .mensaje { font-size: 14px; min-height: 2.8em; }
     .mensaje strong { display: block; margin-bottom: 4px; font-size: 17px; font-weight: 700; }
     .acciones-montaje { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
@@ -259,22 +268,24 @@
     /* Escritorio: la escena ocupa más altura y el inventario se queda a la vista. */
     @media (min-width: 1101px) {
       #escena { aspect-ratio: auto; height: clamp(440px, calc(100vh - 360px), 640px); }
-      .centro { align-self: stretch; grid-template-rows: auto minmax(0, 1fr); }
       .registro { display: flex; flex-direction: column; min-height: 0; }
       .registro .log { flex: 1; min-height: 120px; max-height: none; overflow-y: auto; }
     }
     /* Escritorio: el inventario se queda a la vista y se desplaza por dentro. */
     @media (min-width: 1101px) {
-      .inventario { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; }
+      .inventario { max-height: 70vh; overflow-y: auto; }
     }
 
     /* Anchos menores: la escena va primero y el resto apila. */
     @media (max-width: 1100px) {
       .pagina { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
-      .escena-wrap, .centro, .acciones-montaje, .lateral, .inventario { grid-column: 1; grid-row: auto; }
+      /* En una columna, visor, componentes, estado, pedido e instrucciones se ordenan como elementos de la página. */
+      .central { display: contents; }
+      .escena-wrap, .centro, .columna-izq, .lateral { grid-column: 1; grid-row: auto; }
       .escena-wrap { order: 1; }
       /* Las piezas se eligen mientras se mira el chasis: el inventario va justo debajo de la escena. */
-      .inventario { order: 2; max-height: 60vh; overflow-y: auto; }
+      .columna-izq { order: 2; }
+      .inventario { max-height: 60vh; overflow-y: auto; }
       .centro { order: 3; }
       .lateral { order: 4; }
     }
@@ -302,6 +313,7 @@
   </header>
 
   <main class="pagina">
+    <div class="columna-izq">
     <aside class="inventario tarjeta" aria-label="Componentes disponibles">
       <h2>Componentes</h2>
       <div class="filtros" role="group" aria-label="Filtrar componentes">
@@ -311,7 +323,18 @@
       </div>
       <div id="bandeja" class="bandeja"></div>
     </aside>
+      <section class="acciones-montaje tarjeta" aria-label="Mensaje y acciones">
+      <p id="mensaje" class="mensaje" aria-live="polite" tabindex="-1"></p>
+      <div class="botones">
+        <button id="reiniciar" class="boton" type="button">Reiniciar</button>
+        <button id="encender" class="boton primario" type="button">Encender equipo</button>
+      </div>
+    </section>
+    </div>
 
+
+
+    <div class="central">
     <section class="escena-wrap" aria-label="Escena de montaje">
       <p class="ayuda-escena">Arrastra los componentes o selecciónalos con el teclado.</p>
       <div id="escena" role="img" aria-label="Chasis abierto con placa base y componentes en 3D">
@@ -323,6 +346,22 @@
         </div>
       </div>
     </section>
+
+    <div class="centro">
+      <section class="tarjeta estado-montaje" aria-labelledby="estado-titulo">
+        <h2 id="estado-titulo">Estado del montaje</h2>
+        <ol id="etapas" class="etapas"></ol>
+      </section>
+      <details class="tarjeta montadas" hidden>
+        <summary>Piezas montadas</summary>
+        <ul id="lista-montadas" class="montadas-lista"></ul>
+      </details>
+      <details class="tarjeta registro" hidden>
+        <summary>Registro de la partida</summary>
+        <ul id="log" class="log" aria-live="polite"></ul>
+      </details>
+    </div>
+    </div>
 
     <div class="lateral">
       <section id="seleccion" class="tarjeta" aria-labelledby="seleccion-titulo" hidden>
@@ -383,29 +422,7 @@
         </div>
       </section>
 
-        <section class="acciones-montaje tarjeta" aria-label="Mensaje y acciones">
-          <p id="mensaje" class="mensaje" aria-live="polite" tabindex="-1"></p>
-          <div class="botones">
-            <button id="reiniciar" class="boton" type="button">Reiniciar</button>
-            <button id="encender" class="boton primario" type="button">Encender equipo</button>
-          </div>
-        </section>
       </div>
-
-    <div class="centro">
-      <section class="tarjeta estado-montaje" aria-labelledby="estado-titulo">
-        <h2 id="estado-titulo">Estado del montaje</h2>
-        <ol id="etapas" class="etapas"></ol>
-      </section>
-      <details class="tarjeta montadas" open>
-        <summary>Piezas montadas</summary>
-        <ul id="lista-montadas" class="montadas-lista"></ul>
-      </details>
-      <details class="tarjeta registro" open>
-        <summary>Registro de la partida</summary>
-        <ul id="log" class="log" aria-live="polite"></ul>
-      </details>
-    </div>
 
   </main>
 

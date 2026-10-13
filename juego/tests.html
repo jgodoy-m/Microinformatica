@@ -193,47 +193,53 @@
       afirmar(log().some((t) => /no arranca/.test(t)), `mensaje: ${log()[0]}`);
     });
 
-    await prueba('Socket incompatible: el panel muestra el motivo y no permite confirmar', async () => {
+    await prueba('Socket incompatible: sin pista previa; al confirmar aparece el error y la CPU no se coloca', async () => {
       await cargar('am4');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       // La bandeja muestra todas las piezas del catálogo: también la CPU de otro socket.
       fichaDe('cpu-am5').click();
       const b = await hasta(() => d.querySelector('[data-dest="cpu"]'));
       b.click();
-      afirmar(d.getElementById('confirmar').disabled, 'con socket distinto no debe poder confirmarse');
-      afirmar(/socket AM5/.test(d.getElementById('seleccion-motivo').textContent), `motivo: ${d.getElementById('seleccion-motivo').textContent}`);
+      afirmar(!d.getElementById('confirmar').disabled, 'con un destino elegido se puede confirmar');
+      afirmar(!/socket/i.test(d.getElementById('seleccion-motivo').textContent), `el panel no debe avisar antes: ${d.getElementById('seleccion-motivo').textContent}`);
+      d.getElementById('confirmar').click();
+      await esperar(30);
+      afirmar(!w.montaje.estado().placed['cpu-am5'], 'la CPU de otro socket no debe colocarse');
+      afirmar(/socket/i.test(d.getElementById('mensaje').textContent), `error tras confirmar: ${d.getElementById('mensaje').textContent}`);
       d.getElementById('cancelar').click();
       await esperar(20);
     });
 
     await prueba('Escape cancela la selección sin colocar nada', async () => {
       await cargar('am4');
-      fichaDe('caja-cristal-rgb').click();
+      fichaDe('cpu-am4').click();
       await esperar(20);
       afirmar(!d.getElementById('seleccion').hidden, 'el panel de selección debe abrirse');
       w.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape' }));
       await esperar(20);
       afirmar(d.getElementById('seleccion').hidden, 'Esc debe cerrar el panel');
-      afirmar(Object.keys(w.montaje.estado().placed).length === 0, 'no debe colocar nada');
+      afirmar(!w.montaje.estado().placed['cpu-am4'], 'no debe colocar nada');
     });
 
-    await prueba('Destino no válido: confirmar queda deshabilitado y explica por qué', async () => {
+    await prueba('Destino no válido: la lista no marca destinos; confirmar muestra el error y no coloca', async () => {
       await cargar('am4');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       fichaDe('ram-x').click();
       const b = await hasta(() => d.querySelector('[data-dest="ram1"]'));
+      afirmar(!/válido/.test(b.textContent), `la lista no debe marcar destinos: ${b.textContent}`);
       b.click();
-      afirmar(d.getElementById('confirmar').disabled, 'confirmar debe estar deshabilitado');
-      afirmar(/DDR5/.test(d.getElementById('seleccion-motivo').textContent), `motivo: ${d.getElementById('seleccion-motivo').textContent}`);
+      afirmar(!d.getElementById('confirmar').disabled, 'con un destino elegido se puede confirmar');
+      afirmar(!/DDR5|generación/i.test(d.getElementById('seleccion-motivo').textContent), `el panel no debe revelar el motivo: ${d.getElementById('seleccion-motivo').textContent}`);
+      d.getElementById('confirmar').click();
+      await esperar(30);
+      afirmar(!w.montaje.estado().placed['ram-x'], 'la memoria DDR5 no debe colocarse en una placa DDR4');
+      afirmar(/DDR|generación/i.test(d.getElementById('mensaje').textContent), `error tras confirmar: ${d.getElementById('mensaje').textContent}`);
       d.getElementById('cancelar').click();
       await esperar(20);
     });
 
     await prueba('Montaje correcto hasta la pantalla POST (teclado y toques)', async () => {
       await cargar('am4');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       await elegir('cpu-am4', 'cpu');
       await elegir('ram-a', 'ram1');
@@ -252,13 +258,12 @@
       d.getElementById('encender').click();
       await esperar(30);
       afirmar(w.montaje.estado().final, `debe arrancar: ${ultimoLog()}`);
-      afirmar(log().some((t) => /Comprobaciones superadas \(9 de 9\)/.test(t)), 'el resumen debe listar las 9 comprobaciones');
+      afirmar(log().some((t) => /Comprobaciones superadas \(8 de 8\)/.test(t)), 'el resumen debe listar las 8 comprobaciones');
       afirmar(log().some((t) => /No se cometieron errores/.test(t)) || log().some((t) => /Errores cometidos/.test(t)), 'el resumen debe indicar errores');
     });
 
     await prueba('Encender de nuevo tras el POST informa al alumno y no altera el resultado', async () => {
       await cargar('am4');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       await elegir('cpu-am4', 'cpu');
       await elegir('ram-a', 'ram1');
@@ -292,7 +297,6 @@
       afirmar(d.getElementById('confirmar-modo').hidden, 'sin progreso no debe pedir confirmación');
       afirmar(w.montaje.modo() === 'dificil', 'sin progreso el cambio es directo');
       await cargar('am4', 'facil');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       const antes = JSON.stringify(w.montaje.estado());
       d.querySelector('[data-modo="dificil"]').click();
@@ -308,7 +312,6 @@
 
     await prueba('Retirar una pieza independiente: se quita sin confirmación y puede volver a colocarse sin duplicar', async () => {
       await cargar('am4', 'facil');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       await elegir('nvme', 'm2');
       const boton = d.querySelector('[data-retirar="nvme"]');
@@ -325,7 +328,6 @@
 
     await prueba('Retirar la placa base retira también lo que depende de ella, tras confirmar', async () => {
       await cargar('am4', 'facil');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       await elegir('cpu-am4', 'cpu');
       d.querySelector('[data-retirar="board-am4"]').click();
@@ -346,7 +348,6 @@
 
     await prueba('Desconectar un cable retira solo ese cable; la fuente sin cables no se retira', async () => {
       await cargar('am4', 'facil');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       await elegir('psu', 'psu');
       for (const [id, port] of [['c-atx', 'atx24'], ['c-eps', 'eps8']]) {
@@ -369,7 +370,6 @@
 
     await prueba('Etapas: retirar una memoria reabre Componentes y no deja Conexiones completada', async () => {
       await cargar('am4', 'facil');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       await elegir('cpu-am4', 'cpu');
       await elegir('ram-a', 'ram1');
@@ -398,11 +398,11 @@
 
     await prueba('Textos del paso a paso y de la confirmación: números del pedido y singular correcto', async () => {
       await cargar('am4', 'facil');
-      await elegir('caja-cristal-rgb', 'caja');
       const pasosTexto = [...d.querySelectorAll('#pasos li')].map((li) => li.textContent).join(' ');
       afirmar(/Instala los dos módulos de RAM DDR4/.test(pasosTexto), 'el paso de memoria debe decir cuántos módulos hay');
       afirmar(/Conecta los tres cables de alimentación/.test(pasosTexto), 'el paso de cables debe decir cuántos cables hay');
       await elegir('board-am4', 'board');
+      await elegir('cpu-am4', 'cpu');
       d.querySelector('[data-modo="dificil"]').click();
       await esperar(20);
       afirmar(!d.getElementById('confirmar-modo').hidden, 'con progreso debe pedir confirmación');
@@ -411,7 +411,7 @@
       d.getElementById('modo-cancelar').click();
       await esperar(20);
       await cargar('am4', 'facil');
-      await elegir('caja-cristal-rgb', 'caja');
+      await elegir('board-am4', 'board');
       d.querySelector('[data-modo="dificil"]').click();
       await esperar(20);
       const singular = d.getElementById('confirmar-modo-texto').textContent;
@@ -422,7 +422,6 @@
 
     await prueba('Piezas montadas: las dos memorias se distinguen por ranura y el registro lo indica', async () => {
       await cargar('am4', 'facil');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       await elegir('ram-a', 'ram1');
       await elegir('ram-b', 'ram2');
@@ -436,7 +435,6 @@
 
     await prueba('Explicaciones: la función se explica la primera vez de cada tipo; después solo se confirma la colocación', async () => {
       await cargar('am4', 'facil');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       await elegir('ram-a', 'ram1');
       afirmar(/Generación DDR4: coincide/.test(ultimoLog()), `primera memoria: ${ultimoLog()}`);
@@ -446,16 +444,14 @@
       afirmar(/Socket AM4: coincide/.test(ultimoLog()), `el procesador explica el requisito de socket: ${ultimoLog()}`);
     });
 
-    await prueba('Explicaciones en modo difícil: al acertar se explica la función sin repetir el nombre de la pieza', async () => {
+    await prueba('Explicaciones en modo difícil: el nombre de la pieza aparece también en la explicación', async () => {
       await cargar('am4', 'dificil');
-      await elegir('caja-cristal-rgb', 'caja');
-      afirmar(/^Pieza colocada: Caja\. /.test(ultimoLog()), `en difícil se usa el nombre genérico: ${ultimoLog()}`);
-      afirmar(!/Torre de cristal|Caja cristal/.test(ultimoLog()), `no debe aparecer el nombre concreto: ${ultimoLog()}`);
+      await elegir('board-am4', 'board');
+      afirmar(/^Pieza colocada: Placa base AM4 \(DDR4\)\. /.test(ultimoLog()), `en difícil se usa el nombre completo: ${ultimoLog()}`);
     });
 
     await prueba('Resumen del POST: componentes, conexiones, compatibilidad y retiradas salen del estado real', async () => {
       await cargar('am4', 'facil');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       await elegir('cpu-am4', 'cpu');
       await elegir('ram-a', 'ram1');
@@ -485,19 +481,9 @@
       afirmar(buscar(/retirados durante el montaje: 1\./), `el resumen debe contar la retirada: ${lineas.slice(0, 4).join(' | ')}`);
     });
 
-    await prueba('Foco: al cancelar o cerrar un diálogo vuelve al control que lo abrió', async () => {
+    await prueba('Foco: al cancelar un cambio de dificultad vuelve al selector que lo abrió', async () => {
       await cargar('am4', 'facil');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
-      await elegir('cpu-am4', 'cpu');
-      const boton = d.querySelector('[data-retirar="board-am4"]');
-      boton.focus();
-      boton.click();
-      await esperar(30);
-      afirmar(!d.getElementById('confirmar-retirada').hidden, 'la retirada en cascada debe pedir confirmación');
-      d.getElementById('retirada-cancelar').click();
-      await esperar(20);
-      afirmar(d.activeElement === boton, `tras cancelar el foco debe volver al botón: ${d.activeElement?.id || d.activeElement?.tagName}`);
       const modo = d.querySelector('[data-modo="dificil"]');
       modo.focus();
       modo.click();
@@ -510,7 +496,7 @@
 
     await prueba('Pistas: cambiar de dificultad no reinicia el límite; cancelar no lo altera; reiniciar sí', async () => {
       await cargar('am4', 'dificil');
-      await elegir('caja-cristal-rgb', 'caja');
+      await elegir('board-am4', 'board');
       d.getElementById('pista').click();
       d.getElementById('pista').click();
       afirmar(d.getElementById('pista').disabled, 'dos pistas agotan el límite');
@@ -539,73 +525,33 @@
       await cargar('am4', 'dificil');
       d.getElementById('pista').click();
       afirmar(/Pista: /.test(d.getElementById('pista-texto').textContent), 'la pista aparece al pedirla');
-      await elegir('caja-cristal-rgb', 'caja');
-      afirmar(d.getElementById('pista-texto').textContent === '', `la pista de un paso hecho debe ocultarse: ${d.getElementById('pista-texto').textContent}`);
+      await elegir('board-am4', 'board');
+      afirmar(d.getElementById('pista-texto').textContent === '', `la pista del paso completado debe ocultarse: ${d.getElementById('pista-texto').textContent}`);
     });
 
     await prueba('Accesibilidad: cada ficha tiene un nombre con pausas entre nombre, datos y estado', async () => {
       await cargar('am4', 'facil');
-      const etiqueta = fichaDe('caja-cristal-rgb').getAttribute('aria-label');
+      const etiqueta = fichaDe('cpu-am4').getAttribute('aria-label');
       afirmar(/Disponible$/.test(etiqueta), `el estado debe anunciarse al final: ${etiqueta}`);
       afirmar(!/RGBCon|RGB\s*Disponible/.test(etiqueta) && etiqueta.includes('. '), `el nombre no debe leerse pegado: ${etiqueta}`);
-      await elegir('caja-cristal-rgb', 'caja');
-      afirmar(/Instalado$/.test(fichaDe('caja-cristal-rgb').getAttribute('aria-label')), 'una pieza montada debe anunciarse como instalada');
+      await elegir('board-am4', 'board');
+      afirmar(/Instalado$/.test(fichaDe('board-am4').getAttribute('aria-label')), 'una pieza montada debe anunciarse como instalada');
     });
 
     await prueba('Retirada en cascada: la lista de piezas se separa con punto y coma, sin confundirse con las comas de los nombres', async () => {
       await cargar('am4', 'facil');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       await elegir('cpu-am4', 'cpu');
       await elegir('ram-a', 'ram1');
       await elegir('ram-b', 'ram2');
-      d.querySelector('[data-retirar="caja-cristal-rgb"]').click();
+      d.querySelector('[data-retirar="board-am4"]').click();
       await esperar(30);
       afirmar(/RAM DDR4, ranura 1; RAM DDR4, ranura 2/.test(d.getElementById('retirada-texto').textContent), `aviso: ${d.getElementById('retirada-texto').textContent}`);
       d.getElementById('retirada-confirmar').click();
       await esperar(30);
-      afirmar(/Retirado: Caja cristal RGB; Placa AM4; CPU AM4; RAM DDR4, ranura 1; RAM DDR4, ranura 2\./.test(ultimoLog()), `registro: ${ultimoLog()}`);
-      afirmar(Object.keys(w.montaje.estado().placed).length === 0, 'la caja arrastra todo lo montado');
+      afirmar(/Retirado: Placa AM4; CPU AM4; RAM DDR4, ranura 1; RAM DDR4, ranura 2\./.test(ultimoLog()), `registro: ${ultimoLog()}`);
+      afirmar(!w.montaje.estado().placed['board-am4'] && w.montaje.estado().placed['caja-cristal-rgb'], 'la placa se retira y la caja, que va en el chasis, se queda');
     });
-
-    await prueba('Retirar la caja no deja luces ni cristales residuales; la fuente arrastra sus cables y cancelar no cambia nada', async () => {
-      await cargar('am4', 'facil');
-      await elegir('caja-cristal-rgb', 'caja');
-      await elegir('board-am4', 'board');
-      await elegir('psu', 'psu');
-      for (const [id, port] of [['c-atx', 'atx24'], ['c-eps', 'eps8']]) {
-        fichaDe(id).click();
-        const b = await hasta(() => d.querySelector(`[data-dest="${port}"]`));
-        b.click();
-        d.getElementById('confirmar').click();
-        await esperar(20);
-      }
-      const antes = JSON.stringify(w.montaje.estado());
-      d.querySelector('[data-retirar="psu"]').click();
-      await esperar(30);
-      afirmar(!d.getElementById('confirmar-retirada').hidden, 'la fuente con cables pide confirmación');
-      d.getElementById('retirada-cancelar').click();
-      await esperar(20);
-      afirmar(JSON.stringify(w.montaje.estado()) === antes, 'cancelar la retirada de la fuente conserva el estado exacto');
-      d.querySelector('[data-retirar="psu"]').click();
-      await esperar(30);
-      d.getElementById('retirada-confirmar').click();
-      await esperar(30);
-      const e = w.montaje.estado();
-      afirmar(!e.placed.psu && !e.plugged['c-atx'] && !e.plugged['c-eps'], 'la fuente y sus cables se retiran juntos');
-      afirmar(e.placed['caja-cristal-rgb'] && e.placed['board-am4'], 'la caja y la placa no dependen de la fuente');
-      d.querySelector('[data-retirar="caja-cristal-rgb"]').click();
-      await esperar(30);
-      d.getElementById('retirada-confirmar').click();
-      await esperar(40);
-      afirmar(w.montaje.lucesCaja() === 0 && w.montaje.vidriosCaja() === 0, `restos de caja: luces ${w.montaje.lucesCaja()}, cristales ${w.montaje.vidriosCaja()}`);
-    });
-
-    // ---------- Contadores y ciclo de la partida ----------
-    // Semántica (ver el comentario de cargarPedido en montaje.js):
-    // - Pistas, errores y retiradas pertenecen a la partida: un cambio de dificultad los conserva.
-    // - Solo «Reiniciar» o elegir otro pedido los pone a cero.
-    // - Una retirada cancelada no cuenta; una confirmada cuenta cada pieza o cable retirado.
 
     await prueba('Contadores: los errores sobreviven a cambios de dificultad y solo se reinician con una partida nueva', async () => {
       await cargar('am4', 'facil');
@@ -614,7 +560,6 @@
       afirmar(w.montaje.estado().errores === 1, 'un encendido prematuro cuenta como error');
       await cambiarModo('dificil');
       afirmar(w.montaje.estado().errores === 1, 'sin piezas, el cambio de dificultad conserva el error');
-      await elegir('caja-cristal-rgb', 'caja');
       await cambiarModo('facil');
       afirmar(w.montaje.estado().errores === 1 && w.montaje.estado().fallos.length === 1, 'con piezas, el cambio conserva errores y su lista');
       afirmar(/Cambio a dificultad fácil/.test(log().join(' | ')), 'el registro anota el cambio de dificultad');
@@ -626,7 +571,6 @@
 
     await prueba('Contadores: una retirada cancelada no cuenta; una confirmada cuenta cada elemento retirado y sobrevive al cambio de dificultad', async () => {
       await cargar('am4', 'facil');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       await elegir('cpu-am4', 'cpu');
       d.querySelector('[data-retirar="board-am4"]').click();
@@ -645,7 +589,7 @@
 
     await prueba('Pistas y registro: el cambio de dificultad conserva el límite y el historial; cancelarlo no toca nada', async () => {
       await cargar('am4', 'dificil');
-      await elegir('caja-cristal-rgb', 'caja');
+      await elegir('board-am4', 'board');
       d.getElementById('pista').click();
       d.getElementById('pista').click();
       const registroAntes = log().length;
@@ -664,7 +608,6 @@
 
     await prueba('Retirada pendiente: si se coloca una pieza mientras se confirma, el diálogo se cierra y no deja piezas huérfanas', async () => {
       await cargar('am4', 'facil');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       await elegir('cpu-am4', 'cpu');
       d.querySelector('[data-retirar="board-am4"]').click();
@@ -685,7 +628,7 @@
 
     await prueba('POST antes y después de retirar: no declara correcto un montaje al que le falta una pieza', async () => {
       await cargar('am4', 'facil');
-      for (const [id, dest] of [['caja-cristal-rgb', 'caja'], ['board-am4', 'board'], ['cpu-am4', 'cpu'], ['ram-a', 'ram1'], ['ram-b', 'ram2'], ['gpu', 'pcie'], ['nvme', 'm2'], ['psu', 'psu']]) {
+      for (const [id, dest] of [['board-am4', 'board'], ['cpu-am4', 'cpu'], ['ram-a', 'ram1'], ['ram-b', 'ram2'], ['gpu', 'pcie'], ['nvme', 'm2'], ['psu', 'psu']]) {
         await elegir(id, dest);
       }
       for (const [id, port] of [['c-atx', 'atx24'], ['c-eps', 'eps8'], ['c-pcie', 'pcie8']]) {
@@ -713,15 +656,13 @@
     await prueba('Lenguaje: la bandeja usa los mismos nombres que las instrucciones y el botón de encendido', async () => {
       await cargar('am4', 'facil');
       const pasosTexto = [...d.querySelectorAll('#pasos li')].map((li) => li.textContent).join(' ');
-      afirmar(fichaDe('caja-cristal-rgb').textContent.includes('Torre de cristal con RGB'), `ficha de la caja: ${fichaDe('caja-cristal-rgb').textContent.slice(0, 60)}`);
-      afirmar(/Coloca la caja: Torre de cristal con RGB/.test(pasosTexto), 'la instrucción usa el mismo nombre');
+      afirmar(!/Coloca la caja/.test(pasosTexto), 'la caja ya está en el chasis y no aparece como paso');
       afirmar(fichaDe('psu').textContent.includes('Fuente de 650 W'), 'la ficha de la fuente usa el nombre del pedido');
       afirmar(/Pulsa «Encender equipo»/.test(pasosTexto) && d.getElementById('encender').textContent.trim() === 'Encender equipo', 'el paso y el botón usan el mismo nombre');
     });
 
     await prueba('Lenguaje: al instalar la fuente se explica que de ella salen los cables de alimentación', async () => {
       await cargar('am4', 'facil');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       await elegir('cpu-am4', 'cpu');
       await elegir('ram-a', 'ram1');
@@ -762,69 +703,6 @@
     });
 
     // Modo difícil: una pista solo si el texto del cliente enuncia la propiedad que la pieza contradice.
-    await prueba('Orientación en difícil: caso correcto, caso con pista verificable y caso ambiguo sin pista', async () => {
-      // Correcto: la caja del pedido se acepta sin motivo.
-      await cargar('am4', 'dificil');
-      fichaDe('caja-cristal-rgb').click();
-      const bien = await hasta(() => d.querySelector('[data-dest="caja"]'));
-      bien.click();
-      afirmar(!d.getElementById('confirmar').disabled, 'la caja del pedido debe poder confirmarse');
-      d.getElementById('cancelar').click();
-      await esperar(20);
-      // Con pista: el cliente de intel pide una caja sin luces; una caja con RGB se contradice con su texto.
-      await cargar('intel', 'dificil');
-      fichaDe('caja-cristal-rgb').click();
-      const rgb = await hasta(() => d.querySelector('[data-dest="caja"]'));
-      rgb.click();
-      const pista = d.getElementById('seleccion-motivo').textContent;
-      afirmar(/sin iluminación RGB/.test(pista) && !/Torre|cristal/.test(pista), `pista verificable sin revelar la pieza: ${pista}`);
-      d.getElementById('cancelar').click();
-      await esperar(20);
-      // Ambiguo: la caja de intel sin RGB pero con cristal: el texto del cliente no dice nada del cristal; mensaje genérico.
-      fichaDe('caja-cristal').click();
-      const amb = await hasta(() => d.querySelector('[data-dest="caja"]'));
-      amb.click();
-      afirmar(d.getElementById('seleccion-motivo').textContent === 'Esa pieza no corresponde a este pedido.', `caso ambiguo: ${d.getElementById('seleccion-motivo').textContent}`);
-      d.getElementById('cancelar').click();
-      await esperar(20);
-      // Sin propiedad en el texto del cliente: no hay pista.
-      await cargar('am4', 'dificil');
-      fichaDe('caja-metal').click();
-      const sinTexto = await hasta(() => d.querySelector('[data-dest="caja"]'));
-      sinTexto.click();
-      afirmar(d.getElementById('seleccion-motivo').textContent === 'Esa pieza no corresponde a este pedido.', 'sin propiedad en el texto no hay pista');
-      d.getElementById('cancelar').click();
-      await esperar(20);
-    });
-
-    await prueba('Orientación en difícil: en pedidos aleatorios, la pista coincide con la caja real del pedido', async () => {
-      const aleatorios = PEDIDOS.filter((p) => p.id.startsWith('aleatorio-'));
-      let verificados = 0;
-      for (const p of aleatorios) {
-        await cargar(p.id, 'dificil');
-        const req = pieza(p.piezas.caja);
-        const otra = PIEZAS.find((x) => x.kind === 'caja' && x.rgb !== req.rgb);
-        fichaDe(otra.id).click();
-        const b = await hasta(() => d.querySelector('[data-dest="caja"]'));
-        b.click();
-        const texto = d.getElementById('seleccion-motivo').textContent;
-        afirmar(texto.includes(`una caja ${req.rgb ? 'con' : 'sin'} iluminación RGB`), `${p.id}: pista esperada para ${req.rgb ? 'con' : 'sin'} RGB: ${texto}`);
-        afirmar(!texto.includes(req.nombre) && !texto.includes(otra.nombre), `${p.id}: la pista no debe nombrar ninguna caja`);
-        d.getElementById('cancelar').click();
-        await esperar(20);
-        fichaDe(req.id).click();
-        const ok = await hasta(() => d.querySelector('[data-dest="caja"]'));
-        ok.click();
-        afirmar(!d.getElementById('confirmar').disabled, `${p.id}: la caja del pedido debe aceptarse`);
-        d.getElementById('cancelar').click();
-        await esperar(20);
-        verificados++;
-      }
-      return `${verificados} pedidos aleatorios verificados`;
-    });
-
-    // Coherencia del catálogo: el texto del cliente no contradice las piezas del pedido, para los fijos
-    // y para aleatorios de varias semillas (no solo para la semilla del juego).
     await prueba('Catálogo: el texto del cliente no contradice las piezas del pedido (fijos y aleatorios de varias semillas)', () => {
       const todos = [...PEDIDOS, ...[1, 7, 99, 31337].flatMap((s) => generarPedidos(NUMERO_PEDIDOS_ALEATORIOS, s))];
       for (const p of todos) {
@@ -864,12 +742,13 @@
 
     await prueba('Motivos en modo difícil: causa concreta sin revelar la pieza correcta', async () => {
       await cargar('am4', 'dificil');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       fichaDe('cpu-am5').click();
       const b = await hasta(() => d.querySelector('[data-dest="cpu"]'));
       b.click();
-      const motivo = d.getElementById('seleccion-motivo').textContent;
+      d.getElementById('confirmar').click();
+      await esperar(30);
+      const motivo = d.getElementById('mensaje').textContent;
       afirmar(/socket/.test(motivo), `en difícil debe nombrarse la causa: ${motivo}`);
       afirmar(!/AM5|Ryzen|Procesador AM5/.test(motivo), `en difícil no debe revelarse la pieza correcta: ${motivo}`);
       d.getElementById('cancelar').click();
@@ -878,7 +757,6 @@
 
     await prueba('Arrastrar un cable sobre su conector con el puntero: sin errores y conectado', async () => {
       await cargar('am4', 'facil');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       await elegir('psu', 'psu');
       // Para arrastrar hace falta un área visible: se amplía el marco mientras dura la prueba.
@@ -923,14 +801,13 @@
       d.getElementById('reiniciar').click();
       await esperar(40);
       const e = w.montaje.estado();
-      afirmar(!e.final && Object.keys(e.placed).length === 0 && Object.keys(e.plugged).length === 0, 'estado residual tras reiniciar');
+      afirmar(!e.final && Object.keys(e.placed).length === 1 && Object.keys(e.plugged).length === 0, 'estado residual tras reiniciar');
       afirmar(d.querySelectorAll('.ficha.seleccionada').length === 0, 'no debe quedar ninguna pieza seleccionada');
     });
 
     await prueba('Cambiar de Fácil a Difícil a mitad de partida no deja residuos', async () => {
       await cargar('am4', 'facil');
-      await elegir('caja-cristal-rgb', 'caja');
-      fichaDe('board-am4').click();
+      await elegir('board-am4', 'board');
       await esperar(20);
       d.querySelector('[data-modo="dificil"]').click();
       await esperar(40);
@@ -938,7 +815,7 @@
       d.getElementById('modo-confirmar').click();
       await esperar(40);
       const e = w.montaje.estado();
-      afirmar(Object.keys(e.placed).length === 0, 'las piezas no deben sobrevivir al cambio de modo');
+      afirmar(Object.keys(e.placed).join() === 'caja-cristal-rgb', 'solo la caja, que va sola al chasis, sobrevive al cambio de modo');
       afirmar(d.getElementById('seleccion').hidden, 'el panel de selección debe cerrarse');
       afirmar(w.montaje.modo() === 'dificil', 'el modo debe ser difícil');
       afirmar(d.querySelectorAll('.ficha').length > 0, 'la bandeja debe repoblarse');
@@ -946,7 +823,6 @@
 
     await prueba('Redibujar la escena no acumula geometrías en memoria', async () => {
       await cargar('am4');
-      await elegir('caja-cristal-rgb', 'caja');
       await elegir('board-am4', 'board');
       for (let i = 0; i < 3; i++) d.getElementById('encender').click();
       await esperar(40);
@@ -970,13 +846,13 @@
       const cb = tipos('cables');
       afirmar(cb.length === CABLES.length && cb.every((t) => t === 'cable'), 'Cables solo debe mostrar los tres cables');
       tipos('todos');
-      afirmar(d.querySelectorAll('.ficha').length === PIEZAS.length + CABLES.length, 'Todos debe mostrar el inventario completo');
+      afirmar(d.querySelectorAll('.ficha').length === PIEZAS.filter((p) => p.kind !== 'caja').length + CABLES.length, 'Todos debe mostrar el inventario completo, sin la caja, que va sola al chasis');
     });
 
     await prueba('Una pieza instalada aparece como Instalado y no se puede volver a coger', async () => {
       await cargar('am4');
-      await elegir('caja-cristal-rgb', 'caja');
-      const f = fichaDe('caja-cristal-rgb');
+      await elegir('board-am4', 'board');
+      const f = fichaDe('board-am4');
       afirmar(f.getAttribute('aria-disabled') === 'true', 'debe estar marcada como no disponible');
       afirmar(/Instalado/.test(f.textContent), 'debe decir Instalado, no solo cambiar de color');
       f.click();
@@ -984,15 +860,16 @@
       afirmar(d.getElementById('seleccion').hidden, 'no debe abrirse la selección para una pieza instalada');
     });
 
-    await prueba('Instrucciones: en fácil con nombres, en difícil sin datos técnicos', async () => {
+    await prueba('Instrucciones: en fácil y en difícil se nombra cada pieza; en difícil no hay especificaciones', async () => {
       await cargar('am4', 'facil');
       const facil = d.getElementById('pasos').textContent;
-      afirmar(/Torre de cristal con RGB/.test(facil), 'en fácil la instrucción nombra la pieza');
-      afirmar(d.querySelectorAll('#pasos li').length === 9, 'nueve pasos');
+      afirmar(/Placa base AM4 \(DDR4\)/.test(facil), 'en fácil la instrucción nombra la pieza');
+      afirmar(d.querySelectorAll('#pasos li').length === 8, 'ocho pasos: la caja ya va montada');
       afirmar(d.querySelector('#pasos li[aria-current="step"]')?.dataset.estado === 'actual', 'el paso actual debe estar marcado');
       await cargar('am4', 'dificil');
       const dificil = d.getElementById('pasos').textContent;
-      afirmar(!/cristal|Ryzen|Ryzen|AM4|RGB|DDR4/.test(dificil), `en difícil no debe haber datos técnicos: ${dificil.slice(0, 80)}`);
+      afirmar(/Placa base AM4 \(DDR4\)/.test(dificil), 'en difícil también se nombra la pieza');
+      afirmar(!/\d+ W/.test(dificil), `en difícil no deben aparecer datos de potencia: ${dificil.slice(0, 80)}`);
       afirmar(d.getElementById('especificaciones').hidden, 'en difícil no se muestran especificaciones');
     });
 
@@ -1008,7 +885,6 @@
       await cargar('am4');
       const etapa = (n) => d.querySelector(`#etapas li:nth-child(${n})`).dataset.estado;
       afirmar(etapa(1) === 'actual' && etapa(2) === 'pendiente', 'al empezar, Componentes está en curso');
-      await elegir('caja-cristal-rgb', 'caja');
       afirmar(/Siguiente paso/.test(d.getElementById('mensaje').textContent), 'el mensaje indica el siguiente paso');
       afirmar(d.querySelector('#pasos li[aria-current="step"]').textContent.includes('Placa base') || d.querySelector('#pasos li[aria-current="step"]').textContent.includes('placa'), 'el paso actual avanza tras colocar la caja');
       await elegir('board-am4', 'board');
@@ -1050,11 +926,9 @@
 
     await prueba('Cajas: solo las variantes RGB tienen luces; al cambiar a una sin RGB no quedan restos', async () => {
       await cargar('am4');
-      await elegir('caja-cristal-rgb', 'caja');
       afirmar(w.montaje.lucesCaja() > 0, 'la caja RGB debe tener luces');
       w.montaje.cargar('intel');
       await esperar(40);
-      await elegir('caja-metal', 'caja');
       afirmar(w.montaje.lucesCaja() === 0, `la caja sin RGB no debe tener luces: ${w.montaje.lucesCaja()}`);
     });
 
@@ -1063,7 +937,6 @@
       for (const [pedido, caja, rgb, cristal] of [['am4', 'caja-cristal-rgb', true, true], ['am5', 'caja-cristal', false, true], ['intel', 'caja-metal', false, false], ['aleatorio-8', 'caja-metal-rgb', true, false]]) {
         w.montaje.cargar(pedido);
         await esperar(40);
-        await elegir(caja, 'caja');
         const vidrios = w.montaje.vidriosCaja();
         const luces = w.montaje.lucesCaja();
         resumen.push(`${caja}: vidrios ${vidrios}, luces ${luces}`);
@@ -1080,26 +953,20 @@
       for (const [pedido, caja, ventiladores, rgb] of esperado) {
         w.montaje.cargar(pedido);
         await esperar(40);
-        await elegir(caja, 'caja');
         const n = w.montaje.ventiladoresCaso();
         afirmar(n === ventiladores, `${caja}: ${n} ventiladores, se esperaban ${ventiladores}`);
         afirmar(rgb ? w.montaje.lucesCaja() > 0 : w.montaje.lucesCaja() === 0, `${caja}: luces ${w.montaje.lucesCaja()}`);
         resumen.push(`${caja}: ${n} ventiladores`);
-        d.querySelector(`[data-retirar="${caja}"]`).click();
-        await esperar(30);
       }
       return resumen.join(' · ');
     });
 
-    await prueba('Cajas: colocar y retirar las cuatro variantes repetidamente no acumula geometrías ni ventiladores', async () => {
+    await prueba('Cajas: cambiar entre las cuatro variantes repetidamente no acumula geometrías ni ventiladores', async () => {
       const variantes = [['am4', 'caja-cristal-rgb'], ['am5', 'caja-cristal'], ['intel', 'caja-metal'], ['aleatorio-8', 'caja-metal-rgb']];
       const ciclo = async () => {
         for (const [pedido, caja] of variantes) {
           w.montaje.cargar(pedido);
           await esperar(40);
-          await elegir(caja, 'caja');
-          d.querySelector(`[data-retirar="${caja}"]`).click();
-          await esperar(30);
         }
       };
       await ciclo();
@@ -1107,19 +974,15 @@
       for (let i = 0; i < 3; i++) await ciclo();
       const despues = w.montaje.renderInfo().geometries;
       afirmar(despues <= antes + 4, `geometrías: ${antes} → ${despues} tras 3 ciclos`);
-      afirmar(w.montaje.ventiladoresCaso() === 0 && w.montaje.lucesCaja() === 0 && w.montaje.vidriosCaja() === 0, `sin caja no deben quedar ventiladores (${w.montaje.ventiladoresCaso()}), luces ni cristales`);
+      afirmar(w.montaje.ventiladoresCaso() === 3 && w.montaje.lucesCaja() === 3 && w.montaje.vidriosCaja() === 0, `al cerrar el ciclo queda solo la metálica con RGB: ventiladores ${w.montaje.ventiladoresCaso()}, luces ${w.montaje.lucesCaja()}, cristales ${w.montaje.vidriosCaja()}`);
       return `${antes} → ${despues} geometrías tras 3 ciclos completos`;
     });
 
-    await prueba('Cambiar de modelo de caja: la escena muestra solo la nueva, sin restos de la anterior', async () => {
+    await prueba('Cambiar de pedido entre cajas: la escena muestra solo la nueva, sin restos de la anterior', async () => {
       await cargar('am4');
-      await elegir('caja-cristal-rgb', 'caja');
       afirmar(w.montaje.vidriosCaja() > 0 && w.montaje.ventiladoresCaso() === 3, 'antes: cristal con RGB (3 ventiladores)');
-      d.querySelector('[data-retirar="caja-cristal-rgb"]').click();
-      await esperar(30);
       w.montaje.cargar('aleatorio-8');
       await esperar(40);
-      await elegir('caja-metal-rgb', 'caja');
       const v = w.montaje.vidriosCaja(), f = w.montaje.ventiladoresCaso(), l = w.montaje.lucesCaja();
       afirmar(v === 0, `restos de cristal tras cambiar a metálica: ${v}`);
       afirmar(f === 3, `ventiladores tras cambiar a metálica con RGB: ${f}, se esperaban 3`);
@@ -1127,16 +990,14 @@
       return `cristal con RGB → metálica con RGB: cristales ${v}, ventiladores ${f}, luces ${l}`;
     });
 
-    await prueba('Guías: solo aparecen para la pieza seleccionada y solo en los huecos que la admiten', async () => {
+    await prueba('Sin guías: al seleccionar una pieza no se marca ningún hueco', async () => {
       await cargar('am4');
       afirmar(w.montaje.guiasVisibles().length === 0, 'sin selección no debe haber guías');
       fichaDe('cpu-am4').click();
       await esperar(20);
-      const visibles = w.montaje.guiasVisibles();
-      afirmar(visibles.length === 1 && visibles[0] === 'cpu', `solo la guía de la CPU: ${visibles.join(', ')}`);
+      afirmar(w.montaje.guiasVisibles().length === 0, `no deben marcarse huecos: ${w.montaje.guiasVisibles().join(', ')}`);
       d.getElementById('cancelar').click();
       await esperar(20);
-      afirmar(w.montaje.guiasVisibles().length === 0, 'al cancelar las guías deben desaparecer');
     });
 
     await prueba('Mensajes y acciones: Encender prematuro y Reiniciar actualizan el mensaje', async () => {
@@ -1145,12 +1006,11 @@
       await esperar(20);
       afirmar(!w.montaje.estado().final, 'encender sin piezas no debe arrancar');
       afirmar(/Siguiente paso/.test(d.getElementById('mensaje').textContent), `mensaje: ${d.getElementById('mensaje').textContent}`);
-      await elegir('caja-cristal-rgb', 'caja');
-      afirmar(/Siguiente paso/.test(d.getElementById('mensaje').textContent), 'tras colocar la caja el mensaje sigue indicando el siguiente paso');
+      afirmar(/Siguiente paso/.test(d.getElementById('mensaje').textContent), 'al empezar, el mensaje indica el siguiente paso');
       d.getElementById('reiniciar').click();
       await esperar(40);
-      afirmar(Object.keys(w.montaje.estado().placed).length === 0, 'reiniciar debe vaciar las piezas');
-      afirmar(/Siguiente paso/.test(d.getElementById('mensaje').textContent) && /Coloca la caja/.test(d.getElementById('mensaje').textContent), `mensaje tras reiniciar: ${d.getElementById('mensaje').textContent}`);
+      afirmar(Object.keys(w.montaje.estado().placed).length === 1, 'reiniciar deja solo la caja, que va sola al chasis');
+      afirmar(/Siguiente paso/.test(d.getElementById('mensaje').textContent) && /Fija la Placa base/.test(d.getElementById('mensaje').textContent), `mensaje tras reiniciar: ${d.getElementById('mensaje').textContent}`);
       afirmar(!d.getElementById('encender').disabled && !d.getElementById('reiniciar').disabled, 'los dos botones deben estar activos');
     });
 
