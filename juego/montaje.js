@@ -567,29 +567,36 @@ function fallo(msg, corto) {
 }
 function ok(msg) { log('ok', msg); }
 
+// Devuelve null si la pieza puede ir en ese hueco; si no, el motivo (largo y corto).
+function motivoColocar(p, sid) {
+  const placa = tabla();
+  if (p.kind !== 'caja' && !piezaPlacada('caja')) {
+    return { msg: 'Primero elige la caja: sin chasis no hay dónde montar el equipo.', corto: 'Primero la caja.' };
+  }
+  if (p.kind !== 'caja' && p.kind !== 'board' && !placa) {
+    return { msg: 'Primero fija la placa base en el chasis: sin ella no hay dónde montar el resto.', corto: 'Primero la placa base.' };
+  }
+  if (occupied(sid)) return { msg: `El ${SLOTS[sid].nombre} ya está ocupado.`, corto: 'Ese hueco ya está ocupado.' };
+  if (p.kind === 'cpu' && p.socket !== placa.socket) {
+    return { msg: `${p.nombre} no encaja: es para socket ${p.socket} y la placa tiene ${placa.socket}. Cada socket admite solo sus familias de procesador (apuntes S11).`, corto: 'Ese procesador no encaja en esta placa.' };
+  }
+  if (p.kind === 'ram' && p.gen !== placa.gen) {
+    return { msg: `${p.nombre} no entra en una placa ${placa.gen}: las ranuras son distintas según la generación (apuntes S11).`, corto: 'Esa memoria no encaja en esta placa.' };
+  }
+  if (p.kind === 'psu' && p.watts < potenciaNecesaria()) {
+    return { msg: `La fuente de ${p.watts} W se queda corta: el equipo necesita al menos ${potenciaNecesaria()} W, según (TDP CPU + TDP GPU + 100 W) × 1,3 (apuntes S11).`, corto: 'Esa fuente no basta para este equipo.' };
+  }
+  if (!enPedido(p.id)) {
+    return { msg: `${p.nombre} no es el componente que pide el cliente en este pedido. Mira el pedido y elige otra pieza.`, corto: 'Esa pieza no es la que pide el cliente.' };
+  }
+  return null;
+}
+
 function intentarColocar(p, x, y) {
   const sid = huecoEn(x, y, p);
   if (!sid) return;
-  const placa = tabla();
-  if (p.kind !== 'caja' && !piezaPlacada('caja')) {
-    return fallo('Primero elige la caja: sin chasis no hay dónde montar el equipo.', 'Primero la caja.');
-  }
-  if (p.kind !== 'caja' && p.kind !== 'board' && !placa) {
-    return fallo('Primero fija la placa base en el chasis: sin ella no hay dónde montar el resto.', 'Primero la placa base.');
-  }
-  if (occupied(sid)) return fallo(`El ${SLOTS[sid].nombre} ya está ocupado.`, 'Ese hueco ya está ocupado.');
-  if (p.kind === 'cpu' && p.socket !== placa.socket) {
-    return fallo(`${p.nombre} no encaja: es para socket ${p.socket} y la placa tiene ${placa.socket}. Cada socket admite solo sus familias de procesador (apuntes S11).`, 'Ese procesador no encaja en esta placa.');
-  }
-  if (p.kind === 'ram' && p.gen !== placa.gen) {
-    return fallo(`${p.nombre} no entra en una placa ${placa.gen}: las ranuras son distintas según la generación (apuntes S11).`, 'Esa memoria no encaja en esta placa.');
-  }
-  if (p.kind === 'psu' && p.watts < potenciaNecesaria()) {
-    return fallo(`La fuente de ${p.watts} W se queda corta: el equipo necesita al menos ${potenciaNecesaria()} W, según (TDP CPU + TDP GPU + 100 W) × 1,3 (apuntes S11).`, 'Esa fuente no basta para este equipo.');
-  }
-  if (!enPedido(p.id)) {
-    return fallo(`${p.nombre} no es el componente que pide el cliente en este pedido. Mira el pedido y elige otra pieza.`, 'Esa pieza no es la que pide el cliente.');
-  }
+  const motivo = motivoColocar(p, sid);
+  if (motivo) return fallo(motivo.msg, motivo.corto);
   S.placed[p.id] = sid;
   const mensajes = {
     caja: `${p.nombre} colocada: ${p.rgb ? 'tiene iluminación RGB' : 'no lleva iluminación RGB'}.`,
@@ -603,14 +610,21 @@ function intentarColocar(p, x, y) {
   ok(esFacil() ? mensajes[p.kind] : 'Pieza colocada.');
 }
 
+// Devuelve null si el cable puede conectarse a ese conector (sin mirar la longitud).
+function motivoConectar(c, pid) {
+  if (c.port !== pid) {
+    return { msg: `${c.nombre} no encaja en el conector ${PORTS[pid].etiqueta}: el número de pines y la forma son distintos (apuntes S07).`, corto: 'Ese cable no encaja en ese conector.' };
+  }
+  if (!piezaPlacada('psu')) return { msg: 'Antes de conectar los cables, instala la fuente: de ella salen.', corto: 'Primero la fuente.' };
+  if (pluggedPort(pid)) return { msg: `El conector ${PORTS[pid].etiqueta} ya tiene un cable.`, corto: 'Ese conector ya tiene cable.' };
+  return null;
+}
+
 function intentarConectar(c, x, y, ruta) {
   const pid = puertoEn(x, y);
   if (!pid) return log('info', `${c.nombre} vuelve a la bandeja: suéltalo sobre su conector.`);
-  if (c.port !== pid) {
-    return fallo(`${c.nombre} no encaja en el conector ${PORTS[pid].etiqueta}: el número de pines y la forma son distintos (apuntes S07).`, 'Ese cable no encaja en ese conector.');
-  }
-  if (!piezaPlacada('psu')) return fallo('Antes de conectar los cables, instala la fuente: de ella salen.', 'Primero la fuente.');
-  if (pluggedPort(pid)) return fallo(`El conector ${PORTS[pid].etiqueta} ya tiene un cable.`, 'Ese conector ya tiene cable.');
+  const motivo = motivoConectar(c, pid);
+  if (motivo) return fallo(motivo.msg, motivo.corto);
   const largo = longitudCable(ruta, puertoRect(pid));
   if (largo > c.longitudMax) {
     return fallo(`${c.nombre} mide ${Math.round(largo)} cm de recorrido y el máximo es ${c.longitudMax} cm. Trázalo más directo entre la fuente y el conector.`, 'Ese cable no llega al conector.');
@@ -618,6 +632,7 @@ function intentarConectar(c, x, y, ruta) {
   S.plugged[c.id] = { port: pid, ruta };
   ok(esFacil() ? `${c.nombre} conectado (${Math.round(largo)} cm de ${c.longitudMax} cm).` : 'Cable conectado.');
 }
+
 
 // Pasos del pedido en curso (el texto depende de las piezas que pide el cliente).
 function pasos() {
@@ -792,7 +807,8 @@ function construirGuias() {
   }
 }
 
-function actualizarGuias(hover) {
+function actualizarGuias(hover, valido = false) {
+  const color = (id) => (hover !== id ? '#EBCB8B' : valido ? '#A3BE8C' : '#BF616A');
   if (!esFacil()) {
     for (const m of [...Object.values(guiaSlot), ...Object.values(guiaPort)]) m.visible = false;
     return;
@@ -805,6 +821,7 @@ function actualizarGuias(hover) {
     // La placa ocupa casi todo el chasis: su guía solo se marca de forma sutil.
     const base = id === 'board' ? 0.1 : 0.4;
     m.material.opacity = hover === id ? (id === 'board' ? 0.25 : 0.8) : base;
+    m.material.color.set(color(id));
     m.position.set(s.x, s.y, 0.06);
   }
   for (const [pid, m] of Object.entries(guiaPort)) {
@@ -815,6 +832,7 @@ function actualizarGuias(hover) {
       m.position.set(r.x, r.y, r.z + 0.06);
       m.scale.set(r.w + 0.8, r.h + 0.8, 1);
       m.material.opacity = hover === pid ? 0.9 : 0.55;
+      m.material.color.set(color(pid));
     }
   }
 }
@@ -950,13 +968,20 @@ window.addEventListener('pointermove', (e) => {
       // El cable se mantiene dentro de la placa: los puntos fuera se llevan al borde.
       const q = { x: Math.min(14.5, Math.max(-14.5, p.x)), y: Math.min(11.5, Math.max(-11.5, p.y)) };
       const ultimo = arrastre.ruta[arrastre.ruta.length - 1];
-      if (Math.hypot(q.x - ultimo[0], q.y - ultimo[1]) > 0.5) arrastre.ruta.push([q.x, q.y, ALTURA_CABLE]);
+      const distancia = Math.hypot(q.x - ultimo[0], q.y - ultimo[1]);
+      // El recorrido empieza en la salida de la fuente: los puntos lejos de ella no cuentan
+      // hasta que el cursor se acerca (si no, el tramo desde el borde de la escena se sumaría al cable).
+      const llegaALaSalida = arrastre.ruta.length > 1 || distancia < 6;
+      if (llegaALaSalida && distancia > 0.5) arrastre.ruta.push([q.x, q.y, ALTURA_CABLE]);
       dibujarPrevia(arrastre, q);
     } else {
       hover = huecoEn(p.x, p.y, pieza(arrastre.id));
     }
   }
-  actualizarGuias(hover);
+  const valido = arrastre.tipo === 'cable'
+    ? !!hover && !motivoConectar(cable(arrastre.id), hover)
+    : !!hover && !motivoColocar(pieza(arrastre.id), hover);
+  actualizarGuias(hover, valido);
 });
 
 function terminarArrastre(e, cancelado) {
