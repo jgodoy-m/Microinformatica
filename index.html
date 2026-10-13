@@ -520,7 +520,7 @@
 
     .practice-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 14px;
     }
 
@@ -675,6 +675,12 @@
     @media (min-width: 761px) {
       .hero-inner {
         padding-block: 54px;
+      }
+    }
+
+    @media (min-width: 761px) and (max-width: 1000px) {
+      .practice-grid {
+        grid-template-columns: minmax(0, 1fr);
       }
     }
 
@@ -907,6 +913,15 @@
             <div>
               <h3>Simulacro de examen</h3>
               <p>Comprueba lo que has aprendido con un test tipo examen. 51 preguntas de todos los apuntes.</p>
+            </div>
+            <span class="practice-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+          </a>
+
+          <a class="practice-card" href="juego/montaje.html">
+            <span class="practice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg></span>
+            <div>
+              <h3>Montaje del equipo</h3>
+              <p>Monta un equipo en 3D: coloca placa, procesador, memoria, gráfica y fuente, y conecta los cables antes de encenderlo.</p>
             </div>
             <span class="practice-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
           </a>
