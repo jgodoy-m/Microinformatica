@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark light">
+  <link rel="icon" href="data:,">
   <title>Montaje del equipo · Microinformática</title>
   <script>
     (() => {
@@ -17,6 +18,14 @@
       document.documentElement.dataset.theme =
         matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
     })();
+  </script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/three.module.min.js",
+        "three/addons/": "./vendor/three/"
+      }
+    }
   </script>
   <style>
     :root {
@@ -79,19 +88,73 @@
     @media (max-width: 900px) {
       .layout { grid-template-columns: minmax(0, 1fr); }
     }
-    .escena {
-      display: block;
+    .escena-wrap { display: grid; gap: 12px; min-width: 0; }
+    #escena {
+      position: relative;
       width: 100%;
-      height: auto;
+      aspect-ratio: 16 / 10;
       border: 1px solid var(--border);
       border-radius: 8px;
+      overflow: hidden;
+      background: #2E3440;
+      touch-action: none;
+    }
+    #escena canvas { display: block; width: 100%; height: 100%; }
+    @media (max-width: 480px) {
+      #escena { aspect-ratio: 4 / 3; }
+    }
+    .bandeja {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+      gap: 8px;
       background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .bandeja h2 { grid-column: 1 / -1; margin: 0; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .ficha {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 48px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-2);
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+      text-align: left;
+      cursor: grab;
       touch-action: none;
       user-select: none;
-      -webkit-user-select: none;
     }
-    .pieza { cursor: grab; }
-    .pieza:active { cursor: grabbing; }
+    .ficha:active { cursor: grabbing; }
+    .ficha:hover { border-color: var(--accent); }
+    .ficha i {
+      flex: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      border: 1px solid rgba(0, 0, 0, .35);
+    }
+    .ficha[aria-disabled="true"] { opacity: .4; cursor: default; }
+    #fantasma {
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 10;
+      pointer-events: none;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: var(--accent);
+      color: var(--accent-text);
+      font-size: 13px;
+      font-weight: 700;
+      transform: translate(-50%, -50%);
+      display: none;
+    }
     .panel {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -102,7 +165,7 @@
     .obj { margin: 0 0 6px; font-weight: 700; font-size: 17px; }
     .prog { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
     .acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-    button {
+    button.boton {
       font: inherit;
       min-height: 44px;
       padding: 8px 14px;
@@ -112,9 +175,9 @@
       color: var(--text);
       cursor: pointer;
     }
-    button:hover { border-color: var(--accent); }
+    button.boton:hover { border-color: var(--accent); }
     button.primario { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
-    h2 { font-size: 14px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    h2.titulo { font-size: 14px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
     .log {
       list-style: none;
       margin: 0;
@@ -134,35 +197,32 @@
   <header>
     <a href="../index.html">← Temario</a>
     <h1>Montaje del equipo</h1>
-    <button id="tema" type="button" aria-label="Cambiar tema">Tema</button>
+    <button id="tema" class="boton" type="button" aria-label="Cambiar tema">Tema</button>
   </header>
 
   <main class="layout">
-    <section aria-label="Escena de montaje">
-      <svg id="escena" class="escena" viewBox="0 0 1000 620" role="img" aria-label="Chasis con placa base, componentes y cables. Arrastra las piezas al chasis y conecta los cables.">
-        <g id="g-caso"></g>
-        <g id="g-tablero"></g>
-        <g id="g-piezas"></g>
-        <g id="g-cables"></g>
-        <g id="g-huecos"></g>
-        <g id="g-bandeja"></g>
-        <g id="g-arrastre"></g>
-      </svg>
+    <section class="escena-wrap" aria-label="Escena de montaje">
+      <div id="escena" role="img" aria-label="Chasis abierto con placa base y componentes en 3D"></div>
+      <div id="bandeja" class="bandeja">
+        <h2>Piezas y cables</h2>
+      </div>
     </section>
 
     <aside class="panel">
       <p class="obj" id="objetivo"></p>
       <p class="prog" id="progreso"></p>
       <div class="acciones">
-        <button id="encender" class="primario" type="button">Encender el equipo</button>
-        <button id="reiniciar" type="button">Empezar de nuevo</button>
+        <button id="encender" class="boton primario" type="button">Encender el equipo</button>
+        <button id="reiniciar" class="boton" type="button">Empezar de nuevo</button>
       </div>
-      <h2>Registro</h2>
+      <h2 class="titulo">Registro</h2>
       <ul id="log" class="log" aria-live="polite"></ul>
-      <p class="ayuda">Arrastra cada pieza al hueco que le corresponde. Los cables se conectan arrastrándolos a su conector.</p>
+      <p class="ayuda">Arrastra cada pieza de la bandeja al hueco que le corresponde en el chasis. Los cables se conectan arrastrándolos a su conector.</p>
     </aside>
   </main>
 
-  <script src="montaje.js"></script>
+  <div id="fantasma"></div>
+
+  <script type="module" src="montaje.js"></script>
 </body>
 </html>
