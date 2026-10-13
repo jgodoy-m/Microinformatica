@@ -8,115 +8,155 @@ window.TEMAS.push({
   titulo: 'Averías en la placa base',
   resumen: 'Diagnostica cinco averías siguiendo el orden de la S12 y localiza cada conector en una placa real.',
 
+  /* Zonas sobre placa-quiz.jpg: motherboard.jpg recortada (100, 70, 1720, 1390) y girada 90° a la derecha,
+     para ver la placa en su posición habitual (panel de E/S arriba a la izquierda).
+     n: nombre. d: qué es y qué hay que saber. f: para qué sirve sin decir su nombre (preguntas «Por su función»). */
   mapa: {
     foto: {
-      src: 'motherboard.jpg',
-      ancho: 1800,
-      alto: 1497,
-      alt: 'Foto frontal de una placa base ATX con sus conectores, zócalo, ranuras y disipadores',
+      src: 'placa-quiz.jpg',
+      ancho: 1320,
+      alto: 1620,
+      alt: 'Foto de una placa base ATX en vertical, con el panel de E/S arriba a la izquierda',
       credito: {
         autor: 'PantheraLeo1359531',
         autorUrl: 'https://commons.wikimedia.org/wiki/File:Asus-ROG-Strix-Z390-F-Gaming-Motherboard_20201120_DSC6025.jpg',
         licencia: 'CC BY 4.0',
         licenciaUrl: 'https://creativecommons.org/licenses/by/4.0/',
-        nota: 'Imagen reducida a 1800 px; sin otros cambios.'
+        nota: 'Imagen recortada y girada 90°.'
       }
     },
     zonas: {
+      cpu: {
+        n: 'Zócalo de CPU (LGA1151)',
+        d: 'Socket del procesador. Comprueba socket y BIOS antes de cambiar la CPU.',
+        f: 'Aquí se instala el procesador. Tiene una palanca de retención y cientos de contactos.',
+        rects: [[590, 360, 280, 360]]
+      },
       vrm: {
         n: 'VRM (etapas de alimentación de la CPU)',
         d: 'Convierte +12 V en la tensión que necesita la CPU. Sus disipadores se calientan: un VRM sin refrigeración limita la CPU.',
-        rects: [[200, 505, 160, 450], [140, 915, 850, 430], [400, 780, 170, 110]]
-      },
-      atx: {
-        n: 'ATX 24 pines',
-        d: 'Alimenta la placa desde la fuente. Tiene clip: no se fuerza.',
-        rects: [[598, 128, 248, 62]]
+        f: 'Convierte los 12 V de la fuente en la tensión baja y estable del procesador. Va bajo disipadores alrededor del zócalo.',
+        rects: [[440, 95, 430, 175], [275, 165, 195, 570]]
       },
       eps: {
         n: 'EPS 4+4 pines',
         d: 'Alimenta la CPU con +12 V. Sin él, la placa no pasa el POST.',
-        rects: [[226, 992, 50, 92]]
-      },
-      cpu: {
-        n: 'Zócalo de CPU (LGA1151)',
-        d: 'Socket del procesador. Comprueba socket y BIOS antes de cambiar la CPU.',
-        rects: [[462, 505, 356, 282]]
+        f: 'Conector de alimentación de 12 V dedicado solo al procesador. Sin él, la placa no pasa el POST.',
+        rects: [[305, 125, 72, 55]]
       },
       ram: {
         n: 'Slots de RAM (DIMM)',
-        d: 'Módulos DIMM. Dual channel con los slots que indique el manual.',
-        rects: [[262, 222, 718, 200]]
+        d: 'Cuatro ranuras DIMM. Para dual channel, usa los slots que indique el manual (normalmente A2 y B2).',
+        f: 'Ranuras largas con pestañas en los extremos donde se instalan los módulos de memoria.',
+        rects: [[975, 160, 190, 710]]
       },
-      pcie: {
-        n: 'PCIe x16 y x1',
-        d: 'Ranuras de la gráfica y de periféricos. La x16 puede tener menos carriles eléctricos.',
-        rects: [[1066, 650, 546, 440]]
+      atx: {
+        n: 'ATX 24 pines',
+        d: 'Alimenta la placa desde la fuente. Tiene clip: no se fuerza.',
+        f: 'El conector de alimentación más grande: lleva la energía de la fuente a toda la placa.',
+        rects: [[1205, 492, 58, 256]]
       },
-      m21: {
-        n: 'M.2_1 (SOCKET 3)',
-        d: 'Para SSD NVMe o SATA según la clave del módulo y lo que admita la placa.',
-        rects: [[1040, 650, 22, 290]]
-      },
-      m22: {
-        n: 'M.2_2 bajo el disipador',
-        d: 'Ranura M.2 cubierta por el disipador: hay que quitarlo para cambiar el SSD.',
-        rects: [[1385, 330, 34, 240]]
-      },
-      m23: {
-        n: 'M.2 junto a la CPU',
-        d: 'Ranura M.2 horizontal al lado del zócalo. Sus tornillos fijan el módulo.',
-        rects: [[905, 538, 112, 40]]
-      },
-      sata: {
-        n: 'Puertos SATA 6 Gb/s',
-        d: 'Datos para discos y unidades. Necesitan también alimentación SATA.',
-        rects: [[1074, 110, 244, 92]]
-      },
-      usb3: {
-        n: 'USB 3.2 frontal (Tipo-C)',
-        d: 'Cabecera interna USB 3.2 para el frontal de la caja. Tiene muesca: no se fuerza.',
-        rects: [[878, 138, 90, 40]]
-      },
-      usb2: {
-        n: 'USB 2.0 interno',
-        d: 'Cabeceras de 9 pines para los puertos USB de la caja. No confundir con la de 19 pines.',
-        rects: [[1618, 352, 56, 300]]
-      },
-      fpanel: {
-        n: 'F_PANEL (panel frontal)',
-        d: 'Pulsador de encendido, reset y LED. Solo los LED tienen polaridad.',
-        rects: [[1618, 128, 52, 135]]
+      cpufan: {
+        n: 'CPU_FAN y CPU_OPT',
+        d: 'Cabeceras de 4 pines (PWM) para el ventilador del disipador de la CPU. Sin giro en CPU_FAN, la placa avisa al arrancar.',
+        f: 'Cabeceras de 4 pines reservadas al ventilador del disipador del procesador.',
+        rects: [[870, 180, 90, 70]]
       },
       chafan: {
         n: 'Ventiladores de caja (CHA_FAN)',
-        d: 'Cabeceras de 4 pines para los ventiladores de la caja. Controlan la temperatura de todo el equipo.',
-        rects: [[1372, 126, 170, 68]]
+        d: 'Cabeceras de 4 pines para los ventiladores de la caja. No sustituyen al CPU_FAN.',
+        f: 'Cabeceras de 4 pines para los ventiladores que mueven el aire dentro de la caja.',
+        rects: [[388, 798, 50, 32], [1228, 1275, 34, 158]]
       },
-      cpufan: {
-        n: 'CPU_FAN',
-        d: 'Ventilador de CPU, 4 pines (PWM). No lo conectes en un header de caja sin mirar.',
-        rects: [[893, 1000, 60, 44]]
+      qled: {
+        n: 'LED de diagnóstico (Q-LED)',
+        d: 'Cuatro LED: BOOT, VGA, DRAM y CPU. El que queda encendido indica dónde se detiene el POST.',
+        f: 'Cuatro luces que se quedan encendidas en la fase del arranque que ha fallado.',
+        rects: [[1215, 425, 42, 60]]
+      },
+      usb3c: {
+        n: 'USB 3.2 frontal (Tipo-C)',
+        d: 'Cabecera interna para el puerto USB-C del frontal de la caja. Es pequeña y frágil: no se fuerza.',
+        f: 'Conector interno para el puerto frontal reversible de la caja, el más rápido.',
+        rects: [[1206, 786, 40, 66]]
+      },
+      m21: {
+        n: 'M.2_1 (SOCKET 3)',
+        d: 'Para SSD NVMe o SATA según la clave del módulo. Admite 2242, 2260 y 2280: el tornillo va en el agujero de su longitud.',
+        f: 'Ranura para un SSD en formato tarjeta, con tres agujeros para fijar módulos de distinta longitud.',
+        rects: [[440, 812, 425, 100]]
+      },
+      m22: {
+        n: 'M.2_2 bajo el disipador',
+        d: 'Ranura M.2 cubierta por un disipador: hay que quitarlo para cambiar el SSD.',
+        f: 'Ranura para un SSD que queda oculta bajo una chapa metálica: hay que retirarla para cambiar la unidad.',
+        rects: [[518, 1332, 664, 114]]
+      },
+      pciex16: {
+        n: 'Ranuras PCIe x16',
+        d: 'Para la tarjeta gráfica. La primera, la más cercana a la CPU, es la de 16 carriles reales; las otras pueden tener menos.',
+        f: 'Ranuras largas de expansión donde se instala la tarjeta gráfica.',
+        rects: [[298, 958, 455, 66], [298, 1250, 455, 64], [298, 1455, 455, 55]]
+      },
+      pciex1: {
+        n: 'Ranuras PCIe x1',
+        d: 'Ranuras cortas para tarjetas de red, sonido o capturadoras. Una tarjeta x1 también entra en una ranura x16.',
+        f: 'Ranuras cortas de expansión para tarjetas pequeñas, como una de red o de sonido.',
+        rects: [[298, 878, 128, 48], [298, 1165, 128, 50], [298, 1360, 128, 48]]
       },
       chipset: {
-        n: 'Chipset',
-        d: 'Controla SATA, USB y PCIe. Bajo su disipador: no se desmonta sin necesidad.',
-        rects: [[1050, 205, 380, 380]]
+        n: 'Chipset (bajo el disipador)',
+        d: 'Controla SATA, USB y parte de las líneas PCIe. Bajo su disipador: no se desmonta sin necesidad.',
+        f: 'Chip bajo un disipador que gestiona los puertos SATA, los USB y parte de las ranuras de expansión.',
+        rects: [[815, 990, 370, 310]]
+      },
+      sata: {
+        n: 'Puertos SATA 6 Gb/s',
+        d: 'Datos para discos y unidades ópticas. El disco necesita además su cable de alimentación SATA.',
+        f: 'Puertos de datos de 7 pines para discos duros, SSD de 2,5" y unidades ópticas.',
+        rects: [[1190, 972, 86, 240]]
       },
       bateria: {
         n: 'Batería CR2032',
         d: 'Mantiene la hora y la configuración de la BIOS. Si falla, la hora se pierde al apagar.',
-        rects: [[1160, 800, 116, 130]]
+        f: 'Pila de botón que conserva la hora y la configuración de la BIOS con el equipo desenchufado.',
+        rects: [[460, 1062, 84, 106]]
+      },
+      clrtc: {
+        n: 'Puente CLRTC (borrar CMOS)',
+        d: 'Dos pines que, puenteados con el equipo desenchufado, devuelven la BIOS a sus valores de fábrica.',
+        f: 'Dos pines que, puenteados con el equipo desenchufado, borran la configuración de la BIOS.',
+        rects: [[1092, 1536, 28, 30]]
       },
       superio: {
         n: 'Super I/O (controladora de E/S)',
-        d: 'Gestiona puertos serie, ventiladores y sondas de temperatura de la placa.',
-        rects: [[1195, 1120, 80, 110]]
+        d: 'Gestiona puertos heredados, ventiladores y sondas de temperatura de la placa.',
+        f: 'Chip que gestiona puertos heredados, la velocidad de los ventiladores y las sondas de temperatura.',
+        rects: [[162, 1108, 98, 98]]
       },
       audio: {
         n: 'Códec de audio',
-        d: 'Convierte el audio digital en señal analógica para los jacks traseros y frontales.',
-        rects: [[1395, 1162, 95, 100]]
+        d: 'Convierte el audio digital en señal analógica para los jacks traseros y frontales. Va bajo una tapa metálica.',
+        f: 'Chip bajo una tapa metálica que convierte el sonido digital en señal analógica para los jacks.',
+        rects: [[124, 1290, 100, 104]]
+      },
+      usb2: {
+        n: 'USB 2.0 interno',
+        d: 'Cabeceras de 9 pines para los puertos USB de la caja. No confundir con la de 19 pines.',
+        f: 'Cabeceras de 9 pines para los puertos frontales más lentos de la caja.',
+        rects: [[745, 1528, 78, 48], [948, 1528, 76, 48]]
+      },
+      usb3: {
+        n: 'USB 3.2 frontal (19 pines)',
+        d: 'Cabecera ancha de 19 pines para los USB-A azules del frontal. Tiene muesca: no se fuerza.',
+        f: 'Cabecera ancha de 19 pines para los puertos frontales rápidos de tipo A.',
+        rects: [[832, 1528, 112, 48]]
+      },
+      fpanel: {
+        n: 'F_PANEL (panel frontal)',
+        d: 'Pulsador de encendido, reset y LED. Solo los LED tienen polaridad.',
+        f: 'Aquí se conectan el botón de encendido, el reset y los LED de la caja.',
+        rects: [[1120, 1524, 124, 50]]
       }
     }
   },

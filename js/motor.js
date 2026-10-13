@@ -534,38 +534,49 @@
     };
   }
 
-  /* ---------- MAPA ---------- */
+  /* ---------- MAPA Y QUIZ ---------- */
+  /* Explorar: se pincha una zona y se lee qué es.
+     Quiz: preguntas de tres tipos sobre las zonas del tema.
+       localizar  → se da el nombre y se pincha en la foto (dos intentos; el primer fallo dice qué se ha pinchado).
+       identificar → se marca una zona y se elige su nombre entre cuatro.
+       funcion    → se describe para qué sirve (campo «f» de la zona) y se elige el nombre entre cuatro.
+     Durante el quiz las zonas no llevan su nombre en aria-label ni se resalta la respuesta. */
+  var TIPOS_QUIZ = {
+    localizar: { n: 'Localizar', d: 'Te digo el componente y lo pinchas en la foto.' },
+    identificar: { n: 'Identificar', d: 'Marco una zona y eliges cómo se llama.' },
+    funcion: { n: 'Por su función', d: 'Te digo para qué sirve y eliges cuál es.' }
+  };
+  var PREGUNTAS_QUIZ = 12;
+
   function mapa(tema, raiz) {
     var F = tema.mapa.foto, Z = tema.mapa.zonas;
     var ids = Object.keys(Z);
+    var conFuncion = ids.filter(function (id) { return Z[id].f; });
     var q = function (s) { return raiz.querySelector(s); };
-    var modo = 'explorar', Q = null, bloqueado = false, timer = null;
+    var qa = function (s) { return Array.prototype.slice.call(raiz.querySelectorAll(s)); };
+    var modo = 'explorar', Q = null, eleccion = 'mixto';
 
     var cr = F.credito;
     var credito = cr ? '<p class="credit">Foto: <a href="' + cr.autorUrl + '">' + escapar(cr.autor) + '</a>, Wikimedia Commons, licencia <a href="' + cr.licenciaUrl + '">' + escapar(cr.licencia) + '</a>. ' + escapar(cr.nota) + '</p>' : '';
 
     raiz.innerHTML =
+      '<header class="cabecera-pag"><h1>Quiz de la placa base</h1>' +
+        '<p class="intro">Aprende dónde está cada componente en una placa real y ponte a prueba.</p></header>' +
+      '<div class="modes" role="group" aria-label="Modo">' +
+        '<button type="button" class="mE" aria-pressed="true">Explorar</button>' +
+        '<button type="button" class="mQ" aria-pressed="false">Quiz</button>' +
+      '</div>' +
       '<div class="card mapa-card">' +
         '<figure class="map"><svg class="mapa" viewBox="0 0 ' + F.ancho + ' ' + F.alto + '" role="group" aria-label="' + escapar(F.alt) + '">' +
           '<image href="' + F.src + '" x="0" y="0" width="' + F.ancho + '" height="' + F.alto + '" preserveAspectRatio="xMidYMid meet"/>' +
           '<g class="zonas"></g>' +
         '</svg></figure>' +
-        '<div class="mapa-panel">' +
-          '<div class="modes">' +
-            '<button type="button" class="mE" aria-pressed="true">Explorar</button>' +
-            '<button type="button" class="mQ" aria-pressed="false">Quiz</button>' +
-            '<span class="qScore val"></span>' +
-          '</div>' +
-          '<div class="legend">' +
-            '<span><i class="sw sw-hover"></i>Cursor o foco</span>' +
-            '<span><i class="sw sw-hit"></i>Acierto</span>' +
-            '<span><i class="sw sw-miss"></i>Fallo</span>' +
-          '</div>' +
-          '<div class="log info" aria-live="polite"></div>' +
-        '</div>' +
+        '<div class="mapa-panel" aria-live="polite"></div>' +
       '</div>' + credito;
 
     var zonasG = q('.zonas');
+    var panel = q('.mapa-panel');
+    var svg = q('svg.mapa');
 
     ids.forEach(function (id) {
       var g = document.createElementNS(NS, 'g');
@@ -573,89 +584,244 @@
       g.setAttribute('data-id', id);
       g.setAttribute('tabindex', '0');
       g.setAttribute('role', 'button');
-      g.setAttribute('aria-label', Z[id].n);
       Z[id].rects.forEach(function (r) {
         var rect = document.createElementNS(NS, 'rect');
         rect.setAttribute('x', r[0]); rect.setAttribute('y', r[1]);
         rect.setAttribute('width', r[2]); rect.setAttribute('height', r[3]);
         g.appendChild(rect);
       });
-      g.addEventListener('click', function () { zona(id); });
+      g.addEventListener('click', function (e) { e.stopPropagation(); zona(id); });
       g.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); zona(id); }
       });
       zonasG.appendChild(g);
     });
+    /* Un clic en la foto fuera de cualquier zona: en «localizar» avisa sin gastar intento. */
+    svg.addEventListener('click', function () {
+      var p = Q && Q.list[Q.i];
+      if (modo === 'quiz' && p && p.tipo === 'localizar' && !p.resuelta) {
+        var aviso = q('.q-aviso');
+        if (aviso) aviso.textContent = 'Ahí no hay ningún componente del quiz. Prueba en otro sitio.';
+      }
+    });
 
     function zonaEl(id) { return zonasG.querySelector('[data-id="' + id + '"]'); }
-    function limpiar() { zonasG.querySelectorAll('.z').forEach(function (g) { g.classList.remove('hit', 'miss', 'pulse'); }); }
+    function limpiar() { qa('.zonas .z').forEach(function (g) { g.classList.remove('hit', 'miss', 'marca', 'sel'); }); }
     function mezclar(a) {
       a = a.slice();
       for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
       return a;
     }
-
-    function setModo(m) {
-      modo = m; limpiar(); bloqueado = false; clearTimeout(timer);
-      q('.mE').setAttribute('aria-pressed', m === 'explorar');
-      q('.mQ').setAttribute('aria-pressed', m === 'quiz');
-      if (m === 'quiz') {
-        Q = { list: mezclar(ids).slice(0, Math.min(10, ids.length)), i: 0, ok: 0 };
-        preguntar();
-      } else {
-        Q = null;
-        q('.qScore').textContent = '';
-        q('.info').innerHTML = 'Pincha una zona de la placa para ver qué es y para qué sirve.';
-      }
+    /* En el quiz las zonas no dicen su nombre: el lector de pantalla no debe dar la respuesta. */
+    function etiquetar(conNombre) {
+      ids.forEach(function (id, i) {
+        zonaEl(id).setAttribute('aria-label', conNombre ? Z[id].n : 'Zona ' + (i + 1) + ' de la placa');
+      });
+    }
+    function zonasActivas(activas) {
+      svg.classList.toggle('bloqueado', !activas);
+      qa('.zonas .z').forEach(function (g) { g.setAttribute('tabindex', activas ? '0' : '-1'); });
     }
 
+    function setModo(m) {
+      modo = m; Q = null; limpiar();
+      q('.mE').setAttribute('aria-pressed', m === 'explorar');
+      q('.mQ').setAttribute('aria-pressed', m === 'quiz');
+      if (m === 'quiz') { inicioQuiz(); return; }
+      etiquetar(true); zonasActivas(true);
+      panel.innerHTML =
+        '<h2 class="label">Explorar</h2>' +
+        '<div class="explora"><p class="muted">Pincha una zona de la placa para ver qué es y para qué sirve.</p></div>' +
+        '<p class="nota">Hay ' + ids.length + ' componentes marcados. Cuando los tengas claros, pasa al quiz.</p>';
+    }
+
+    function inicioQuiz() {
+      etiquetar(false); zonasActivas(false);
+      var opciones = [['mixto', 'Mixto', 'Los tres tipos de pregunta mezclados. Recomendado.']].concat(
+        Object.keys(TIPOS_QUIZ).map(function (k) { return [k, TIPOS_QUIZ[k].n, TIPOS_QUIZ[k].d]; }));
+      panel.innerHTML =
+        '<h2 class="label">Nuevo quiz</h2>' +
+        '<p>' + PREGUNTAS_QUIZ + ' preguntas sobre los componentes de la placa. Elige el tipo:</p>' +
+        '<div class="tipos" role="radiogroup" aria-label="Tipo de quiz">' + opciones.map(function (o) {
+          return '<button type="button" class="tipo" role="radio" data-t="' + o[0] + '" aria-checked="' + (o[0] === eleccion) + '">' +
+            '<b>' + escapar(o[1]) + '</b><span>' + escapar(o[2]) + '</span></button>';
+        }).join('') + '</div>' +
+        '<button type="button" class="btn-prim empezar">Empezar</button>';
+      qa('.tipo').forEach(function (b) {
+        b.onclick = function () {
+          eleccion = b.dataset.t;
+          qa('.tipo').forEach(function (x) { x.setAttribute('aria-checked', x === b); });
+        };
+      });
+      q('.empezar').onclick = function () { empezar(eleccion, null); };
+    }
+
+    /* Monta la lista de preguntas. «soloIds» limita el quiz a esas zonas (repaso de fallos). */
+    function empezar(tipo, soloIds) {
+      var base = soloIds ? soloIds.slice() : ids;
+      var n = soloIds ? soloIds.length : Math.min(PREGUNTAS_QUIZ, ids.length);
+      var zonas = mezclar(base).slice(0, n);
+      var tipos = Object.keys(TIPOS_QUIZ);
+      var list = zonas.map(function (id, i) {
+        var t = tipo === 'mixto' ? tipos[i % tipos.length] : tipo;
+        if (t === 'funcion' && !Z[id].f) t = 'identificar';
+        return { id: id, tipo: t, intentos: 0, resultado: null, resuelta: false };
+      });
+      list = mezclar(list);
+      Q = { list: list, i: 0, puntos: 0, racha: 0, mejorRacha: 0, tipo: tipo };
+      zonasActivas(false);
+      preguntar();
+    }
+
+    function opcionesPara(id) {
+      var otras = mezclar(ids.filter(function (x) { return x !== id; })).slice(0, 3);
+      return mezclar(otras.concat(id));
+    }
+
+    function cabecera() {
+      var hechas = Q.i;
+      return '<div class="q-cab">' +
+          '<span>Pregunta <b>' + (Q.i + 1) + '</b> de ' + Q.list.length + '</span>' +
+          '<span class="val">Puntos ' + fmt(Q.puntos) + ' · Racha ' + Q.racha + '</span>' +
+        '</div>' +
+        '<div class="q-prog" role="progressbar" aria-label="Progreso del quiz" aria-valuemin="0" aria-valuemax="' + Q.list.length + '" aria-valuenow="' + hechas + '">' +
+          '<b style="width:' + (100 * hechas / Q.list.length) + '%"></b></div>';
+    }
+    function fmt(n) { return String(n).replace('.', ','); }
+
     function preguntar() {
-      limpiar(); bloqueado = false;
-      if (Q.i >= Q.list.length) {
-        q('.info').innerHTML = '<b>Fin del quiz:</b> ' + Q.ok + ' de ' + Q.list.length + ' aciertos.';
-        q('.qScore').textContent = '';
-        var rep = document.createElement('button');
-        rep.type = 'button';
-        rep.className = 'mQ repetir';
-        rep.textContent = 'Repetir quiz';
-        rep.onclick = function () { setModo('quiz'); };
-        q('.info').appendChild(rep);
-        rep.focus();
-        return;
+      limpiar();
+      if (Q.i >= Q.list.length) { fin(); return; }
+      var p = Q.list[Q.i], z = Z[p.id];
+      var cuerpo = '<span class="q-tipo">' + escapar(TIPOS_QUIZ[p.tipo].n) + '</span>';
+      if (p.tipo === 'localizar') {
+        zonasActivas(true);
+        cuerpo += '<p class="q-enun">¿Dónde está <b>' + escapar(z.n) + '</b>? Pínchalo en la foto.</p>' +
+          '<p class="q-aviso" role="status"></p>';
+      } else {
+        zonasActivas(false);
+        if (p.tipo === 'identificar') {
+          zonaEl(p.id).classList.add('marca');
+          cuerpo += '<p class="q-enun">¿Qué es la zona marcada en la foto?</p>';
+        } else {
+          cuerpo += '<p class="q-enun">' + escapar(z.f) + '</p><p class="q-sub">¿Qué componente es?</p>';
+        }
+        cuerpo += '<div class="q-ops">' + opcionesPara(p.id).map(function (o, i) {
+          return '<button type="button" class="q-op" data-id="' + o + '"><span class="q-letra" aria-hidden="true">' + 'ABCD'[i] + '</span>' + escapar(Z[o].n) + '</button>';
+        }).join('') + '</div>';
       }
-      var target = Q.list[Q.i];
-      zonaEl(target).classList.add('pulse');
-      q('.info').innerHTML = 'Pincha: <b>' + escapar(Z[target].n) + '</b>';
-      q('.qScore').textContent = 'Aciertos: ' + Q.ok + '/' + Q.i;
+      panel.innerHTML = cabecera() + '<div class="q-cuerpo">' + cuerpo + '</div><div class="q-fb"></div>';
+      qa('.q-op').forEach(function (b) { b.onclick = function () { responderOpcion(b); }; });
+      var foco = q('.q-op') || q('.q-enun');
+      if (foco && foco.classList.contains('q-op')) foco.focus();
+      if (p.tipo === 'identificar') {
+        var r = zonaEl(p.id).getBoundingClientRect();
+        if (r.top < 0 || r.bottom > window.innerHeight) zonaEl(p.id).scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
     }
 
     function zona(id) {
       if (modo === 'explorar') {
-        q('.info').innerHTML = '<b>' + escapar(Z[id].n) + '</b><p class="info-d">' + escapar(Z[id].d) + '</p>';
+        limpiar(); zonaEl(id).classList.add('sel');
+        q('.explora').innerHTML = '<p class="explora-n">' + escapar(Z[id].n) + '</p><p>' + escapar(Z[id].d) + '</p>';
         return;
       }
-      if (!Q || bloqueado || Q.i >= Q.list.length) return;
-      bloqueado = true;
-      var target = Q.list[Q.i];
-      var g = zonaEl(id), gt = zonaEl(target);
-      gt.classList.remove('pulse');
-      if (id === target) {
-        g.classList.add('hit'); Q.ok++;
-        q('.info').innerHTML = '<span class="ok">Correcto.</span> ' + escapar(Z[target].d);
+      var p = Q && Q.list[Q.i];
+      if (!p || p.tipo !== 'localizar' || p.resuelta) return;
+      p.intentos++;
+      if (id === p.id) {
+        zonaEl(id).classList.add('hit');
+        resolver(p.intentos === 1 ? 1 : 0.5, p.intentos === 1 ? '¡Correcto!' : 'Correcto al segundo intento.');
+      } else if (p.intentos === 1) {
+        var g = zonaEl(id);
+        g.classList.add('miss');
+        q('.q-aviso').innerHTML = '<span class="bad">No.</span> Eso es <b>' + escapar(Z[id].n) + '</b>. Te queda un intento.';
+        setTimeout(function () { g.classList.remove('miss'); }, 1200);
       } else {
-        g.classList.add('miss'); gt.classList.add('hit');
-        q('.info').innerHTML = '<span class="bad">No era esa.</span> Era <b>' + escapar(Z[target].n) + '</b>: ' + escapar(Z[target].d);
+        zonaEl(id).classList.add('miss'); zonaEl(p.id).classList.add('hit');
+        resolver(0, 'Tampoco. Eso es ' + Z[id].n + '. La respuesta está marcada en verde.');
       }
-      Q.i++;
-      /* El marcador se actualiza al responder; el alumno avanza cuando quiere, sin temporizador. */
-      q('.qScore').textContent = 'Aciertos: ' + Q.ok + '/' + Q.i;
+    }
+
+    function responderOpcion(b) {
+      var p = Q.list[Q.i];
+      if (p.resuelta) return;
+      var ok = b.dataset.id === p.id;
+      qa('.q-op').forEach(function (x) {
+        x.disabled = true;
+        if (x.dataset.id === p.id) x.classList.add('correcta');
+      });
+      if (!ok) b.classList.add('errada');
+      zonaEl(p.id).classList.remove('marca');
+      zonaEl(p.id).classList.add('hit');
+      resolver(ok ? 1 : 0, ok ? '¡Correcto!' : 'No. Era ' + Z[p.id].n + ', marcado en verde en la foto.');
+    }
+
+    function resolver(puntos, titulo) {
+      var p = Q.list[Q.i];
+      p.resuelta = true; p.resultado = puntos;
+      Q.puntos += puntos;
+      Q.racha = puntos === 1 ? Q.racha + 1 : 0;
+      Q.mejorRacha = Math.max(Q.mejorRacha, Q.racha);
+      zonasActivas(false);
+      var aviso = q('.q-aviso'); if (aviso) aviso.textContent = '';
+      var clase = puntos === 1 ? 'ok' : puntos > 0 ? 'medio' : 'bad';
+      var fb = q('.q-fb');
+      fb.className = 'q-fb ' + clase;
+      fb.innerHTML = '<p class="q-fb-t">' + escapar(titulo) + '</p>' +
+        '<p><b>' + escapar(Z[p.id].n) + ':</b> ' + escapar(Z[p.id].d) + '</p>';
+      q('.q-cab .val').textContent = 'Puntos ' + fmt(Q.puntos) + ' · Racha ' + Q.racha;
       var sig = document.createElement('button');
       sig.type = 'button';
-      sig.className = 'mQ siguiente';
-      sig.textContent = Q.i < Q.list.length ? 'Siguiente pregunta →' : 'Ver resultado';
-      sig.onclick = function () { preguntar(); };
-      q('.info').appendChild(sig);
-      sig.focus();
+      sig.className = 'btn-prim siguiente';
+      sig.textContent = Q.i + 1 < Q.list.length ? 'Siguiente pregunta →' : 'Ver resultado';
+      sig.onclick = function () { Q.i++; preguntar(); };
+      fb.appendChild(sig);
+      sig.focus({ preventScroll: true });
+      /* En móvil el panel va debajo de la foto: se asegura que la corrección quede a la vista. */
+      var r = fb.getBoundingClientRect();
+      if (r.bottom > window.innerHeight) fb.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+
+    function fin() {
+      zonasActivas(false); limpiar();
+      var total = Q.list.length;
+      var pct = Math.round(100 * Q.puntos / total);
+      var fallos = Q.list.filter(function (p) { return p.resultado < 1; });
+      var nota = pct >= 90 ? 'Dominas la placa.' : pct >= 70 ? 'Muy bien: repasa los fallos y lo tendrás.' : pct >= 50 ? 'Vas bien, pero conviene repasar.' : 'Vuelve a Explorar y repasa los componentes.';
+      var porTipo = Object.keys(TIPOS_QUIZ).map(function (t) {
+        var de = Q.list.filter(function (p) { return p.tipo === t; });
+        if (!de.length) return '';
+        var pts = de.reduce(function (s, p) { return s + p.resultado; }, 0);
+        return '<li><span>' + escapar(TIPOS_QUIZ[t].n) + '</span><span class="val">' + fmt(pts) + ' / ' + de.length + '</span></li>';
+      }).join('');
+      panel.innerHTML =
+        '<h2 class="label">Resultado</h2>' +
+        '<p class="q-nota"><span class="val">' + pct + ' %</span> ' + escapar(nota) + '</p>' +
+        '<ul class="desglose">' +
+          '<li><span>Puntos</span><span class="val">' + fmt(Q.puntos) + ' / ' + total + '</span></li>' +
+          porTipo +
+          '<li><span>Mejor racha</span><span class="val">' + Q.mejorRacha + '</span></li>' +
+        '</ul>' +
+        (fallos.length
+          ? '<h3 class="label">Para repasar</h3><ul class="q-fallos">' + fallos.map(function (p) {
+              return '<li><button type="button" class="q-ver" data-id="' + p.id + '">' + escapar(Z[p.id].n) + '</button></li>';
+            }).join('') + '</ul>'
+          : '<p class="ok">Sin fallos.</p>') +
+        '<div class="q-acciones">' +
+          (fallos.length ? '<button type="button" class="btn-prim repasar">Repasar fallos (' + fallos.length + ')</button>' : '') +
+          '<button type="button" class="btn-sec nuevo">Nuevo quiz</button>' +
+        '</div>';
+      qa('.q-ver').forEach(function (b) {
+        b.onclick = function () {
+          limpiar(); zonaEl(b.dataset.id).classList.add('hit');
+          qa('.q-ver').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+        };
+      });
+      var rep = q('.repasar');
+      if (rep) rep.onclick = function () { empezar(Q.tipo, fallos.map(function (p) { return p.id; })); };
+      q('.nuevo').onclick = inicioQuiz;
+      (rep || q('.nuevo')).focus({ preventScroll: true });
     }
 
     q('.mE').onclick = function () { setModo('explorar'); };
@@ -691,7 +857,7 @@
             '<nav class="nav" aria-label="Secciones">' +
               '<button type="button" class="nav-item" data-v="inicio">Inicio</button>' +
               '<button type="button" class="nav-item" data-v="caso">Caso actual</button>' +
-              '<button type="button" class="nav-item" data-v="mapa">Mapa del quiz</button>' +
+              '<button type="button" class="nav-item" data-v="mapa">Quiz de la placa</button>' +
               '<button type="button" class="nav-item" data-v="ayuda">Ayuda</button>' +
             '</nav>' +
             '<div class="side-pie">' +
