@@ -186,6 +186,9 @@
     }
     .ficha:active { cursor: grabbing; }
     .ficha:hover { border-color: var(--accent); }
+    /* Estados de las fichas: normal, seleccionada (teclado), arrastrando, y el punto de soltado. */
+    .ficha.arrastrando { opacity: .45; outline: 2px dashed var(--accent); outline-offset: 2px; }
+    #escena.destino-no-valido { outline: 3px dashed var(--bad); outline-offset: -3px; }
     .ficha[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
     .huecos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
     .huecos .boton { min-height: 40px; }

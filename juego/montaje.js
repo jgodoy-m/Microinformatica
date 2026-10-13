@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { CABLES } from './catalogo.js';
 import { SLOTS, SALIDA_CABLE, ALTURA_CABLE } from './geometria.js';
 import { hooks, esFacil, cable, estado, pieza, piezaPlacada, tabla } from './estado.js';
-import { $, bandeja, botonesModo, fantasma } from './dom.js';
+import { $, bandeja, botonesModo, contenedor, fantasma } from './dom.js';
 import { actualizarGuias, ajustarTamano, caja, camera, conectorCable, construirCaso, construirGuias, construirPieza, construirTablero, dibujarPrevia, fans, grupoCables, grupoCaso, grupoPiezas, grupoTablero, huecoEn, ledMats, modelosListos, posicionDe, puertoEn, puertoRect, puntosCable, renderer, tuboCable, vaciar, claveTablero } from './escena.js';
 import { encender, intentarColocar, intentarConectar, log, pintarPanel, reiniciar, comprobarConexiones, comprobarFuente } from './juego.js';
 import { pintarBandeja } from './bandeja.js';
@@ -70,7 +70,7 @@ bandeja.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   estado.arrastre = { id: el.dataset.id, tipo: el.dataset.tipo, el, ruta: null };
   if (estado.arrastre.tipo === 'cable') estado.arrastre.ruta = [SALIDA_CABLE[estado.arrastre.id]];
-  el.style.opacity = '0.4';
+  el.classList.add('arrastrando');
   fantasma.textContent = el.textContent;
   fantasma.style.display = 'block';
   moverFantasma(e.clientX, e.clientY);
@@ -93,6 +93,8 @@ window.addEventListener('pointermove', (e) => {
       hover = huecoEn(p.x, p.y, pieza(estado.arrastre.id));
     }
   }
+  // Destino no válido: borde discontinuo sobre la placa cuando no hay hueco para la pieza.
+  contenedor.classList.toggle('destino-no-valido', !!p && !hover);
   actualizarGuias(hover);
 });
 
@@ -101,6 +103,8 @@ function terminarArrastre(e, cancelado) {
   const a = estado.arrastre;
   estado.arrastre = null;
   fantasma.style.display = 'none';
+  a.el.classList.remove('arrastrando');
+  contenedor.classList.remove('destino-no-valido');
   if (!cancelado) {
     const p = puntoEnPlaca(e.clientX, e.clientY);
     if (a.tipo === 'cable' && !p) log('info', `${cable(a.id).nombre} vuelve a la bandeja: suéltalo sobre su conector.`);

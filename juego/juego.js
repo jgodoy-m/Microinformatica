@@ -20,7 +20,7 @@ export function ok(msg) { log('ok', msg); }
 
 export function intentarColocar(p, x, y) {
   const sid = huecoEn(x, y, p);
-  if (!sid) return;
+  if (!sid) return log('info', `${p.comercial ?? p.nombre} no encaja aquí: busca el hueco que le corresponde en el chasis.`);
   const cpu = cpuActual();
   const resultado = comprobarColocacion({
     pieza: p,

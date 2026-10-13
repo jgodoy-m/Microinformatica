@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Composición de la cabecera · Microinformática</title>
+  <style>html,body{margin:0;background:#2E3440} canvas{display:block}</style>
+</head>
+<body>
+<script>
+  // Composición de la imagen de cabecera a partir de las fotos recortadas del proyecto (juego/fotos/).
+  // Fondo Nord, luz azul fría y sombras suaves. No incluye texto ni marcas nuevas.
+  const W = 1536, H = 1024;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  document.body.appendChild(cv);
+  const ctx = cv.getContext('2d');
+
+  // Fondo de laboratorio: degradado Nord 0 → Nord 1 y resplandor frío (Nord 8)
+  const fondo = ctx.createLinearGradient(0, 0, W, H);
+  fondo.addColorStop(0, '#2E3440');
+  fondo.addColorStop(1, '#3B4252');
+  ctx.fillStyle = fondo;
+  ctx.fillRect(0, 0, W, H);
+  const resplandor = ctx.createRadialGradient(1050, 260, 40, 1050, 260, 760);
+  resplandor.addColorStop(0, 'rgba(136,192,208,0.22)');
+  resplandor.addColorStop(1, 'rgba(136,192,208,0)');
+  ctx.fillStyle = resplandor;
+  ctx.fillRect(0, 0, W, H);
+
+  const cargar = (src) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; });
+  const F = '../juego/fotos/';
+
+  // Dibuja una pieza: sombra suave bajo ella y la imagen recortada escalada a su ancho.
+  function pieza(img, x, y, ancho, sombra = 0.55) {
+    const alto = img.height * (ancho / img.width);
+    ctx.save();
+    ctx.filter = 'blur(16px)';
+    ctx.globalAlpha = sombra;
+    ctx.fillStyle = '#0B0E14';
+    ctx.beginPath();
+    ctx.ellipse(x + ancho / 2, y + alto - 6, ancho * 0.52, Math.max(10, alto * 0.08), 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.drawImage(img, x, y, ancho, alto);
+    return alto;
+  }
+
+  (async () => {
+    const [placa, cpu, ram, ram2, gpu, fuente, ssd] = await Promise.all([
+      cargar(F + 'board-am4.png'), cargar(F + 'cpu-am4.png'), cargar(F + 'ram-x.png'),
+      cargar(F + 'ram-a.png'), cargar(F + 'gpu-blanca.png'), cargar(F + 'psu-750.png'), cargar(F + 'nvme.png')
+    ]);
+
+    // Placa base al fondo, en el centro-izquierda
+    pieza(placa, 150, 210, 620, 0.6);
+    // Procesador sobre la placa
+    pieza(cpu, 390, 320, 200, 0.7);
+    // Memoria RAM en primer plano, a la derecha de la placa
+    pieza(ram2, 1010, 150, 170, 0.5);
+    pieza(ram, 1200, 170, 120, 0.5);
+    // Tarjeta gráfica en primer plano
+    pieza(gpu, 820, 650, 560, 0.7);
+    // Fuente de alimentación en la esquina inferior derecha
+    pieza(fuente, 1120, 700, 330, 0.6);
+    // SSD en la parte inferior izquierda
+    pieza(ssd, 120, 790, 250, 0.45);
+
+    // Viñeta: oscurece los bordes para integrar la composición en el fondo
+    const vineta = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, W * 0.75);
+    vineta.addColorStop(0, 'rgba(46,52,64,0)');
+    vineta.addColorStop(1, 'rgba(46,52,64,0.85)');
+    ctx.fillStyle = vineta;
+    ctx.fillRect(0, 0, W, H);
+
+    window.__lista = true;
+  })().catch((e) => { window.__error = String(e); });
+</script>
+</body>
+</html>
