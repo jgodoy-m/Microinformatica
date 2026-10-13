@@ -1131,14 +1131,31 @@ function specDe(p) {
 // Nombres sin datos técnicos, para el modo difícil.
 const NOMBRE_GENERICO = { caja: 'Caja', board: 'Placa base', cpu: 'Procesador', ram: 'Memoria RAM', gpu: 'Tarjeta gráfica', nvme: 'SSD', psu: 'Fuente de alimentación', cable: 'Cable de alimentación' };
 
+const GRUPOS_BANDEJA = [
+  ['caja', 'Cajas'], ['board', 'Placas base'], ['cpu', 'Procesadores'], ['ram', 'Memoria RAM'],
+  ['gpu', 'Tarjetas gráficas'], ['nvme', 'SSD'], ['psu', 'Fuentes de alimentación'], ['cable', 'Cables de alimentación']
+];
+
 function pintarBandeja() {
   bandeja.innerHTML = '';
   const items = [
     ...PIEZAS.map((p) => ({ id: p.id, kind: p.kind, tipo: 'parte', nombre: p.nombre, corto: p.corto, spec: specDe(p), color: p.color, foto: !p.sinFoto, instalado: placed(p.id) })),
     ...CABLES.map((c) => ({ id: c.id, kind: 'cable', tipo: 'cable', nombre: c.nombre, corto: c.corto, spec: `Conector ${PORTS[c.port].etiqueta}`, color: c.color, foto: !c.sinFoto, instalado: plugged(c.id) }))
   ].filter((it) => filtro === 'todos' || (filtro === 'cables' ? it.tipo === 'cable' : it.tipo === 'parte'));
-  for (const it of items) pintarFicha(it, bandeja);
+  // Un desplegable por tipo: se abre con un clic. Con un filtro activo se muestran abiertos.
+  for (const [tipo, titulo] of GRUPOS_BANDEJA) {
+    const del = items.filter((it) => it.kind === tipo);
+    if (!del.length) continue;
+    const montados = del.filter((it) => it.instalado).length;
+    const grupo = document.createElement('details');
+    grupo.className = 'grupo';
+    grupo.open = filtro !== 'todos';
+    grupo.innerHTML = `<summary>${titulo} <small>${montados} de ${del.length} ${del.length === 1 ? 'montado' : 'montados'}</small></summary><div class="grupo-lista"></div>`;
+    bandeja.appendChild(grupo);
+    for (const it of del) pintarFicha(it, grupo.querySelector('.grupo-lista'));
+  }
 }
+
 
 // Una pieza instalada no se puede volver a coger: aparece como «Instalado» o «Conectado».
 // Icono de respaldo para las piezas sin foto. Un dibujo por tipo, con el mismo encuadre que las fotos.

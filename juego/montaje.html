@@ -129,7 +129,14 @@
     .tarjeta > h2 { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
     .filtros { display: flex; gap: 6px; margin: 10px 0; }
     .filtros .boton { flex: 1; min-height: 40px; padding: 0 8px; font-size: 14px; border-radius: 999px; }
-    .bandeja { display: grid; gap: 8px; }
+    .bandeja { display: grid; gap: 10px; }
+    .grupo { border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2); }
+    .grupo > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 12px; font-weight: 700; font-size: 14px; list-style: none; }
+    .grupo > summary::-webkit-details-marker { display: none; }
+    .grupo > summary::after { content: "▸"; color: var(--muted); transition: transform .15s; }
+    .grupo[open] > summary::after { transform: rotate(90deg); }
+    .grupo > summary small { margin-left: auto; font-size: 12px; font-weight: 400; color: var(--muted); }
+    .grupo-lista { display: grid; gap: 8px; padding: 0 8px 8px; }
     .ficha {
       display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 10px;
       min-height: 60px; padding: 5px 10px 5px 5px; border: 1px solid var(--line); border-radius: 12px;
@@ -176,7 +183,7 @@
     #escena .fantasma-tip { display: none; }
 
     /* Lateral derecho */
-    .lateral { grid-column: 3; grid-row: 1 / span 2; display: grid; gap: 16px; min-width: 0; align-content: start; }
+    .lateral { grid-column: 3; grid-row: 1 / span 2; display: grid; gap: 16px; min-width: 0; align-content: start; align-self: start; }
     .cabecera-tarjeta { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
     .nivel { font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 999px; background: var(--pill-ok); color: var(--ok-texto); border: 1px solid color-mix(in srgb, var(--ok) 45%, transparent); }
     .nivel[data-nivel="dificil"] { background: rgba(235, 203, 139, .16); color: var(--aviso-texto); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
