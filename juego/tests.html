@@ -67,6 +67,10 @@
     comprobar('cada cable tiene su conector y su salida', CABLES.every((c) => PORTS[c.port] && SALIDA_CABLE[c.id]));
     comprobar('los huecos de la placa están dentro de ella (la fuente va delante)', Object.values(SLOTS).filter((h) => h.nombre !== 'chasis' && h.nombre !== 'hueco de la fuente').every((h) => Math.abs(h.x) < 15 && Math.abs(h.y) < 12));
 
+    // Nombres: toda pieza tiene nombre comercial (en modo difícil) y todo cable su nombre completo
+    comprobar('todas las piezas tienen nombre comercial', PIEZAS.every((p) => typeof p.comercial === 'string' && p.comercial.length > 0));
+    comprobar('todos los cables tienen nombre', CABLES.every((c) => typeof c.nombre === 'string' && c.nombre.length > 0));
+
     const fallos = resultados.filter((r) => !r.ok);
     document.getElementById('resumen').textContent = fallos.length
       ? `${fallos.length} de ${resultados.length} pruebas fallan`
