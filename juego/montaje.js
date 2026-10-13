@@ -1121,20 +1121,24 @@ const GRUPOS_BANDEJA = [
   ['gpu', 'Tarjetas gráficas'], ['nvme', 'SSD'], ['psu', 'Fuentes de alimentación'], ['cable', 'Cables de alimentación']
 ];
 
-function pintarBandeja() {
+function pintarBandeja(conservarAbiertos = true) {
+  // Al redibujar se mantienen abiertos los desplegables que ya lo estaban (al elegir o montar una pieza).
+  const abiertos = conservarAbiertos ? new Set([...bandeja.querySelectorAll('.grupo[open]')].map((g) => g.dataset.tipo)) : new Set();
   bandeja.innerHTML = '';
   const items = [
     ...PIEZAS.map((p) => ({ id: p.id, kind: p.kind, tipo: 'parte', nombre: p.nombre, corto: p.corto, spec: specDe(p), color: p.color, foto: !p.sinFoto, instalado: placed(p.id) })),
     ...CABLES.map((c) => ({ id: c.id, kind: 'cable', tipo: 'cable', nombre: c.nombre, corto: c.corto, spec: `Conector ${PORTS[c.port].etiqueta}`, color: c.color, foto: !c.sinFoto, instalado: plugged(c.id) }))
   ].filter((it) => it.kind !== 'caja' && (filtro === 'todos' || (filtro === 'cables' ? it.tipo === 'cable' : it.tipo === 'parte')));
-  // Un desplegable por tipo: se abre con un clic. Con un filtro activo se muestran abiertos.
+  // Un desplegable por tipo: se abre con un clic. Con un filtro activo se muestran abiertos,
+  // y el de la pieza seleccionada nunca se cierra solo.
   for (const [tipo, titulo] of GRUPOS_BANDEJA) {
     const del = items.filter((it) => it.kind === tipo);
     if (!del.length) continue;
     const montados = del.filter((it) => it.instalado).length;
     const grupo = document.createElement('details');
     grupo.className = 'grupo';
-    grupo.open = filtro !== 'todos';
+    grupo.dataset.tipo = tipo;
+    grupo.open = filtro !== 'todos' || abiertos.has(tipo) || del.some((it) => it.id === seleccion?.id);
     grupo.innerHTML = `<summary>${titulo} <small>${montados} de ${del.length} ${del.length === 1 ? 'montado' : 'montados'}</small></summary><div class="grupo-lista"></div>`;
     bandeja.appendChild(grupo);
     for (const it of del) pintarFicha(it, grupo.querySelector('.grupo-lista'));
@@ -1599,7 +1603,7 @@ for (const b of botonesFiltro) {
   b.addEventListener('click', () => {
     filtro = b.dataset.filtro;
     for (const o of botonesFiltro) o.setAttribute('aria-pressed', String(o === b));
-    pintarBandeja();
+    pintarBandeja(false);
   });
 }
 
