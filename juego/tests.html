@@ -494,35 +494,27 @@
       afirmar(d.activeElement === modo, `tras cancelar el cambio el foco debe volver al selector: ${d.activeElement?.id || d.activeElement?.tagName}`);
     });
 
-    await prueba('Pistas: cambiar de dificultad no reinicia el límite; cancelar no lo altera; reiniciar sí', async () => {
+    await prueba('Pistas: en difícil no hay tarjeta de pistas; al cambiar de modo aparece o desaparece', async () => {
       await cargar('am4', 'dificil');
       await elegir('board-am4', 'board');
+      afirmar(d.getElementById('instrucciones-titulo').closest('.tarjeta').hidden, 'en difícil no hay instrucciones ni pistas');
       d.getElementById('pista').click();
-      d.getElementById('pista').click();
-      afirmar(d.getElementById('pista').disabled, 'dos pistas agotan el límite');
+      afirmar(w.montaje.estado().pistas === 0 && d.getElementById('pista-texto').textContent === '', 'en difícil no se puede pedir pista');
       // Cancelar el cambio con progreso: nada cambia.
       d.querySelector('[data-modo="facil"]').click();
       await esperar(20);
       afirmar(!d.getElementById('confirmar-modo').hidden, 'con progreso el cambio pide confirmación');
       d.getElementById('modo-cancelar').click();
       await esperar(20);
-      afirmar(d.getElementById('pista').disabled && w.montaje.modo() === 'dificil', 'cancelar no reinicia ni cambia el modo');
-      // Ida y vuelta de difícil a fácil y de nuevo a difícil: el límite sigue agotado.
+      afirmar(d.getElementById('instrucciones-titulo').closest('.tarjeta').hidden && w.montaje.modo() === 'dificil', 'cancelar no cambia el modo');
       await cambiarModo('facil');
-      afirmar(!d.getElementById('pista').disabled, 'en fácil no hay límite');
+      afirmar(!d.getElementById('instrucciones-titulo').closest('.tarjeta').hidden && !d.getElementById('pista').disabled, 'en fácil vuelven las instrucciones y la pista');
       await cambiarModo('dificil');
-      afirmar(d.getElementById('pista').disabled, 'al volver a difícil el límite sigue agotado');
-      afirmar(/Pistas usadas: 2 de 2/.test(d.getElementById('pista-contador').textContent), 'el contador conserva las dos pistas');
-      // Reinicio explícito de la partida: el contador vuelve a cero.
-      d.getElementById('reiniciar').click();
-      await esperar(40);
-      afirmar(w.montaje.estado().pistas === 0, 'reiniciar devuelve el contador a cero');
-      afirmar(/Pistas usadas: 0 de 2/.test(d.getElementById('pista-contador').textContent), 'el contador visible también vuelve a cero');
-      afirmar(!d.getElementById('pista').disabled, 'tras reiniciar se puede volver a pedir pista');
+      afirmar(d.getElementById('instrucciones-titulo').closest('.tarjeta').hidden, 'al volver a difícil se ocultan otra vez');
     });
 
     await prueba('Pistas: la pista deja de mostrarse cuando su paso ya está completado', async () => {
-      await cargar('am4', 'dificil');
+      await cargar('am4', 'facil');
       d.getElementById('pista').click();
       afirmar(/Pista: /.test(d.getElementById('pista-texto').textContent), 'la pista aparece al pedirla');
       await elegir('board-am4', 'board');
@@ -587,20 +579,17 @@
       afirmar(w.montaje.estado().retiradas === 2, 'el cambio de dificultad conserva las retiradas');
     });
 
-    await prueba('Pistas y registro: el cambio de dificultad conserva el límite y el historial; cancelarlo no toca nada', async () => {
+    await prueba('Registro: el cambio de dificultad conserva el historial; cancelarlo no toca nada', async () => {
       await cargar('am4', 'dificil');
       await elegir('board-am4', 'board');
-      d.getElementById('pista').click();
-      d.getElementById('pista').click();
       const registroAntes = log().length;
       d.querySelector('[data-modo="facil"]').click();
       await esperar(20);
       d.getElementById('modo-cancelar').click();
       await esperar(20);
-      afirmar(log().length === registroAntes && d.getElementById('pista').disabled, 'cancelar no cambia el registro ni el límite');
+      afirmar(log().length === registroAntes, 'cancelar no cambia el registro');
       await cambiarModo('facil');
       await cambiarModo('dificil');
-      afirmar(d.getElementById('pista').disabled, 'el límite de pistas sigue agotado');
       afirmar(log().length > registroAntes, 'el registro conserva el historial y anota los cambios');
     });
 
@@ -742,17 +731,18 @@
       return `${n} títulos de varias semillas`;
     });
 
-    await prueba('Motivos en modo difícil: causa concreta sin revelar la pieza correcta', async () => {
+    await prueba('Modo difícil: una pieza incompatible no se coloca y no aparece ningún aviso', async () => {
       await cargar('am4', 'dificil');
       await elegir('board-am4', 'board');
+      const errores = w.montaje.estado().errores;
       fichaDe('cpu-am5').click();
       const b = await hasta(() => d.querySelector('[data-dest="cpu"]'));
       b.click();
       d.getElementById('confirmar').click();
       await esperar(30);
-      const motivo = d.getElementById('mensaje').textContent;
-      afirmar(/socket/.test(motivo), `en difícil debe nombrarse la causa: ${motivo}`);
-      afirmar(!/AM5|Ryzen|Procesador AM5/.test(motivo), `en difícil no debe revelarse la pieza correcta: ${motivo}`);
+      afirmar(!w.montaje.estado().placed['cpu-am5'], 'la pieza incompatible no se coloca');
+      afirmar(w.montaje.estado().errores === errores + 1, 'el error cuenta igualmente');
+      afirmar(d.getElementById('mensaje').textContent.trim() === '', `en difícil no hay aviso: ${d.getElementById('mensaje').textContent}`);
       d.getElementById('cancelar').click();
       await esperar(20);
     });
@@ -869,7 +859,7 @@
       afirmar(d.querySelectorAll('#pasos li').length === 8, 'ocho pasos: la caja ya va montada');
       afirmar(d.querySelector('#pasos li[aria-current="step"]')?.dataset.estado === 'actual', 'el paso actual debe estar marcado');
       await cargar('am4', 'dificil');
-      afirmar(d.getElementById('pasos').hidden, 'en difícil no se muestran las instrucciones');
+      afirmar(d.getElementById('instrucciones-titulo').closest('.tarjeta').hidden, 'en difícil no se muestran las instrucciones');
       afirmar(d.getElementById('mensaje').textContent.trim() === '', `en difícil no se indica el siguiente paso: ${d.getElementById('mensaje').textContent}`);
       afirmar(d.getElementById('especificaciones').hidden, 'en difícil no se muestran especificaciones');
     });
@@ -899,16 +889,13 @@
       afirmar(etapa(4) === 'pendiente', 'Encendido sigue pendiente');
     });
 
-    await prueba('Pistas: en fácil sin límite; en difícil, dos por partida y el botón se desactiva', async () => {
+    await prueba('Pistas: en fácil sin límite; en difícil no hay pistas', async () => {
       await cargar('am4', 'facil');
       for (let k = 0; k < 3; k++) d.getElementById('pista').click();
       afirmar(!d.getElementById('pista').disabled, 'en fácil el botón sigue activo');
       afirmar(/Pistas sin límite/.test(d.getElementById('pista-contador').textContent), 'contador de fácil');
       await cargar('am4', 'dificil');
-      d.getElementById('pista').click();
-      d.getElementById('pista').click();
-      afirmar(d.getElementById('pista').disabled, 'tras dos pistas el botón se desactiva');
-      afirmar(/Pistas usadas: 2 de 2/.test(d.getElementById('pista-contador').textContent), 'contador de difícil');
+      afirmar(d.getElementById('instrucciones-titulo').closest('.tarjeta').hidden, 'en difícil la tarjeta de pistas no aparece');
     });
 
     await prueba('Controles de cámara: acercar, alejar y restablecer', () => {

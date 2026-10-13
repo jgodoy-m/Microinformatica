@@ -969,17 +969,11 @@ const PISTAS = [
   'Cada cable sale de la fuente y termina en el conector que tenga su mismo número de pines.',
   'Antes de encender, revisa que cada pieza y cable del pedido esté colocado.'
 ];
-const PISTAS_MAX_DIFICIL = 2;
-
+// Las pistas solo existen en fácil, sin límite. En difícil la tarjeta está oculta.
 function pedirPista() {
+  if (!esFacil()) return;
   const i = pasos().findIndex((p) => !p.hecho());
-  if (!esFacil() && S.pistas >= PISTAS_MAX_DIFICIL) {
-    log('info', `En modo difícil hay ${PISTAS_MAX_DIFICIL} pistas por partida y ya las has usado.`);
-    return;
-  }
   const texto = PISTAS[i < 0 ? PISTAS.length - 1 : i];
-  // Solo las pistas de difícil cuentan para el límite. El contador es de la partida, no del modo.
-  if (!esFacil()) S.pistas++;
   S.pistaPaso = i;
   $('pista-texto').textContent = `Pista: ${texto}`;
   pintarPanel();
@@ -1045,9 +1039,8 @@ function pintarPanel() {
     ? (S.final ? `Equipo montado · Errores: ${S.errores}` : `Paso ${i < 0 ? lista.length : i + 1} de ${lista.length} · Errores: ${S.errores}`)
     : `Errores: ${S.errores}`;
 
-  // En difícil no hay instrucciones: la tarjeta se queda solo con las pistas.
-  pasosEl.hidden = !esFacil();
-  $('instrucciones-titulo').textContent = esFacil() ? 'Instrucciones' : 'Pistas';
+  // En difícil no hay instrucciones ni pistas: la tarjeta entera desaparece.
+  $('instrucciones-titulo').closest('.tarjeta').hidden = !esFacil();
   pasosEl.innerHTML = lista.map((p, n) => {
     const estado = p.hecho() ? 'hecho' : n === i ? 'actual' : 'pendiente';
     const texto = p.txt;
@@ -1078,21 +1071,16 @@ function pintarPanel() {
   if (esFacil() && estadoEl.parentElement !== centroEl) centroEl.prepend(estadoEl);
   else if (!esFacil() && estadoEl.parentElement !== columnaIzqEl) columnaIzqEl.append(estadoEl);
 
-  // En difícil no se orienta sobre el siguiente paso: solo se avisa de errores y del final.
+  // En difícil no se orienta ni se avisa de errores: solo se anuncia el final.
   let texto = '';
   if (S.final) texto = `<strong>Montaje completado.</strong> El equipo arranca. Errores durante el montaje: ${S.errores}.`;
   else if (esFacil() && seleccion) texto = '<strong>Pieza seleccionada.</strong> Elige un destino de la lista y confirma.';
   else if (esFacil() && c1 && c2) texto = '<strong>Todo conectado.</strong> Pulsa «Encender equipo» para comprobar el montaje.';
   else if (esFacil()) texto = `<strong>Siguiente paso.</strong> ${lista[i].txt}`;
-  if (ultimoAviso && !S.final) texto += ` <span class="aviso">${ultimoAviso}</span>`;
+  if (esFacil() && ultimoAviso && !S.final) texto += ` <span class="aviso">${ultimoAviso}</span>`;
   mensajeEl.innerHTML = texto;
 
-  pistaContadorEl.textContent = esFacil() ? 'Pistas sin límite en fácil' : `Pistas usadas: ${S.pistas} de ${PISTAS_MAX_DIFICIL}`;
-  const botonPista = $('pista');
-  const teniaFoco = document.activeElement === botonPista;
-  botonPista.disabled = !esFacil() && S.pistas >= PISTAS_MAX_DIFICIL;
-  // Un botón desactivado pierde el foco: el teclado no debe quedarse sin punto de partida.
-  if (teniaFoco && botonPista.disabled) mensajeEl.focus();
+  pistaContadorEl.textContent = 'Pistas sin límite';
 }
 
 // Especificaciones exactas de las piezas del pedido (solo en modo fácil).
