@@ -55,10 +55,11 @@ export const PIEZAS = [
 ];
 
 // Cables de alimentación. El conector sale de la fuente y el alumno traza su recorrido.
+// longitudMax: largo máximo del cable en cm (1 unidad de escena ≈ 1 cm). Si el recorrido es más largo, no llega.
 export const CABLES = [
-  { id: 'c-atx', nombre: 'Cable ATX 24 pines', corto: 'ATX 24', port: 'atx24', color: '#D08770', sinFoto: true },
-  { id: 'c-eps', nombre: 'Cable EPS 8 pines', corto: 'EPS 8', port: 'eps8', color: '#E5E9F0', sinFoto: true },
-  { id: 'c-pcie', nombre: 'Cable PCIe 6+2 pines', corto: 'PCIe 6+2', port: 'pcie8', color: '#B48EAD', sinFoto: true }
+  { id: 'c-atx', nombre: 'Cable ATX 24 pines', corto: 'ATX 24', port: 'atx24', color: '#D08770', longitudMax: 34, sinFoto: true },
+  { id: 'c-eps', nombre: 'Cable EPS 8 pines', corto: 'EPS 8', port: 'eps8', color: '#E5E9F0', longitudMax: 40, sinFoto: true },
+  { id: 'c-pcie', nombre: 'Cable PCIe 6+2 pines', corto: 'PCIe 6+2', port: 'pcie8', color: '#B48EAD', longitudMax: 30, sinFoto: true }
 ];
 
 // Plataformas compatibles: cada una agrupa placas, procesadores y memoria que encajan entre sí.

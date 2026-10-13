@@ -91,8 +91,8 @@ const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
 const camera = new THREE.PerspectiveCamera(32, 1.6, 0.1, 300);
-camera.position.set(6, 6, 70);
-camera.lookAt(0, -4.5, 0);
+camera.position.set(6, 6, 84);
+camera.lookAt(0, -3, 0);
 
 const luzPrincipal = new THREE.DirectionalLight('#ffffff', 1.3);
 luzPrincipal.position.set(12, 22, 40);
@@ -606,8 +606,12 @@ function intentarConectar(c, x, y, ruta) {
   }
   if (!piezaPlacada('psu')) return fallo('Antes de conectar los cables, instala la fuente: de ella salen.');
   if (pluggedPort(pid)) return fallo(`El conector ${PORTS[pid].etiqueta} ya tiene un cable.`);
+  const largo = longitudCable(ruta, puertoRect(pid));
+  if (largo > c.longitudMax) {
+    return fallo(`${c.nombre} mide ${Math.round(largo)} cm de recorrido y el máximo es ${c.longitudMax} cm. Trázalo más directo entre la fuente y el conector.`);
+  }
   S.plugged[c.id] = { port: pid, ruta };
-  ok(`${c.nombre} conectado.`);
+  ok(`${c.nombre} conectado (${Math.round(largo)} cm de ${c.longitudMax} cm).`);
 }
 
 // Pasos del pedido en curso (el texto depende de las piezas que pide el cliente).
@@ -751,6 +755,14 @@ function puntosCable(ruta, r) {
   return [...ruta, [r.x, r.y, altura], [r.x, r.y, r.z + 1.2]];
 }
 
+// Largo del recorrido en cm (1 unidad de escena ≈ 1 cm).
+function longitudCable(ruta, r) {
+  const puntos = puntosCable(ruta, r);
+  let total = 0;
+  for (let i = 1; i < puntos.length; i++) total += Math.hypot(puntos[i][0] - puntos[i - 1][0], puntos[i][1] - puntos[i - 1][1], puntos[i][2] - puntos[i - 1][2]);
+  return total;
+}
+
 function tuboCable(puntos, color) {
   const vectores = puntos.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
   const curva = new THREE.CatmullRomCurve3(vectores, false, 'centripetal');
@@ -780,7 +792,11 @@ function conectorCable(color, r) {
 
 function dibujarPrevia(a, p) {
   if (vistaPrevia) grupoCables.remove(vistaPrevia);
-  vistaPrevia = tuboCable([...a.ruta, [p.x, p.y, ALTURA_CABLE]], cable(a.id).color);
+  const trazado = [...a.ruta, [p.x, p.y, ALTURA_CABLE]];
+  let largo = 0;
+  for (let i = 1; i < trazado.length; i++) largo += Math.hypot(trazado[i][0] - trazado[i - 1][0], trazado[i][1] - trazado[i - 1][1], trazado[i][2] - trazado[i - 1][2]);
+  const excede = largo > cable(a.id).longitudMax;
+  vistaPrevia = tuboCable(trazado, excede ? '#E0868E' : cable(a.id).color);
   grupoCables.add(vistaPrevia);
 }
 
