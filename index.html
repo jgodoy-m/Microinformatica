@@ -155,6 +155,22 @@
       white-space: nowrap;
     }
 
+    .header-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 18px;
+      font-size: 15px;
+    }
+    .header-nav a {
+      color: var(--muted);
+      text-decoration: none;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+    }
+    .header-nav a:hover { color: var(--accent); }
+    .header-nav a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 4px; }
+    #practicas, #temas { scroll-margin-top: 84px; }
     .header-link:hover {
       color: var(--accent);
     }
@@ -837,6 +853,12 @@
         <span>Microinformática</span>
       </a>
 
+      <nav class="header-nav" aria-label="Principal">
+        <a href="#inicio">Inicio</a>
+        <a href="#temas">Temario</a>
+        <a href="#practicas">Prácticas</a>
+      </nav>
+
       <div class="header-actions">
         <a class="header-link" href="averias.html">Simulador <span aria-hidden="true">→</span></a>
 
@@ -864,18 +886,18 @@
       <div class="container hero-inner">
         <div class="hero-copy">
           <h1 id="hero-title">
-            Aprende a diagnosticar y reparar
-            <span>sistemas microinformáticos.</span>
+            Aprende. Monta.
+            <span>Diagnostica.</span>
           </h1>
 
           <p class="hero-description">
-            Practica con casos basados en averías reales de una placa base, realiza pruebas
-            y aprende a identificar sus conectores.
+            Prácticas interactivas de hardware con apuntes del curso: monta un equipo,
+            diagnostica sus averías y comprueba lo que has aprendido.
           </p>
 
           <div class="hero-actions">
-            <a class="primary-button" href="averias.html">Practicar averías</a>
-            <a class="secondary-link" href="#temas">Ver temario</a>
+            <a class="primary-button" href="#practicas">Empezar a practicar</a>
+            <a class="secondary-link" href="#temas">Explorar el temario</a>
           </div>
         </div>
 
@@ -891,11 +913,11 @@
       </div>
     </section>
 
-    <section class="practice" aria-labelledby="practice-title">
+    <section class="practice" id="practicas" aria-labelledby="practice-title">
       <div class="container practice-inner">
         <div class="practice-intro">
           <p class="eyebrow">Práctica</p>
-          <h2 id="practice-title">Pon a prueba lo que aprendes</h2>
+          <h2 id="practice-title">Prácticas</h2>
         </div>
 
         <div class="practice-grid">
@@ -903,7 +925,7 @@
             <span class="practice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><circle cx="12" cy="10" r="2.5"/></svg></span>
             <div>
               <h3>Simulador de averías</h3>
-              <p>Diagnostica 5 averías, realiza pruebas y compara tu diagnóstico con la causa real.</p>
+              <p>Investiga fallos, analiza síntomas y diagnostica el problema.</p>
             </div>
             <span class="practice-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
           </a>
@@ -912,7 +934,7 @@
             <span class="practice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16l2 2 3-3"/></svg></span>
             <div>
               <h3>Simulacro de examen</h3>
-              <p>Comprueba lo que has aprendido con un test tipo examen. 51 preguntas de todos los apuntes.</p>
+              <p>Pon a prueba tus conocimientos con preguntas tipo test y de respuesta corta. <span id="total-preguntas"></span></p>
             </div>
             <span class="practice-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
           </a>
@@ -920,8 +942,8 @@
           <a class="practice-card" href="juego/montaje.html">
             <span class="practice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg></span>
             <div>
-              <h3>Montaje del equipo</h3>
-              <p>Monta un equipo en 3D: coloca placa, procesador, memoria, gráfica y fuente, y conecta los cables antes de encenderlo.</p>
+              <h3>Montaje de un equipo</h3>
+              <p>Instala componentes, conecta cables y enciende el equipo paso a paso.</p>
             </div>
             <span class="practice-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
           </a>
@@ -1073,6 +1095,16 @@
       });
 
       updateThemeButton();
+    })();
+  </script>
+  <script src="examen/banco.js"></script>
+  <script>
+    // Recuento tomado del banco de preguntas del simulacro (no escrito a mano).
+    (() => {
+      const el = document.getElementById('total-preguntas');
+      if (el && window.BANCO) {
+        el.textContent = window.BANCO.length + ' preguntas en el banco.';
+      }
     })();
   </script>
 </body>
