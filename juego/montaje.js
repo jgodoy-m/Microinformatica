@@ -31,7 +31,7 @@ const PORTS = {
   atx24: { x: 12.5, y: 2.5, w: 1.8, h: 5, z: 0.5, etiqueta: 'ATX 24' },
   eps8:  { x: -12.5, y: 10, w: 2.5, h: 2, z: 0.5, etiqueta: 'EPS 8' },
   // El conector PCIe está en la esquina superior derecha de la gráfica, que se monta sobre su ranura.
-  pcie8: { relativo: true, dx: 4.6, dy: 1.6, w: 1.2, h: 1.4, etiqueta: 'PCIe 6+2' }
+  pcie8: { relativo: true, dx: 4.6, dy: 1.6, w: 2.0, h: 2.2, etiqueta: 'PCIe 6+2' }
 };
 
 const PIEZAS = [
@@ -53,12 +53,13 @@ const CABLES = [
   { id: 'c-pcie', nombre: 'Cable PCIe 6+2 pines', corto: 'PCIe 6+2', port: 'pcie8', color: '#B48EAD' }
 ];
 
-// Recorridos de cada cable desde la fuente hasta su conector, por encima de la placa.
-const RUTAS = {
-  'c-atx': [[6.5, -12.2, 0.4], [13.6, -12.2, 0.8], [14.6, -8, 0.9], [14.6, -1, 0.9], [13.8, 2.5, 0.7]],
-  'c-eps': [[-6.5, -12.2, 0.4], [-14.6, -12.2, 0.9], [-14.6, 6, 0.9], [-13.6, 9.6, 0.8]],
-  'c-pcie': [[2.5, -12.2, 0.4], [4, -10.2, 0.8], [8.5, -10.2, 1.2], [8.5, -5.4, 2.4]]
+// Punto de salida de cada cable en la fuente. El recorrido hasta el conector lo traza el alumno.
+const SALIDA_CABLE = {
+  'c-atx': [7.0, -12.2, 0.4],
+  'c-eps': [-6.5, -12.2, 0.4],
+  'c-pcie': [2.5, -12.2, 0.4]
 };
+const ALTURA_CABLE = 1.1;
 
 const EXPLICA = {
   'c-atx': 'Sin ATX 24 pines la placa no recibe alimentación y no arranca (apuntes S07).',
@@ -84,6 +85,9 @@ let arrastre = null;
 
 const placed = (id) => id in S.placed;
 const plugged = (id) => id in S.plugged;
+const pluggedPort = (pid) => Object.values(S.plugged).some((v) => v.port === pid);
+let destelloHasta = 0;
+let vistaPrevia = null;
 const occupied = (sid) => Object.values(S.placed).includes(sid);
 const pieza = (id) => PIEZAS.find((p) => p.id === id);
 const cable = (id) => CABLES.find((c) => c.id === id);
@@ -497,15 +501,15 @@ function intentarColocar(p, x, y) {
   ok(mensajes[p.kind]);
 }
 
-function intentarConectar(c, x, y) {
+function intentarConectar(c, x, y, ruta) {
   const pid = puertoEn(x, y);
-  if (!pid) return;
+  if (!pid) return log('info', `${c.nombre} vuelve a la bandeja: suéltalo sobre su conector.`);
   if (c.port !== pid) {
     return fallo(`${c.nombre} no encaja en el conector ${PORTS[pid].etiqueta}: el número de pines y la forma son distintos (apuntes S07).`);
   }
   if (!placed('psu')) return fallo('Antes de conectar los cables, instala la fuente: de ella salen.');
-  if (Object.values(S.plugged).includes(pid)) return fallo(`El conector ${PORTS[pid].etiqueta} ya tiene un cable.`);
-  S.plugged[c.id] = pid;
+  if (pluggedPort(pid)) return fallo(`El conector ${PORTS[pid].etiqueta} ya tiene un cable.`);
+  S.plugged[c.id] = { port: pid, ruta };
   ok(`${c.nombre} conectado.`);
 }
 
@@ -516,7 +520,8 @@ function encender() {
     S.errores++;
     log('bad', `El equipo no arranca. Falta: ${pendientes[0].txt}`);
     CABLES.filter((c) => !plugged(c.id)).forEach((c) => log('info', EXPLICA[c.id]));
-    pintarPanel();
+    destelloHasta = performance.now() + 4000;
+    pintarEscena();
     return;
   }
   S.final = true;
@@ -554,7 +559,8 @@ function pintarBandeja() {
     el.className = 'ficha';
     el.dataset.id = it.id;
     el.dataset.tipo = it.tipo;
-    el.innerHTML = `<i style="background:${it.color}"></i>${it.corto}`;
+    el.innerHTML = `<span class="miniatura"><i style="background:${it.color}"></i><img src="fotos/${it.id}.jpg" alt="" loading="lazy" onerror="this.remove()"></span>${it.corto}`;
+    if (it.tipo === 'cable' && performance.now() < destelloHasta) el.classList.add('destacar');
     bandeja.appendChild(el);
   }
 }
@@ -583,22 +589,39 @@ function actualizarGuias(hover) {
     const s = SLOTS[id];
     const relevante = id === 'board' ? !placed('board') : (placed('board') || id === 'psu') && !occupied(id);
     m.visible = relevante;
-    m.material.opacity = hover === id ? 0.6 : 0.16;
+    m.material.opacity = hover === id ? 0.8 : 0.4;
     m.position.set(s.x, s.y, 0.06);
   }
   for (const [pid, m] of Object.entries(guiaPort)) {
-    const visible = puertoVisible(pid) && !Object.values(S.plugged).includes(pid);
+    const visible = puertoVisible(pid) && !pluggedPort(pid);
     m.visible = visible;
     if (visible) {
       const r = puertoRect(pid);
       m.position.set(r.x, r.y, r.z + 0.06);
-      m.scale.set(r.w + 0.6, r.h + 0.6, 1);
-      m.material.opacity = hover === pid ? 0.6 : 0.16;
+      m.scale.set(r.w + 0.8, r.h + 0.8, 1);
+      m.material.opacity = hover === pid ? 0.9 : 0.55;
     }
   }
 }
 
 // ---------- Dibujo de piezas montadas ----------
+function tuboCable(puntos, color) {
+  const vectores = puntos.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
+  const curva = new THREE.CatmullRomCurve3(vectores, false, 'catmullrom', 0.2);
+  const tubo = new THREE.Mesh(
+    new THREE.TubeGeometry(curva, Math.max(20, puntos.length * 12), 0.16, 10, false),
+    new THREE.MeshStandardMaterial({ color, roughness: 0.5 })
+  );
+  tubo.castShadow = true;
+  return tubo;
+}
+
+function dibujarPrevia(a, p) {
+  if (vistaPrevia) grupoCables.remove(vistaPrevia);
+  vistaPrevia = tuboCable([...a.ruta, [p.x, p.y, ALTURA_CABLE]], cable(a.id).color);
+  grupoCables.add(vistaPrevia);
+}
+
 function pintarEscena() {
   grupoTablero.visible = placed('board');
 
@@ -610,18 +633,13 @@ function pintarEscena() {
   }
 
   grupoCables.clear();
+  vistaPrevia = null;
   for (const c of CABLES) {
-    const pid = S.plugged[c.id];
-    if (!pid) continue;
-    const r = puertoRect(pid);
-    const puntos = [...RUTAS[c.id], [r.x, r.y, r.z]].map((p) => new THREE.Vector3(...p));
-    const curva = new THREE.CatmullRomCurve3(puntos, false, 'catmullrom', 0.3);
-    const tubo = new THREE.Mesh(
-      new THREE.TubeGeometry(curva, 140, 0.16, 10, false),
-      new THREE.MeshStandardMaterial({ color: c.color, roughness: 0.5 })
-    );
-    tubo.castShadow = true;
-    grupoCables.add(tubo);
+    const conexion = S.plugged[c.id];
+    if (!conexion) continue;
+    const r = puertoRect(conexion.port);
+    const puntos = [...conexion.ruta, [r.x, r.y, r.z]];
+    grupoCables.add(tuboCable(puntos, c.color));
     const conector = caja(r.w, r.h, 0.4, matPlastico(c.color));
     conector.position.set(r.x, r.y, r.z + 0.2);
     grupoCables.add(conector);
@@ -655,7 +673,8 @@ bandeja.addEventListener('pointerdown', (e) => {
   const el = e.target.closest('.ficha');
   if (!el) return;
   e.preventDefault();
-  arrastre = { id: el.dataset.id, tipo: el.dataset.tipo, el };
+  arrastre = { id: el.dataset.id, tipo: el.dataset.tipo, el, ruta: null };
+  if (arrastre.tipo === 'cable') arrastre.ruta = [SALIDA_CABLE[arrastre.id]];
   el.style.opacity = '0.4';
   fantasma.textContent = el.textContent;
   fantasma.style.display = 'block';
@@ -668,7 +687,14 @@ window.addEventListener('pointermove', (e) => {
   const p = puntoEnPlaca(e.clientX, e.clientY);
   let hover = null;
   if (p) {
-    hover = arrastre.tipo === 'cable' ? puertoEn(p.x, p.y) : huecoEn(p.x, p.y, pieza(arrastre.id));
+    if (arrastre.tipo === 'cable') {
+      hover = puertoEn(p.x, p.y);
+      const ultimo = arrastre.ruta[arrastre.ruta.length - 1];
+      if (Math.hypot(p.x - ultimo[0], p.y - ultimo[1]) > 0.5) arrastre.ruta.push([p.x, p.y, ALTURA_CABLE]);
+      dibujarPrevia(arrastre, p);
+    } else {
+      hover = huecoEn(p.x, p.y, pieza(arrastre.id));
+    }
   }
   actualizarGuias(hover);
 });
@@ -680,8 +706,9 @@ function terminarArrastre(e, cancelado) {
   fantasma.style.display = 'none';
   if (!cancelado) {
     const p = puntoEnPlaca(e.clientX, e.clientY);
+    if (a.tipo === 'cable' && !p) log('info', `${cable(a.id).nombre} vuelve a la bandeja: suéltalo sobre su conector.`);
     if (p) {
-      if (a.tipo === 'cable') intentarConectar(cable(a.id), p.x, p.y);
+      if (a.tipo === 'cable') intentarConectar(cable(a.id), p.x, p.y, a.ruta);
       else intentarColocar(pieza(a.id), p.x, p.y);
     }
   }
@@ -704,6 +731,11 @@ new ResizeObserver(ajustarTamano).observe(contenedor);
 renderer.setAnimationLoop(() => {
   const velocidad = S?.final ? 0.22 : 0.02;
   for (const rotor of fans) rotor.rotation.z -= velocidad;
+  const ahora = performance.now();
+  if (ahora < destelloHasta) {
+    const pulso = 0.5 + 0.4 * Math.sin(ahora / 120);
+    for (const m of Object.values(guiaPort)) if (m.visible) m.material.opacity = pulso;
+  }
   renderer.render(scene, camera);
 });
 
