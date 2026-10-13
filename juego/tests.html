@@ -1073,6 +1073,60 @@
       return resumen.join(' · ');
     });
 
+    await prueba('Estructura de las cajas: cada variante tiene sus ventiladores y solo las RGB iluminan', async () => {
+      // El ventilador superior es común; cristal con RGB y metálica con RGB añaden dos más (interiores o frontales).
+      const esperado = [['am4', 'caja-cristal-rgb', 3, true], ['am5', 'caja-cristal', 1, false], ['intel', 'caja-metal', 1, false], ['aleatorio-8', 'caja-metal-rgb', 3, true]];
+      const resumen = [];
+      for (const [pedido, caja, ventiladores, rgb] of esperado) {
+        w.montaje.cargar(pedido);
+        await esperar(40);
+        await elegir(caja, 'caja');
+        const n = w.montaje.ventiladoresCaso();
+        afirmar(n === ventiladores, `${caja}: ${n} ventiladores, se esperaban ${ventiladores}`);
+        afirmar(rgb ? w.montaje.lucesCaja() > 0 : w.montaje.lucesCaja() === 0, `${caja}: luces ${w.montaje.lucesCaja()}`);
+        resumen.push(`${caja}: ${n} ventiladores`);
+        d.querySelector(`[data-retirar="${caja}"]`).click();
+        await esperar(30);
+      }
+      return resumen.join(' · ');
+    });
+
+    await prueba('Cajas: colocar y retirar las cuatro variantes repetidamente no acumula geometrías ni ventiladores', async () => {
+      const variantes = [['am4', 'caja-cristal-rgb'], ['am5', 'caja-cristal'], ['intel', 'caja-metal'], ['aleatorio-8', 'caja-metal-rgb']];
+      const ciclo = async () => {
+        for (const [pedido, caja] of variantes) {
+          w.montaje.cargar(pedido);
+          await esperar(40);
+          await elegir(caja, 'caja');
+          d.querySelector(`[data-retirar="${caja}"]`).click();
+          await esperar(30);
+        }
+      };
+      await ciclo();
+      const antes = w.montaje.renderInfo().geometries;
+      for (let i = 0; i < 3; i++) await ciclo();
+      const despues = w.montaje.renderInfo().geometries;
+      afirmar(despues <= antes + 4, `geometrías: ${antes} → ${despues} tras 3 ciclos`);
+      afirmar(w.montaje.ventiladoresCaso() === 0 && w.montaje.lucesCaja() === 0 && w.montaje.vidriosCaja() === 0, `sin caja no deben quedar ventiladores (${w.montaje.ventiladoresCaso()}), luces ni cristales`);
+      return `${antes} → ${despues} geometrías tras 3 ciclos completos`;
+    });
+
+    await prueba('Cambiar de modelo de caja: la escena muestra solo la nueva, sin restos de la anterior', async () => {
+      await cargar('am4');
+      await elegir('caja-cristal-rgb', 'caja');
+      afirmar(w.montaje.vidriosCaja() > 0 && w.montaje.ventiladoresCaso() === 3, 'antes: cristal con RGB (3 ventiladores)');
+      d.querySelector('[data-retirar="caja-cristal-rgb"]').click();
+      await esperar(30);
+      w.montaje.cargar('aleatorio-8');
+      await esperar(40);
+      await elegir('caja-metal-rgb', 'caja');
+      const v = w.montaje.vidriosCaja(), f = w.montaje.ventiladoresCaso(), l = w.montaje.lucesCaja();
+      afirmar(v === 0, `restos de cristal tras cambiar a metálica: ${v}`);
+      afirmar(f === 3, `ventiladores tras cambiar a metálica con RGB: ${f}, se esperaban 3`);
+      afirmar(l === 3, `luces tras cambiar a metálica con RGB: ${l}, se esperaban 3`);
+      return `cristal con RGB → metálica con RGB: cristales ${v}, ventiladores ${f}, luces ${l}`;
+    });
+
     await prueba('Guías: solo aparecen para la pieza seleccionada y solo en los huecos que la admiten', async () => {
       await cargar('am4');
       afirmar(w.montaje.guiasVisibles().length === 0, 'sin selección no debe haber guías');

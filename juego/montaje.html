@@ -31,23 +31,39 @@
     /* Paleta Nord. Modo oscuro por defecto; el modo claro usa los mismos colores en otro orden. */
     :root {
       color-scheme: dark;
-      --bg: #2E3440;
-      --panel: #3B4252;
-      --panel-2: #434C5E;
+      --bg: #09182C;
+      --fondo: radial-gradient(1200px 620px at 50% -12%, #1E3857 0%, #0F2038 45%, #09182C 100%);
+      --panel: #12253C;
+      --panel-2: #162941;
+      --panel-3: #1C2F46;
       --text: #ECEFF4;
-      --muted: #D8DEE9;
-      --line: #4C566A;
+      --muted: #B8C4D6;
+      --line: #22395A;
       --accent: #88C0D0;
       --accent-2: #81A1C1;
-      --on-accent: #2E3440;
+      --on-accent: #09182C;
+      --pill-ok: rgba(163, 190, 140, .16);
+      --pill-acento: rgba(136, 192, 208, .16);
+      --ok-texto: #A3BE8C;
+      --acento-texto: #88C0D0;
+      --aviso-texto: #EBCB8B;
+      --error-texto: #E88A93;
       --ok: #A3BE8C;
       --warn: #EBCB8B;
       --bad: #BF616A;
       --alt: #B48EAD;
       --focus: #88C0D0;
-      --pista: #B48EAD;
+      --pista: #AA8EE7;
     }
     html[data-theme="light"] {
+      --fondo: var(--bg);
+      --panel-3: #E5E9F0;
+      --pill-ok: rgba(163, 190, 140, .22);
+      --pill-acento: rgba(94, 129, 172, .12);
+      --ok-texto: #3E5A2C;
+      --acento-texto: #2F5378;
+      --aviso-texto: #7A5A10;
+      --error-texto: #8E333C;
       color-scheme: light;
       --bg: #ECEFF4;
       --panel: #E5E9F0;
@@ -55,19 +71,19 @@
       --text: #2E3440;
       --muted: #434C5E;
       --line: color-mix(in srgb, #4C566A 35%, #ECEFF4);
-      --accent: #5E81AC;
+      --accent: #4C6F98;
       --accent-2: #81A1C1;
       --on-accent: #ECEFF4;
       --ok: #A3BE8C;
       --warn: #EBCB8B;
       --bad: #BF616A;
       --alt: #B48EAD;
-      --focus: #5E81AC;
-      --pista: #8F6A8C;
+      --focus: #4C6F98;
+      --pista: #5F4166;
     }
 
     *, *::before, *::after { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    body { margin: 0; background: var(--fondo) fixed, var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; min-height: 100vh; }
     h1, h2, h3, p, ol, ul, dl, dd { margin: 0; }
     :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
     button { font: inherit; color: inherit; }
@@ -86,6 +102,8 @@
       background: var(--panel-2); color: var(--text); cursor: pointer; font-weight: 600;
     }
     .boton:hover { border-color: var(--accent); }
+    .boton:active:not(:disabled) { transform: translateY(1px); }
+    .boton.primario:hover:not(:disabled) { filter: brightness(1.06); }
     .boton[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
     .boton.primario { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
     .boton:disabled { opacity: .5; cursor: not-allowed; }
@@ -105,16 +123,17 @@
     /* Inventario */
     .inventario { grid-column: 1; grid-row: 1 / span 3; display: grid; gap: 12px; align-content: start; min-width: 0; }
     .tarjeta {
-      background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; min-width: 0;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px; min-width: 0;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 8px 24px rgba(0, 0, 0, .18);
     }
     .tarjeta > h2 { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
     .filtros { display: flex; gap: 6px; margin: 10px 0; }
-    .filtros .boton { flex: 1; min-height: 40px; padding: 0 8px; font-size: 14px; }
+    .filtros .boton { flex: 1; min-height: 40px; padding: 0 8px; font-size: 14px; border-radius: 999px; }
     .bandeja { display: grid; gap: 8px; }
     .ficha {
       display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: 10px;
-      min-height: 56px; padding: 5px 10px 5px 5px; border: 1px solid var(--line); border-radius: 10px;
-      background: var(--panel-2); color: var(--text); text-align: left; cursor: grab;
+      min-height: 60px; padding: 5px 10px 5px 5px; border: 1px solid var(--line); border-radius: 12px;
+      background: var(--panel-3); color: var(--text); text-align: left; cursor: grab;
       touch-action: none; user-select: none; position: relative;
     }
     .ficha:hover { border-color: var(--accent); }
@@ -130,10 +149,8 @@
     .ficha .texto { display: flex; flex-direction: column; min-width: 0; font-size: 14px; font-weight: 600; }
     .ficha .texto small { font-size: 12px; font-weight: 400; color: var(--muted); }
     .ficha .marca { font-style: normal; font-size: 12px; font-weight: 700; color: var(--accent); }
-    .ficha .estado { font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
-    .ficha .estado::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
-    .ficha[data-estado="pendiente"] .estado::before { background: var(--line); }
-    .ficha[data-estado="instalado"] .estado::before { background: var(--accent); }
+    .ficha .estado { font-size: 12px; font-weight: 700; white-space: nowrap; display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; background: var(--pill-ok); color: var(--ok-texto); border: 1px solid color-mix(in srgb, var(--ok) 45%, transparent); }
+    .ficha[data-estado="instalado"] .estado { background: var(--pill-acento); color: var(--acento-texto); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
     .ficha .flecha { position: absolute; right: 6px; bottom: 4px; font-size: 12px; color: var(--muted); }
     .ficha .texto { margin-right: 0; }
 
@@ -141,7 +158,7 @@
     .escena-wrap { grid-column: 2; grid-row: 1; min-width: 0; }
     #escena {
       position: relative; width: 100%; aspect-ratio: 4 / 3; border: 1px solid var(--line); border-radius: 14px;
-      overflow: hidden; background: #2E3440; touch-action: none;
+      overflow: hidden; background: var(--bg); touch-action: none;
     }
     #escena:fullscreen { aspect-ratio: auto; height: 100vh; border-radius: 0; }
     #escena canvas { display: block; width: 100%; height: 100%; }
@@ -161,13 +178,13 @@
     /* Lateral derecho */
     .lateral { grid-column: 3; grid-row: 1 / span 2; display: grid; gap: 16px; min-width: 0; align-content: start; }
     .cabecera-tarjeta { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-    .nivel { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--ok); color: var(--bg); }
-    .nivel[data-nivel="dificil"] { background: var(--warn); }
+    .nivel { font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 999px; background: var(--pill-ok); color: var(--ok-texto); border: 1px solid color-mix(in srgb, var(--ok) 45%, transparent); }
+    .nivel[data-nivel="dificil"] { background: rgba(235, 203, 139, .16); color: var(--aviso-texto); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
     .confirmacion { border-color: var(--accent); }
     .montadas-lista { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
     .montadas-lista .boton { width: 100%; text-align: left; min-height: 40px; font-size: 14px; }
-    .modos { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
-    .modos .boton { min-height: 40px; }
+    .modos { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; padding: 4px; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; }
+    .modos .boton { min-height: 38px; border: 0; border-radius: 999px; background: transparent; }
     .modos .boton[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
     .cliente { margin: 10px 0; padding: 8px 10px; border-left: 3px solid var(--accent); color: var(--muted); font-size: 14px; }
     .espec { list-style: none; padding: 0; display: grid; gap: 0; font-size: 14px; }
@@ -192,14 +209,16 @@
       border: 2px solid var(--line); color: var(--muted);
     }
     .pasos li[data-estado="hecho"] .num { background: var(--ok); border-color: var(--ok); color: var(--bg); }
-    .pasos li[data-estado="actual"] .num { border-color: var(--accent); color: var(--accent); }
-    .pasos li[data-estado="actual"] { font-weight: 600; background: color-mix(in srgb, var(--accent) 14%, transparent); border-radius: 8px; padding-inline: 6px; }
+    .pasos li[data-estado="actual"] .num { background: var(--accent); border-color: var(--accent); color: var(--on-accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+    .pasos li[data-estado="actual"] { font-weight: 600; background: var(--panel-3); border: 1px solid var(--accent); border-radius: 12px; padding: 8px 10px; }
     .pasos li[data-estado="hecho"] { color: var(--muted); }
     .pasos .etiqueta-paso { font-size: 12px; color: var(--muted); white-space: nowrap; }
     .pista-caja { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
     .pista-caja h3 { font-size: 13px; font-weight: 700; color: var(--pista); margin-bottom: 2px; }
     .pista { min-height: 1.4em; font-size: 14px; color: var(--text); }
     .pista-caja .acciones { margin-top: 8px; align-items: center; }
+    .pista-caja #pista { min-height: 40px; padding: 0 16px; border-radius: 999px; border-color: var(--pista); color: var(--pista); background: transparent; font-weight: 700; }
+    .pista-caja #pista:hover:not(:disabled) { background: color-mix(in srgb, var(--pista) 16%, transparent); }
     .pista-caja small { color: var(--muted); }
     .registro { min-width: 0; }
     .registro[open] .log { margin-top: 8px; }
@@ -207,10 +226,10 @@
     .log { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 4px; font-size: 14px; max-height: 260px; overflow: auto; }
     .log li { padding: 6px 0; border-bottom: 1px solid var(--line); }
     /* El error se marca también con un símbolo y no solo con el color. */
-    .log .bad { color: var(--bad); font-weight: 600; }
+    .log .bad { color: var(--error-texto); font-weight: 600; }
     .log .bad::before { content: "✖ "; }
     .log .ok::before { content: "✔ "; }
-    .log .ok { color: var(--ok); font-weight: 600; }
+    .log .ok { color: var(--ok-texto); font-weight: 600; }
     .log .info { color: var(--muted); }
 
     /* Barra inferior */
@@ -228,17 +247,18 @@
     .etapas .etiqueta { font-weight: 600; }
     .etapas .estado-etapa { font-size: 12px; color: var(--muted); }
     .etapas .explica { font-size: 12px; color: var(--muted); line-height: 1.4; }
-    .acciones-montaje { grid-column: 3; grid-row: 3; min-width: 0; display: grid; gap: 12px; }
+    .acciones-montaje { min-width: 0; display: grid; gap: 12px; }
     .mensaje { font-size: 14px; min-height: 2.8em; }
-    .mensaje strong { display: block; margin-bottom: 2px; }
-    .mensaje .aviso { color: var(--bad); font-weight: 600; }
+    .mensaje strong { display: block; margin-bottom: 4px; font-size: 17px; font-weight: 700; }
+    .acciones-montaje { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+    .mensaje .aviso { color: var(--error-texto); font-weight: 600; }
     .mensaje .aviso::before { content: "✖ "; }
     .botones { display: flex; gap: 10px; flex-wrap: wrap; }
-    .botones .boton { flex: 1 1 140px; min-height: 48px; }
+    .botones .boton { flex: 1 1 0; min-width: 0; min-height: 48px; padding: 0 12px; line-height: 1.2; }
 
     /* Escritorio: la escena ocupa más altura y el inventario se queda a la vista. */
     @media (min-width: 1101px) {
-      #escena { aspect-ratio: auto; height: clamp(480px, calc(100vh - 150px), 780px); }
+      #escena { aspect-ratio: auto; height: clamp(440px, calc(100vh - 360px), 640px); }
       .centro { align-self: stretch; grid-template-rows: auto minmax(0, 1fr); }
       .registro { display: flex; flex-direction: column; min-height: 0; }
       .registro .log { flex: 1; min-height: 120px; max-height: none; overflow-y: auto; }
@@ -253,10 +273,10 @@
       .pagina { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
       .escena-wrap, .centro, .acciones-montaje, .lateral, .inventario { grid-column: 1; grid-row: auto; }
       .escena-wrap { order: 1; }
-      .centro { order: 2; }
-      .acciones-montaje { order: 3; }
+      /* Las piezas se eligen mientras se mira el chasis: el inventario va justo debajo de la escena. */
+      .inventario { order: 2; max-height: 60vh; overflow-y: auto; }
+      .centro { order: 3; }
       .lateral { order: 4; }
-      .inventario { order: 5; }
     }
     @media (max-width: 480px) {
       .pagina { padding: 12px; gap: 12px; }
@@ -362,7 +382,15 @@
           </div>
         </div>
       </section>
-    </div>
+
+        <section class="acciones-montaje tarjeta" aria-label="Mensaje y acciones">
+          <p id="mensaje" class="mensaje" aria-live="polite" tabindex="-1"></p>
+          <div class="botones">
+            <button id="reiniciar" class="boton" type="button">Reiniciar</button>
+            <button id="encender" class="boton primario" type="button">Encender equipo</button>
+          </div>
+        </section>
+      </div>
 
     <div class="centro">
       <section class="tarjeta estado-montaje" aria-labelledby="estado-titulo">
@@ -379,13 +407,6 @@
       </details>
     </div>
 
-    <section class="acciones-montaje tarjeta" aria-label="Mensaje y acciones">
-      <p id="mensaje" class="mensaje" aria-live="polite" tabindex="-1"></p>
-      <div class="botones">
-        <button id="reiniciar" class="boton" type="button">Reiniciar</button>
-        <button id="encender" class="boton primario" type="button">Encender equipo</button>
-      </div>
-    </section>
   </main>
 
   <div id="fantasma"></div>

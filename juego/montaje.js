@@ -470,8 +470,8 @@ function estructuraComun(grupo, m) {
   }
 }
 
-// Lateral derecho según `cristal`. Cristal: panel transparente con marco metálico y un reflejo sutil.
-// Metálica: panel opaco y sólido, con una rejilla de lamas en la parte superior.
+// Lateral derecho según `cristal`. Cristal: panel transparente amplio con marco metálico y un reflejo sutil.
+// Metálica: panel opaco con una rejilla de ventilación en hueco: placa oscura y lamas que sobresalen del panel.
 function panelLateral(grupo, modelo, m) {
   if (modelo.cristal) {
     bloque(grupo, 0.3, 33.4, 9.2, m.vidrio, 17.3, -2, 3.25);
@@ -483,39 +483,42 @@ function panelLateral(grupo, modelo, m) {
     bloque(grupo, 0.8, 0.5, 9.5, m.borde, 17.3, 6.5, 3.25);
   } else {
     bloque(grupo, 0.6, 34.6, 9.5, m.metal, 17.3, -2, 3.25);
-    // Rejilla lateral: placa oscura empotrada con lamas horizontales visibles desde la cámara.
-    bloque(grupo, 0.2, 5.6, 6.2, m.oscuro, 17.45, 9.6, 4.2);
-    for (let i = 0; i < 7; i++) bloque(grupo, 0.3, 0.22, 6.0, m.metal, 17.62, 12.2 - i * 0.6, 4.2);
+    // Hueco de ventilación en la mitad superior del lateral: fondo oscuro y nueve lamas.
+    bloque(grupo, 0.1, 14.4, 7.6, m.oscuro, 17.66, 5.6, 3.6);
+    for (let i = 0; i < 9; i++) bloque(grupo, 0.3, 0.5, 7.2, m.metal, 17.8, 11.6 - i * 1.5, 3.6);
   }
 }
 
-// Frontal: la metálica muestra una rejilla en la franja superior, y deja el centro libre para montar.
+// Frontal: la metálica tiene bisel superior con lamas y una franja inferior que depende de `rgb`.
+// Metálica sin RGB: rejilla continua en la franja inferior. Metálica con RGB: bahía con dos ventiladores frontales.
+// El cristal no tiene frontal: el hueco queda abierto para montar y ver el interior.
 function frontalCaso(grupo, modelo, m) {
   if (modelo.cristal) return;
   // Bisel superior: placa sólida de 2,5 de alto con lamas de ventilación integradas.
   bloque(grupo, 34.6, 2.5, 0.4, m.metal, 0, 14.05, 8.2);
   for (let i = 0; i < 5; i++) bloque(grupo, 28, 0.22, 0.2, m.oscuro, 0, 13.2 + i * 0.4, 8.5);
-  // Bisel inferior: banda sólida con rejilla sobre la bahía de la fuente.
+  // Banda inferior sobre la bahía de la fuente.
   bloque(grupo, 34.6, 0.8, 0.4, m.metal, 0, -18.9, 8.2);
-  for (let i = 0; i < 12; i++) bloque(grupo, 0.22, 0.6, 0.2, m.oscuro, -14.5 + i * 2.4, -18.9, 8.5);
+  if (modelo.rgb) {
+    // Bahía de ventiladores: dos placas de montaje con un ventilador de 2,5 de radio en cada una.
+    for (const x of [-7.6, 7.6]) {
+      bloque(grupo, 5.8, 5.8, 0.3, m.oscuro, x, -15.8, 8.0);
+      ventiladorCaso(grupo, 2.5, x, -15.8, 8.5, 0, 0);
+    }
+  } else {
+    for (let i = 0; i < 12; i++) bloque(grupo, 0.22, 0.6, 0.2, m.oscuro, -14.5 + i * 2.4, -18.9, 8.5);
+  }
 }
 
-// Luces según `rgb`. Cristal: tiras interiores, visibles a través del lateral transparente.
-// Metálica: luz en elementos concretos del frontal (franja y ventilador frontal), no en todo el marco.
+// Luces según `rgb`. Cristal: dos ventiladores interiores y tiras interiores, visibles a través del lateral transparente.
+// Metálica: sus ventiladores frontales se montan en frontalCaso; aquí no hay nada más que añadir.
 function lucesCaso(grupo, modelo, m) {
-  if (modelo.cristal) {
-    // Dos ventiladores interiores pegados al cristal (girados hacia el lateral) y tiras grandes en el fondo.
-    ventiladorCaso(grupo, 2.2, 16.6, 5, 2.5, 0, Math.PI / 2);
-    ventiladorCaso(grupo, 2.2, 16.6, -9, 2.5, 0, Math.PI / 2);
-    const luz = () => matPlastico('#88C0D0', { emissive: '#88C0D0', emissiveIntensity: 2.0 });
-    for (const mesh of [bloque(grupo, 30, 0.6, 0.4, luz(), 0, 14.4, -1.2), bloque(grupo, 0.4, 32, 0.4, luz(), 16.2, -2, -0.9)]) ledCaso.push(mesh.material);
-  } else {
-    // Dos ventiladores frontales centrados en el bisel inferior: la luz sale de los aros, no del marco.
-    for (const x of [-6.4, 6.4]) {
-      bloque(grupo, 5.4, 5.4, 0.3, m.oscuro, x, -16.2, 8.0);
-      ventiladorCaso(grupo, 2.2, x, -16.2, 8.5, 0, 0);
-    }
-  }
+  if (!modelo.cristal) return;
+  // Dos ventiladores interiores pegados al cristal (girados hacia el lateral) y tiras grandes en el fondo.
+  ventiladorCaso(grupo, 2.2, 16.6, 5, 2.5, 0, Math.PI / 2);
+  ventiladorCaso(grupo, 2.2, 16.6, -9, 2.5, 0, Math.PI / 2);
+  const luz = () => matPlastico('#88C0D0', { emissive: '#88C0D0', emissiveIntensity: 2.0 });
+  for (const mesh of [bloque(grupo, 30, 0.6, 0.4, luz(), 0, 14.4, -1.2), bloque(grupo, 0.4, 32, 0.4, luz(), 16.2, -2, -0.9)]) ledCaso.push(mesh.material);
 }
 
 function construirCaso(modelo) {
@@ -1308,6 +1311,7 @@ function pintarEscena() {
     // Sin caja no queda chasis oculto en memoria: se libera y se reconstruirá al volver a colocarla.
     vaciar(grupoCaso);
     ledCaso.length = 0;
+    fansCaso.length = 0;
     chasisId = null;
   } else if (chasisId !== cajaPuesta.id) {
     vaciar(grupoCaso);
@@ -1801,6 +1805,8 @@ window.montaje = {
   renderInfo: () => ({ geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures }),
   camara: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),
   lucesCaja: () => ledCaso.length,
+  // Ventiladores del chasis (incluido el superior común): cuenta la estructura, con o sin RGB.
+  ventiladoresCaso: () => fansCaso.length,
   // Paneles transparentes del chasis (el cristal). Una caja metálica no tiene ninguno.
   vidriosCaja: () => grupoCaso.children.filter((m) => m.material?.transparent && m.material?.opacity < 0.5).length,
   guiasVisibles: () => [...Object.entries(guiaSlot), ...Object.entries(guiaPort)].filter(([, m]) => m.visible).map(([id]) => id),
