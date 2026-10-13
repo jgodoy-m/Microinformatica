@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Montaje del equipo · Microinformática</title>
+  <script>
+    (() => {
+      try {
+        const saved = localStorage.getItem("temario-tema");
+        if (saved === "dark" || saved === "light") {
+          document.documentElement.dataset.theme = saved;
+          return;
+        }
+      } catch (_) {}
+      document.documentElement.dataset.theme =
+        matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #2E3440;
+      --surface: #3B4252;
+      --surface-2: #434C5E;
+      --text: #ECEFF4;
+      --muted: #D8DEE9;
+      --border: #596579;
+      --accent: #88C0D0;
+      --accent-text: #24313A;
+      --ok: #A3BE8C;
+      --bad: #E0868E;
+      --warn: #EBCB8B;
+    }
+    html[data-theme="light"] {
+      color-scheme: light;
+      --bg: #ECEFF4;
+      --surface: #E5E9F0;
+      --surface-2: #D8DEE9;
+      --text: #2E3440;
+      --muted: #434C5E;
+      --border: #A0AAB9;
+      --accent: #5E81AC;
+      --accent-text: #FFFFFF;
+      --ok: #426B35;
+      --bad: #A3414A;
+      --warn: #76530B;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 { margin: 0; font-size: 18px; }
+    header a { color: var(--muted); text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
+    header a:hover { color: var(--accent); }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 16px;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: minmax(0, 1fr); }
+    }
+    .escena {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .pieza { cursor: grab; }
+    .pieza:active { cursor: grabbing; }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      align-self: start;
+    }
+    .obj { margin: 0 0 6px; font-weight: 700; font-size: 17px; }
+    .prog { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+    .acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    button {
+      font: inherit;
+      min-height: 44px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      cursor: pointer;
+    }
+    button:hover { border-color: var(--accent); }
+    button.primario { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
+    h2 { font-size: 14px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .log {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-height: 340px;
+      overflow: auto;
+      font-size: 14px;
+    }
+    .log li { padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .log .bad { color: var(--bad); }
+    .log .ok { color: var(--ok); }
+    .log .info { color: var(--muted); }
+    .ayuda { font-size: 13px; color: var(--muted); margin: 12px 0 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="../index.html">← Temario</a>
+    <h1>Montaje del equipo</h1>
+    <button id="tema" type="button" aria-label="Cambiar tema">Tema</button>
+  </header>
+
+  <main class="layout">
+    <section aria-label="Escena de montaje">
+      <svg id="escena" class="escena" viewBox="0 0 1000 620" role="img" aria-label="Chasis con placa base, componentes y cables. Arrastra las piezas al chasis y conecta los cables.">
+        <g id="g-caso"></g>
+        <g id="g-tablero"></g>
+        <g id="g-piezas"></g>
+        <g id="g-cables"></g>
+        <g id="g-huecos"></g>
+        <g id="g-bandeja"></g>
+        <g id="g-arrastre"></g>
+      </svg>
+    </section>
+
+    <aside class="panel">
+      <p class="obj" id="objetivo"></p>
+      <p class="prog" id="progreso"></p>
+      <div class="acciones">
+        <button id="encender" class="primario" type="button">Encender el equipo</button>
+        <button id="reiniciar" type="button">Empezar de nuevo</button>
+      </div>
+      <h2>Registro</h2>
+      <ul id="log" class="log" aria-live="polite"></ul>
+      <p class="ayuda">Arrastra cada pieza al hueco que le corresponde. Los cables se conectan arrastrándolos a su conector.</p>
+    </aside>
+  </main>
+
+  <script src="montaje.js"></script>
+</body>
+</html>
