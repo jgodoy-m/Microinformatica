@@ -845,8 +845,6 @@ function moverFantasma(clientX, clientY) {
 }
 
 let inicioPulsacion = null;
-let ignorarClick = false;
-let seleccion = null; // { id, tipo } de la pieza elegida con toque o teclado
 
 bandeja.addEventListener('pointerdown', (e) => {
   const el = e.target.closest('.ficha');
@@ -854,14 +852,6 @@ bandeja.addEventListener('pointerdown', (e) => {
   arrastre = { id: el.dataset.id, tipo: el.dataset.tipo, el, ruta: null, movido: false };
   inicioPulsacion = { x: e.clientX, y: e.clientY };
   if (arrastre.tipo === 'cable') arrastre.ruta = [SALIDA_CABLE[arrastre.id]];
-});
-
-// Un toque o una pulsación de teclado selecciona la pieza; después se elige su destino.
-bandeja.addEventListener('click', (e) => {
-  if (ignorarClick) { ignorarClick = false; return; }
-  const el = e.target.closest('.ficha');
-  if (!el) return;
-  alternarSeleccion({ id: el.dataset.id, tipo: el.dataset.tipo });
 });
 
 window.addEventListener('pointermove', (e) => {
@@ -902,11 +892,10 @@ function terminarArrastre(e, cancelado) {
   a.el.style.opacity = '';
   a.el.classList.remove('arrastrando');
   if (!a.movido || cancelado) {
-    // Fue un toque: el evento click se encarga de seleccionar.
+    // Fue un toque sin movimiento: no hay nada que colocar.
     actualizarGuias(null, false);
     return;
   }
-  ignorarClick = true;
   const p = puntoEnPlaca(e.clientX, e.clientY);
   if (a.tipo === 'cable' && !p) log('info', `${cable(a.id).nombre} vuelve a la bandeja: suéltalo sobre su conector.`);
   if (p) {
