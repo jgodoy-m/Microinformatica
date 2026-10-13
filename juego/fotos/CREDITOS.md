@@ -1,13 +1,16 @@
 # Créditos de las fotos
 
-Todas las fotos proceden de [Pexels](https://www.pexels.com) y se usan bajo la [Licencia de Pexels](https://www.pexels.com/license/), que permite uso gratuito, incluido comercial, sin necesidad de atribución. Se reducen a 600 px de lado mayor.
+Todas las imágenes son recortes (fondo quitado, solo el componente) de fotos de [Pexels](https://www.pexels.com), publicadas con la [Licencia de Pexels](https://www.pexels.com/license/): uso gratuito, incluido comercial, sin necesidad de atribución. Cada archivo indica la foto original de la que sale.
 
-- board.jpg — THE SCMTR (Pexels: https://www.pexels.com/@the-scmtr-509079240/) — https://www.pexels.com/photo/msi-b450m-pro-vdh-plus-motherboard-close-up-37957832/ — Licencia de Pexels
-- cpu.jpg — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/processors-of-a-computer-5206323/ — Licencia de Pexels
-- cpu-x.jpg — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/close-up-of-amd-ryzen-7-9700x-processor-in-hand-32300577/ — Licencia de Pexels
-- ram-a.jpg — Athena Sandrini (Pexels: https://www.pexels.com/@athena/) — https://www.pexels.com/photo/two-white-hyperx-ram-stick-2582928/ — Licencia de Pexels
-- ram-b.jpg — Athena Sandrini (Pexels: https://www.pexels.com/@athena/) — https://www.pexels.com/photo/two-white-hyperx-ram-stick-2582928/ — Licencia de Pexels
-- ram-x.jpg — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/high-performance-xpg-ddr5-ram-modules-on-wooden-surface-34338596/ — Licencia de Pexels
-- gpu.jpg — Matheus Bertelli (Pexels: https://www.pexels.com/@bertellifotografia/) — https://www.pexels.com/photo/close-up-of-geforce-rtx-graphics-card-in-pc-34552796/ — Licencia de Pexels
-- nvme.jpg — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/high-performance-nvme-ssd-on-gray-surface-28666524/ — Licencia de Pexels
-- psu.jpg — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/black-power-supply-unit-on-white-background-33173003/ — Licencia de Pexels
+- board-am4.png — THE SCMTR (Pexels: https://www.pexels.com/@the-scmtr-509079240/) — https://www.pexels.com/photo/msi-b450m-pro-vdh-plus-motherboard-close-up-37957832/ — Licencia de Pexels
+- board-am5.png — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/high-performance-computer-motherboard-on-yellow-33402765/ — Licencia de Pexels
+- board-intel.png — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/motherboard-on-wooden-table-18286300/ — Licencia de Pexels
+- cpu-am4.png — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/processors-of-a-computer-5206323/ (recorte de la zona del procesador) — Licencia de Pexels
+- cpu-intel.png — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/intel-core-i7-processor-with-thermal-paste-34353877/ — Licencia de Pexels
+- ram-a.png — Athena Sandrini (Pexels: https://www.pexels.com/@athena/) — https://www.pexels.com/photo/two-white-hyperx-ram-stick-2582928/ — Licencia de Pexels
+- ram-b.png — Athena Sandrini (Pexels: https://www.pexels.com/@athena/) — https://www.pexels.com/photo/two-white-hyperx-ram-stick-2582928/ — Licencia de Pexels
+- ram-x.png — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/high-performance-xpg-ddr5-ram-modules-on-wooden-surface-34338596/ (un módulo) — Licencia de Pexels
+- ram-x2.png — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/high-performance-xpg-ddr5-ram-modules-on-wooden-surface-34338596/ (un módulo, misma foto que ram-x) — Licencia de Pexels
+- gpu.png — Sergei Starostin (Pexels: https://www.pexels.com/@sejio402/) — https://www.pexels.com/photo/close-up-of-computer-part-6704947/ — Licencia de Pexels
+- nvme.png — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/high-performance-nvme-ssd-on-gray-surface-28666524/ — Licencia de Pexels
+- psu.png — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/black-power-supply-unit-on-white-background-33173003/ — Licencia de Pexels

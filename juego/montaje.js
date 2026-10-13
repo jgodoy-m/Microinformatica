@@ -1,19 +1,18 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/RoomEnvironment.js';
+import { PIEZAS, CABLES, PEDIDOS } from './catalogo.js';
 
 const $ = (id) => document.getElementById(id);
 const logEl = $('log');
 const objEl = $('objetivo');
 const progEl = $('progreso');
+const clienteEl = $('cliente');
+const selectPedido = $('pedido');
 const contenedor = $('escena');
 const bandeja = $('bandeja');
 const fantasma = $('fantasma');
 
-// ---------- Reglas (valores de los apuntes) ----------
-const BOARD = { socket: 'AM4', gen: 'DDR4' };
-const TDP_CPU = 105;
-const TDP_GPU = 150;
-const NECESARIO = Math.ceil((TDP_CPU + TDP_GPU + 100) * 1.3);
+const TDP_GPU = PIEZAS.find((p) => p.kind === 'gpu').tdp;
 
 // Coordenadas en unidades 3D. Centro de la placa = (0, 0). La placa mide 30 x 24.
 const SLOTS = {
@@ -26,6 +25,7 @@ const SLOTS = {
   psu:   { x: 0, y: -15.5, w: 16, h: 6.5, accepts: ['psu'], nombre: 'hueco de la fuente' }
 };
 
+// Tipo de pieza que debe estar montada para que el conector esté disponible.
 const NECESITA = { atx24: 'board', eps8: 'board', pcie8: 'gpu' };
 const PORTS = {
   atx24: { x: 12.5, y: 2.5, w: 1.8, h: 5, z: 0.5, etiqueta: 'ATX 24' },
@@ -34,32 +34,14 @@ const PORTS = {
   pcie8: { relativo: true, dx: 4.6, dy: 1.6, w: 2.0, h: 2.2, etiqueta: 'PCIe 6+2' }
 };
 
-const PIEZAS = [
-  { id: 'board', kind: 'board', nombre: 'Placa base ATX (AM4, DDR4)', corto: 'Placa AM4', color: '#2F4F41' },
-  { id: 'cpu', kind: 'cpu', nombre: 'Procesador AM4 (105 W)', corto: 'CPU AM4', socket: 'AM4', color: '#C9D1DC' },
-  { id: 'cpu-x', kind: 'cpu', nombre: 'Procesador AM5 (105 W)', corto: 'CPU AM5', socket: 'AM5', color: '#C9D1DC', distractor: true },
-  { id: 'ram-a', kind: 'ram', nombre: 'Módulo RAM DDR4', corto: 'RAM DDR4', gen: 'DDR4', color: '#1E222A' },
-  { id: 'ram-b', kind: 'ram', nombre: 'Módulo RAM DDR4', corto: 'RAM DDR4', gen: 'DDR4', color: '#1E222A' },
-  { id: 'ram-x', kind: 'ram', nombre: 'Módulo RAM DDR5', corto: 'RAM DDR5', gen: 'DDR5', color: '#1E222A', distractor: true },
-  { id: 'gpu', kind: 'gpu', nombre: 'Tarjeta gráfica (150 W)', corto: 'GPU', color: '#1C2029' },
-  { id: 'nvme', kind: 'nvme', nombre: 'SSD NVMe M.2', corto: 'SSD NVMe', color: '#2C4B3E' },
-  { id: 'psu', kind: 'psu', nombre: 'Fuente de 650 W', corto: 'Fuente 650 W', watts: 650, color: '#1E222A' },
-  { id: 'psu-x', kind: 'psu', nombre: 'Fuente de 450 W', corto: 'Fuente 450 W', watts: 450, color: '#1E222A', distractor: true }
-];
-
-const CABLES = [
-  { id: 'c-atx', nombre: 'Cable ATX 24 pines', corto: 'ATX 24', port: 'atx24', color: '#D08770' },
-  { id: 'c-eps', nombre: 'Cable EPS 8 pines', corto: 'EPS 8', port: 'eps8', color: '#E5E9F0' },
-  { id: 'c-pcie', nombre: 'Cable PCIe 6+2 pines', corto: 'PCIe 6+2', port: 'pcie8', color: '#B48EAD' }
-];
-
-// Punto de salida de cada cable en la fuente. El recorrido hasta el conector lo traza el alumno.
+// Salida de cada cable: frente del conector modular de la fuente.
 const SALIDA_CABLE = {
-  'c-atx': [7.0, -12.2, 0.4],
-  'c-eps': [-6.5, -12.2, 0.4],
-  'c-pcie': [2.5, -12.2, 0.4]
+  'c-atx': [7.0, -11.45, 3.5],
+  'c-eps': [-6.5, -11.45, 3.5],
+  'c-pcie': [2.5, -11.45, 3.5]
 };
-const ALTURA_CABLE = 1.1;
+const ALTURA_CABLE = 2.9;
+const RADIO_CABLE = 0.2;
 
 const EXPLICA = {
   'c-atx': 'Sin ATX 24 pines la placa no recibe alimentación y no arranca (apuntes S07).',
@@ -67,30 +49,26 @@ const EXPLICA = {
   'c-pcie': 'Sin PCIe 6+2 pines la tarjeta gráfica no tiene la alimentación adicional que necesita (apuntes S07).'
 };
 
-const PASOS = [
-  { txt: 'Fija la placa base en el chasis.', hecho: () => placed('board') },
-  { txt: 'Coloca el procesador en el socket.', hecho: () => placed('cpu') },
-  { txt: 'Instala los dos módulos de RAM DDR4.', hecho: () => placed('ram-a') && placed('ram-b') },
-  { txt: 'Coloca la tarjeta gráfica en la ranura PCIe x16.', hecho: () => placed('gpu') },
-  { txt: 'Instala el SSD NVMe en la ranura M.2.', hecho: () => placed('nvme') },
-  { txt: 'Coloca la fuente de alimentación en su hueco.', hecho: () => placed('psu') },
-  { txt: 'Conecta los tres cables de alimentación a sus conectores.', hecho: () => plugged('c-atx') && plugged('c-eps') && plugged('c-pcie') },
-  { txt: 'Pulsa «Encender el equipo» para comprobar el montaje.', hecho: () => S.final }
-];
-
 // ---------- Estado ----------
 let S;
 let entradas = [];
 let arrastre = null;
+let destelloHasta = 0;
+let vistaPrevia = null;
+let tableroId = null;
 
 const placed = (id) => id in S.placed;
 const plugged = (id) => id in S.plugged;
 const pluggedPort = (pid) => Object.values(S.plugged).some((v) => v.port === pid);
-let destelloHasta = 0;
-let vistaPrevia = null;
 const occupied = (sid) => Object.values(S.placed).includes(sid);
 const pieza = (id) => PIEZAS.find((p) => p.id === id);
 const cable = (id) => CABLES.find((c) => c.id === id);
+const pedido = () => PEDIDOS.find((p) => p.id === S.pedido);
+const enPedido = (id) => Object.values(pedido().piezas).flat().includes(id);
+const piezaPlacada = (kind) => Object.keys(S.placed).map(pieza).find((p) => p.kind === kind);
+const tabla = () => piezaPlacada('board');
+const cpuActual = () => piezaPlacada('cpu') ?? pieza(pedido().piezas.cpu);
+const potenciaNecesaria = () => Math.ceil((cpuActual().tdp + TDP_GPU + 100) * 1.3);
 
 // ---------- Escena 3D ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -143,6 +121,7 @@ const matMetal = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, 
 const matPlastico = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, metalness: 0.05, roughness: 0.65, ...extra });
 const matOro = new THREE.MeshStandardMaterial({ color: '#D9B25F', metalness: 1, roughness: 0.3 });
 const matNegro = matPlastico('#15181E');
+const matCable = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0 });
 
 function caja(w, h, d, mat) {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
@@ -188,15 +167,15 @@ function ventilador(r, colorAro) {
   return g;
 }
 
-function texturaTexto(texto, ancho, alto) {
+function texturaTexto(texto, ancho, alto, fondo = '#20252E', color = '#ECEFF4') {
   const cv = document.createElement('canvas');
   cv.width = ancho;
   cv.height = alto;
   const c = cv.getContext('2d');
-  c.fillStyle = '#20252E';
+  c.fillStyle = fondo;
   c.fillRect(0, 0, ancho, alto);
-  c.fillStyle = '#ECEFF4';
-  c.font = `bold ${Math.round(alto * 0.55)}px system-ui, sans-serif`;
+  c.fillStyle = color;
+  c.font = `bold ${Math.round(alto * 0.5)}px system-ui, sans-serif`;
   c.textAlign = 'center';
   c.textBaseline = 'middle';
   c.fillText(texto, ancho / 2, alto / 2);
@@ -205,7 +184,8 @@ function texturaTexto(texto, ancho, alto) {
   return tex;
 }
 
-function texturaPlaca() {
+// Placa de circuito: color según el modelo, pistas de cobre, zócalo, ranuras y serigrafía.
+function texturaPlaca(placa) {
   const W = 1800;
   const H = 1440;
   const k = 60;
@@ -226,10 +206,7 @@ function texturaPlaca() {
     c.fill();
   };
 
-  const fondo = c.createLinearGradient(0, 0, W, H);
-  fondo.addColorStop(0, '#2F4F41');
-  fondo.addColorStop(1, '#1C3228');
-  c.fillStyle = fondo;
+  c.fillStyle = placa.pcb;
   c.fillRect(0, 0, W, H);
 
   // Pistas de cobre con trazado ortogonal fijo.
@@ -252,12 +229,15 @@ function texturaPlaca() {
     c.stroke();
   }
 
-  // Zócalo AM4: marco de plástico y patillas doradas.
+  // Zócalo: marco de plástico y contactos (más densos en LGA).
   rect(-2, 3, 4.4, 4.4, '#101318');
   rect(-2, 3, 3.95, 3.95, '#262B34');
-  for (let i = 0; i < 30; i++) {
-    for (let j = 0; j < 30; j++) {
-      punto(-2 - 1.9 + i * 0.13, 3 - 1.9 + j * 0.13, 2.2, '#C9A45C');
+  const lga = placa.socket.startsWith('LGA');
+  const n = lga ? 36 : 30;
+  const paso = 3.8 / n;
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      punto(-2 - 1.9 + i * paso, 3 - 1.9 + j * paso, lga ? 1.5 : 2.2, '#C9A45C');
     }
   }
 
@@ -302,8 +282,8 @@ function texturaPlaca() {
   c.fillStyle = 'rgba(236, 239, 244, 0.7)';
   c.font = 'bold 26px system-ui, sans-serif';
   c.textAlign = 'center';
-  c.fillText('AM4', X(-2), Y(5.8));
-  c.fillText('DDR4', X(5.65), Y(11.6));
+  c.fillText(placa.socket, X(-2), Y(5.8));
+  c.fillText(placa.gen, X(5.65), Y(11.6));
   c.fillText('PCIE_X16', X(0.5), Y(-10.3));
   c.fillText('M.2_1', X(-9), Y(0.6));
   c.fillText('CPU_PWR', X(-12.5), Y(7.6));
@@ -346,15 +326,17 @@ function construirCaso() {
   grupoCaso.add(en(caja(0.6, 34.6, 9, oscuro), 17.3, -2, 3.55));
 }
 
-function construirTablero() {
-  const tex = texturaPlaca();
-  const cara = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.55, metalness: 0.05 });
-  const canto = matPlastico('#1B2F25');
-  const placa = new THREE.Mesh(new THREE.BoxGeometry(30, 24, 0.16), [canto, canto, canto, canto, cara, canto]);
-  placa.position.z = -0.08;
-  placa.castShadow = true;
-  placa.receiveShadow = true;
-  grupoTablero.add(placa);
+// La placa se reconstruye cuando cambia el modelo (color, zócalo y memoria).
+function construirTablero(placa) {
+  grupoTablero.clear();
+  tableroId = placa.id;
+  const cara = new THREE.MeshStandardMaterial({ map: texturaPlaca(placa), roughness: 0.5, metalness: 0.05 });
+  const canto = matPlastico(placa.pcb);
+  const pcb = new THREE.Mesh(new THREE.BoxGeometry(30, 24, 0.16), [canto, canto, canto, canto, cara, canto]);
+  pcb.position.z = -0.08;
+  pcb.castShadow = true;
+  pcb.receiveShadow = true;
+  grupoTablero.add(pcb);
 
   const vrm = disipador(3, 6, 1.6, true);
   vrm.position.set(-7.5, 4.5, 0);
@@ -371,13 +353,27 @@ function construirPieza(p, pos) {
   g.userData.id = p.id;
 
   if (p.kind === 'cpu') {
-    g.add(caja(3.9, 3.9, 0.35, matMetal(p.color)));
-    g.add(en(caja(2.6, 2.6, 0.04, matMetal('#8E97A8')), 0, 0, 0.19));
+    // Sustrato verde-negro bajo la tapa metálica con la etiqueta del modelo.
+    g.add(en(caja(4.1, 4.1, 0.14, matPlastico('#1F2A24')), 0, 0, 0.07));
+    const etiqueta = matMetal('#C9D1DC', { map: texturaTexto(p.socket, 256, 256, '#A9B3C2', '#2E3440'), metalness: 0.6, roughness: 0.35 });
+    const tapa = new THREE.Mesh(new THREE.BoxGeometry(3.4, 3.4, 0.16), [matMetal(p.color), matMetal(p.color), matMetal(p.color), matMetal(p.color), etiqueta, matMetal(p.color)]);
+    tapa.position.z = 0.22;
+    tapa.castShadow = true;
+    g.add(tapa);
   }
 
   if (p.kind === 'ram') {
+    const ddr5 = p.gen === 'DDR5';
     g.add(en(caja(0.45, 13, 1.0, matNegro), 0, 0, 0));
-    g.add(en(caja(0.47, 2.2, 1.02, matPlastico('#5E81AC', { emissive: '#000', roughness: 0.4 })), 0, 4.8, 0));
+    // Disipador: negro en DDR4 con acento; en DDR5 con franja RGB.
+    const disipadorRam = matPlastico(ddr5 ? '#1B1F27' : '#1E222A', { roughness: 0.4 });
+    g.add(en(caja(0.5, 10.6, 0.5, disipadorRam), 0, 1.0, 0.45));
+    g.add(en(caja(0.52, 1.6, 0.52, matPlastico(ddr5 ? '#2E3440' : '#8B2E2E', { roughness: 0.4 })), 0, 4.9, 0.45));
+    if (ddr5) {
+      const luz = matPlastico('#88C0D0', { emissive: '#88C0D0', emissiveIntensity: 1.5 });
+      ledMats.push(luz);
+      g.add(en(caja(0.1, 9.8, 0.1, luz), 0.26, 1.0, 0.72));
+    }
     g.add(en(caja(0.45, 0.8, 0.1, matOro), 0, -6.2, -0.5));
   }
 
@@ -391,16 +387,26 @@ function construirPieza(p, pos) {
     f2.position.set(2.6, 0, 1.0);
     g.add(f1, f2);
     g.add(en(caja(9.5, 0.25, 0.05, matOro), 0, -2.45, -1.0));
+    // Soporte metálico de la salida de vídeo y conector de alimentación PCIe.
+    g.add(en(caja(0.5, 4.6, 0.3, matMetal('#A8B0BD')), -5.6, 0, -0.4));
     g.add(en(caja(1.0, 1.3, 0.5, matNegro), 4.6, 1.6, 1.25));
   }
 
   if (p.kind === 'nvme') {
-    g.add(caja(7.9, 2.2, 0.25, matPlastico(p.color)));
+    g.add(caja(7.9, 2.2, 0.25, matPlastico(p.color, { metalness: 0.4, roughness: 0.5 })));
+    const etiqueta = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1.6), new THREE.MeshStandardMaterial({ map: texturaTexto('NVMe M.2', 512, 220, '#E5E9F0', '#2E3440'), roughness: 0.6 }));
+    etiqueta.position.set(1.4, 0, 0.14);
+    g.add(etiqueta);
     g.add(en(caja(1.6, 1.2, 0.12, matNegro), -2.2, 0, 0.18));
   }
 
   if (p.kind === 'psu') {
     g.add(caja(16, 6.5, 7, matPlastico('#1E222A', { roughness: 0.5 })));
+    // Conectores modulares en la cara de salida (+Y) donde se conectan los cables.
+    for (const cid of Object.keys(SALIDA_CABLE)) {
+      const sx = SALIDA_CABLE[cid][0];
+      g.add(en(caja(1.4, 0.8, 1.2, matNegro), sx, 3.65, 0));
+    }
     const etiqueta = new THREE.Mesh(
       new THREE.PlaneGeometry(4.6, 1.6),
       new THREE.MeshStandardMaterial({ map: texturaTexto(`${p.watts} W`, 512, 180), roughness: 0.6 })
@@ -417,7 +423,7 @@ function construirPieza(p, pos) {
 
 function posicionDe(id) {
   const p = pieza(id);
-  if (p.kind === 'cpu') return { x: SLOTS[S.placed[id]].x, y: SLOTS[S.placed[id]].y, z: 0.175 };
+  if (p.kind === 'cpu') return { x: SLOTS[S.placed[id]].x, y: SLOTS[S.placed[id]].y, z: 0 };
   if (p.kind === 'ram') return { x: SLOTS[S.placed[id]].x, y: SLOTS[S.placed[id]].y, z: 0.5 };
   if (p.kind === 'gpu') return { x: SLOTS.pcie.x, y: SLOTS.pcie.y + 2.3, z: 1.6 };
   if (p.kind === 'nvme') return { x: SLOTS.m2.x, y: SLOTS.m2.y, z: 0.125 };
@@ -428,12 +434,13 @@ function posicionDe(id) {
 function puertoRect(pid) {
   const p = PORTS[pid];
   if (!p.relativo) return { x: p.x, y: p.y, w: p.w, h: p.h, z: p.z };
-  const gpu = posicionDe('gpu');
+  const gpu = posicionDe(piezaPlacada('gpu').id);
   return { x: gpu.x + p.dx, y: gpu.y + p.dy, w: p.w, h: p.h, z: 2.7 };
 }
 
 function puertoVisible(pid) {
-  return placed(NECESITA[pid]);
+  const necesita = NECESITA[pid];
+  return necesita === 'board' ? !!tabla() : !!piezaPlacada(necesita);
 }
 
 function puertoEn(x, y) {
@@ -476,27 +483,31 @@ function ok(msg) { log('ok', msg); }
 function intentarColocar(p, x, y) {
   const sid = huecoEn(x, y, p);
   if (!sid) return;
-  if (p.kind !== 'board' && !placed('board')) {
+  const placa = tabla();
+  if (p.kind !== 'board' && !placa) {
     return fallo('Primero fija la placa base en el chasis: sin ella no hay dónde montar el resto.');
   }
   if (occupied(sid)) return fallo(`El ${SLOTS[sid].nombre} ya está ocupado.`);
-  if (p.kind === 'cpu' && p.socket !== BOARD.socket) {
-    return fallo(`${p.nombre} no encaja: es para socket ${p.socket} y la placa tiene ${BOARD.socket}. Cada socket admite solo sus familias de procesador (apuntes S11).`);
+  if (p.kind === 'cpu' && p.socket !== placa.socket) {
+    return fallo(`${p.nombre} no encaja: es para socket ${p.socket} y la placa tiene ${placa.socket}. Cada socket admite solo sus familias de procesador (apuntes S11).`);
   }
-  if (p.kind === 'ram' && p.gen !== BOARD.gen) {
-    return fallo(`${p.nombre} no entra en una placa ${BOARD.gen}: las ranuras son distintas según la generación (apuntes S11).`);
+  if (p.kind === 'ram' && p.gen !== placa.gen) {
+    return fallo(`${p.nombre} no entra en una placa ${placa.gen}: las ranuras son distintas según la generación (apuntes S11).`);
   }
-  if (p.kind === 'psu' && p.watts < NECESARIO) {
-    return fallo(`La fuente de ${p.watts} W se queda corta: el equipo necesita al menos ${NECESARIO} W, según (TDP CPU + TDP GPU + 100 W) × 1,3 (apuntes S11).`);
+  if (p.kind === 'psu' && p.watts < potenciaNecesaria()) {
+    return fallo(`La fuente de ${p.watts} W se queda corta: el equipo necesita al menos ${potenciaNecesaria()} W, según (TDP CPU + TDP GPU + 100 W) × 1,3 (apuntes S11).`);
+  }
+  if (!enPedido(p.id)) {
+    return fallo(`${p.nombre} no es el componente que pide el cliente en este pedido. Mira el pedido y elige otra pieza.`);
   }
   S.placed[p.id] = sid;
   const mensajes = {
-    board: 'Placa fijada en el chasis: los separadores evitan que toque la caja (apuntes S08).',
-    cpu: 'Procesador asentado en el socket AM4.',
+    board: `${p.nombre} fijada en el chasis: los separadores evitan que toque la caja (apuntes S08).`,
+    cpu: `Procesador asentado en el socket ${p.socket}.`,
     ram: `${p.nombre} instalado en la ranura.`,
     gpu: 'Tarjeta gráfica en la ranura PCIe x16.',
     nvme: 'SSD NVMe en la ranura M.2.',
-    psu: `Fuente de ${p.watts} W: suficiente para los ${NECESARIO} W que necesita el equipo.`
+    psu: `Fuente de ${p.watts} W: suficiente para los ${potenciaNecesaria()} W que necesita el equipo.`
   };
   ok(mensajes[p.kind]);
 }
@@ -507,15 +518,30 @@ function intentarConectar(c, x, y, ruta) {
   if (c.port !== pid) {
     return fallo(`${c.nombre} no encaja en el conector ${PORTS[pid].etiqueta}: el número de pines y la forma son distintos (apuntes S07).`);
   }
-  if (!placed('psu')) return fallo('Antes de conectar los cables, instala la fuente: de ella salen.');
+  if (!piezaPlacada('psu')) return fallo('Antes de conectar los cables, instala la fuente: de ella salen.');
   if (pluggedPort(pid)) return fallo(`El conector ${PORTS[pid].etiqueta} ya tiene un cable.`);
   S.plugged[c.id] = { port: pid, ruta };
   ok(`${c.nombre} conectado.`);
 }
 
+// Pasos del pedido en curso (el texto depende de las piezas que pide el cliente).
+function pasos() {
+  const p = pedido().piezas;
+  return [
+    { txt: `Fija la ${pieza(p.board).nombre} en el chasis.`, hecho: () => placed(p.board) },
+    { txt: `Coloca el procesador ${pieza(p.cpu).socket} en su socket.`, hecho: () => placed(p.cpu) },
+    { txt: `Instala los dos módulos de RAM ${pieza(p.ram[0]).gen}.`, hecho: () => p.ram.every(placed) },
+    { txt: 'Coloca la tarjeta gráfica en la ranura PCIe x16.', hecho: () => placed(p.gpu) },
+    { txt: 'Instala el SSD NVMe en la ranura M.2.', hecho: () => placed(p.nvme) },
+    { txt: 'Coloca la fuente de alimentación en su hueco.', hecho: () => placed(p.psu) },
+    { txt: 'Conecta los tres cables de alimentación a sus conectores.', hecho: () => CABLES.every((c) => plugged(c.id)) },
+    { txt: 'Pulsa «Encender el equipo» para comprobar el montaje.', hecho: () => S.final }
+  ];
+}
+
 function encender() {
   if (S.final) return;
-  const pendientes = PASOS.slice(0, -1).filter((p) => !p.hecho());
+  const pendientes = pasos().slice(0, -1).filter((p) => !p.hecho());
   if (pendientes.length) {
     S.errores++;
     log('bad', `El equipo no arranca. Falta: ${pendientes[0].txt}`);
@@ -526,32 +552,36 @@ function encender() {
   }
   S.final = true;
   log('ok', `El equipo arranca y la BIOS muestra la pantalla POST. Errores durante el montaje: ${S.errores}.`);
-  for (const ledMat of ledMats) ledMat.emissiveIntensity = 2.2;
   pintarPanel();
   pintarEscena();
 }
 
-function reiniciar() {
-  S = { placed: {}, plugged: {}, errores: 0, final: false };
+function cargarPedido(id) {
+  S = { pedido: id, placed: {}, plugged: {}, errores: 0, final: false };
   entradas = [];
-  for (const ledMat of ledMats) ledMat.emissiveIntensity = 0.9;
+  clienteEl.textContent = pedido().cliente;
   pintarEscena();
-  log('info', 'Montaje nuevo. Empieza arrastrando la placa base al chasis.');
+  log('info', `Montaje nuevo: ${pedido().titulo}. Empieza arrastrando la placa base al chasis.`);
+}
+
+function reiniciar() {
+  cargarPedido(selectPedido.value);
 }
 
 function pintarPanel() {
-  const i = PASOS.findIndex((p) => !p.hecho());
-  objEl.textContent = i < 0 ? 'Equipo montado' : PASOS[i].txt;
-  const paso = i < 0 ? PASOS.length : i + 1;
-  progEl.textContent = `Paso ${paso} de ${PASOS.length} · Errores: ${S.errores}`;
+  const lista = pasos();
+  const i = lista.findIndex((p) => !p.hecho());
+  objEl.textContent = i < 0 ? 'Equipo montado' : lista[i].txt;
+  const paso = i < 0 ? lista.length : i + 1;
+  progEl.textContent = `Paso ${paso} de ${lista.length} · Errores: ${S.errores}`;
 }
 
 // ---------- Bandeja ----------
 function pintarBandeja() {
   bandeja.querySelectorAll('.ficha').forEach((el) => el.remove());
   const items = [
-    ...PIEZAS.filter((p) => !placed(p.id)).map((p) => ({ id: p.id, tipo: 'parte', corto: p.corto, color: p.color })),
-    ...CABLES.filter((c) => !plugged(c.id)).map((c) => ({ id: c.id, tipo: 'cable', corto: c.corto, color: c.color }))
+    ...PIEZAS.filter((p) => !placed(p.id)).map((p) => ({ id: p.id, tipo: 'parte', corto: p.corto, color: p.color, foto: !p.sinFoto })),
+    ...CABLES.filter((c) => !plugged(c.id)).map((c) => ({ id: c.id, tipo: 'cable', corto: c.corto, color: c.color, foto: !c.sinFoto }))
   ];
   for (const it of items) {
     const el = document.createElement('button');
@@ -559,7 +589,15 @@ function pintarBandeja() {
     el.className = 'ficha';
     el.dataset.id = it.id;
     el.dataset.tipo = it.tipo;
-    el.innerHTML = `<span class="miniatura"><i style="background:${it.color}"></i><img src="fotos/${it.id}.jpg" alt="" loading="lazy" onerror="this.remove()"></span>${it.corto}`;
+    const foto = it.foto ? `<img src="fotos/${it.id}.png" alt="" loading="lazy">` : '';
+    el.innerHTML = `<span class="miniatura">${foto}</span>${it.corto}`;
+    // Sin foto (o si falla la carga): la pieza se ve con su color.
+    const miniatura = el.querySelector('.miniatura');
+    if (!it.foto) miniatura.style.background = it.color;
+    else el.querySelector('img').addEventListener('error', () => {
+      miniatura.style.background = it.color;
+      miniatura.querySelector('img').remove();
+    }, { once: true });
     if (it.tipo === 'cable' && performance.now() < destelloHasta) el.classList.add('destacar');
     bandeja.appendChild(el);
   }
@@ -585,9 +623,10 @@ function construirGuias() {
 }
 
 function actualizarGuias(hover) {
+  const hayPlaca = !!tabla();
   for (const [id, m] of Object.entries(guiaSlot)) {
     const s = SLOTS[id];
-    const relevante = id === 'board' ? !placed('board') : (placed('board') || id === 'psu') && !occupied(id);
+    const relevante = id === 'board' ? !hayPlaca : (hayPlaca || id === 'psu') && !occupied(id);
     m.visible = relevante;
     m.material.opacity = hover === id ? 0.8 : 0.4;
     m.position.set(s.x, s.y, 0.06);
@@ -604,16 +643,38 @@ function actualizarGuias(hover) {
   }
 }
 
-// ---------- Dibujo de piezas montadas ----------
+// ---------- Cables ----------
+// Recorrido completo: salida de la fuente, puntos que traza el alumno, y bajada vertical al conector.
+function puntosCable(ruta, r) {
+  const altura = Math.max(ALTURA_CABLE, r.z + 1.6);
+  return [...ruta, [r.x, r.y, altura], [r.x, r.y, r.z + 1.2]];
+}
+
 function tuboCable(puntos, color) {
   const vectores = puntos.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
-  const curva = new THREE.CatmullRomCurve3(vectores, false, 'catmullrom', 0.2);
-  const tubo = new THREE.Mesh(
-    new THREE.TubeGeometry(curva, Math.max(20, puntos.length * 12), 0.16, 10, false),
-    new THREE.MeshStandardMaterial({ color, roughness: 0.5 })
-  );
+  const curva = new THREE.CatmullRomCurve3(vectores, false, 'centripetal');
+  const tubo = new THREE.Mesh(new THREE.TubeGeometry(curva, Math.max(24, puntos.length * 10), RADIO_CABLE, 12, false), matCable(color));
   tubo.castShadow = true;
   return tubo;
+}
+
+// Conector: carcasa del color del cable, con contactos dorados en la cara superior.
+function conectorCable(color, r) {
+  const g = new THREE.Group();
+  const carcasa = new THREE.Mesh(new THREE.BoxGeometry(r.w, r.h, 1.2), matPlastico(new THREE.Color(color).multiplyScalar(0.55).getStyle(), { roughness: 0.5 }));
+  carcasa.position.set(r.x, r.y, r.z + 0.6);
+  carcasa.castShadow = true;
+  g.add(carcasa);
+  const contactos = Math.max(2, Math.round(Math.max(r.w, r.h) * 1.6));
+  const largo = Math.max(r.w, r.h) * 0.7;
+  const horizontal = r.w > r.h;
+  for (let i = 0; i < contactos; i++) {
+    const t = -largo / 2 + (i + 0.5) * (largo / contactos);
+    const pin = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), matOro);
+    pin.position.set(horizontal ? r.x + t : r.x, horizontal ? r.y : r.y + t, r.z + 1.22);
+    g.add(pin);
+  }
+  return g;
 }
 
 function dibujarPrevia(a, p) {
@@ -622,15 +683,20 @@ function dibujarPrevia(a, p) {
   grupoCables.add(vistaPrevia);
 }
 
+// ---------- Dibujo de piezas montadas ----------
 function pintarEscena() {
-  grupoTablero.visible = placed('board');
+  const placa = tabla();
+  if (placa && tableroId !== placa.id) construirTablero(placa);
+  grupoTablero.visible = !!placa;
 
   grupoPiezas.clear();
   fans.length = 0;
+  ledMats.length = 0;
   for (const id of Object.keys(S.placed)) {
-    if (id === 'board') continue;
+    if (pieza(id).kind === 'board') continue;
     grupoPiezas.add(construirPieza(pieza(id), posicionDe(id)));
   }
+  for (const mat of ledMats) mat.emissiveIntensity = S.final ? 2.2 : 0.9;
 
   grupoCables.clear();
   vistaPrevia = null;
@@ -638,11 +704,8 @@ function pintarEscena() {
     const conexion = S.plugged[c.id];
     if (!conexion) continue;
     const r = puertoRect(conexion.port);
-    const puntos = [...conexion.ruta, [r.x, r.y, r.z]];
-    grupoCables.add(tuboCable(puntos, c.color));
-    const conector = caja(r.w, r.h, 0.4, matPlastico(c.color));
-    conector.position.set(r.x, r.y, r.z + 0.2);
-    grupoCables.add(conector);
+    grupoCables.add(tuboCable(puntosCable(conexion.ruta, r), c.color));
+    grupoCables.add(conectorCable(c.color, r));
   }
 
   pintarBandeja();
@@ -689,9 +752,11 @@ window.addEventListener('pointermove', (e) => {
   if (p) {
     if (arrastre.tipo === 'cable') {
       hover = puertoEn(p.x, p.y);
+      // El cable se mantiene dentro de la placa: los puntos fuera se llevan al borde.
+      const q = { x: Math.min(14.5, Math.max(-14.5, p.x)), y: Math.min(11.5, Math.max(-11.5, p.y)) };
       const ultimo = arrastre.ruta[arrastre.ruta.length - 1];
-      if (Math.hypot(p.x - ultimo[0], p.y - ultimo[1]) > 0.5) arrastre.ruta.push([p.x, p.y, ALTURA_CABLE]);
-      dibujarPrevia(arrastre, p);
+      if (Math.hypot(q.x - ultimo[0], q.y - ultimo[1]) > 0.5) arrastre.ruta.push([q.x, q.y, ALTURA_CABLE]);
+      dibujarPrevia(arrastre, q);
     } else {
       hover = huecoEn(p.x, p.y, pieza(arrastre.id));
     }
@@ -741,9 +806,15 @@ renderer.setAnimationLoop(() => {
 
 // ---------- Inicio ----------
 construirCaso();
-construirTablero();
 construirGuias();
 ajustarTamano();
+for (const p of PEDIDOS) {
+  const opcion = document.createElement('option');
+  opcion.value = p.id;
+  opcion.textContent = p.titulo;
+  selectPedido.appendChild(opcion);
+}
+selectPedido.addEventListener('change', reiniciar);
 reiniciar();
 
 $('encender').addEventListener('click', encender);
