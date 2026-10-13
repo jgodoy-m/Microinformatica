@@ -8,6 +8,7 @@ const objEl = $('objetivo');
 const progEl = $('progreso');
 const clienteEl = $('cliente');
 const selectPedido = $('pedido');
+const selectModo = $('modo');
 const contenedor = $('escena');
 const bandeja = $('bandeja');
 const fantasma = $('fantasma');
@@ -16,6 +17,7 @@ const TDP_GPU = PIEZAS.find((p) => p.kind === 'gpu').tdp;
 
 // Coordenadas en unidades 3D. Centro de la placa = (0, 0). La placa mide 30 x 24.
 const SLOTS = {
+  caja:  { x: 0, y: 0, w: 34, h: 34, accepts: ['caja'], nombre: 'chasis' },
   board: { x: 0, y: 0, w: 30, h: 24, accepts: ['board'], nombre: 'anclaje de la placa base' },
   cpu:   { x: -2.0, y: 3.0, w: 4.0, h: 4.0, accepts: ['cpu'], nombre: 'socket del procesador' },
   ram1:  { x: 5.2, y: 4.3, w: 0.7, h: 13, accepts: ['ram'], nombre: 'ranura de memoria' },
@@ -56,6 +58,8 @@ let arrastre = null;
 let destelloHasta = 0;
 let vistaPrevia = null;
 let tableroId = null;
+let rgbActivo = false;
+let chasisId = null;
 
 const placed = (id) => id in S.placed;
 const plugged = (id) => id in S.plugged;
@@ -87,7 +91,7 @@ scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
 const camera = new THREE.PerspectiveCamera(32, 1.6, 0.1, 300);
 camera.position.set(6, 6, 70);
-camera.lookAt(0, -2, 0);
+camera.lookAt(0, -4.5, 0);
 
 const luzPrincipal = new THREE.DirectionalLight('#ffffff', 1.3);
 luzPrincipal.position.set(12, 22, 40);
@@ -158,10 +162,10 @@ function ventilador(r, colorAro) {
   g.add(rotor);
   const aro = new THREE.Mesh(
     new THREE.TorusGeometry(r * 0.94, r * 0.06, 10, 48),
-    new THREE.MeshStandardMaterial({ color: colorAro, emissive: colorAro, emissiveIntensity: 0.9, roughness: 0.4 })
+    new THREE.MeshStandardMaterial({ color: rgbActivo ? colorAro : '#4C566A', emissive: rgbActivo ? colorAro : '#000000', emissiveIntensity: 0.9, roughness: 0.4 })
   );
   aro.position.z = 0.1;
-  ledMats.push(aro.material);
+  if (rgbActivo) ledMats.push(aro.material);
   g.add(aro);
   fans.push(rotor);
   return g;
@@ -310,20 +314,34 @@ function disipador(w, h, d, vertical) {
 }
 
 // ---------- Construcción de la escena fija ----------
-function construirCaso() {
-  const oscuro = matPlastico('#2A303C', { roughness: 0.7 });
+// Chasis según la caja elegida: lateral de cristal o metálico, y tiras RGB si la caja las tiene.
+function construirCaso(modelo) {
+  grupoCaso.clear();
+  const carcasa = new THREE.MeshPhysicalMaterial({ color: modelo.color, roughness: 0.45, metalness: 0.2, clearcoat: 0.6, clearcoatRoughness: 0.3 });
   const interior = matPlastico('#262B35');
   grupoCaso.add(en(caja(34, 34, 0.5, interior), 0, -2, -0.9));
-  grupoCaso.add(en(caja(34, 0.6, 9, oscuro), 0, 15.3, 3.55));
-  grupoCaso.add(en(caja(34, 0.6, 9, oscuro), 0, -19.3, 3.55));
-  grupoCaso.add(en(caja(0.6, 34.6, 9, oscuro), -17.3, -2, 3.55));
-  const cristal = new THREE.Mesh(
-    new THREE.BoxGeometry(0.3, 34, 9),
-    new THREE.MeshPhysicalMaterial({ color: '#9FB3CC', transparent: true, opacity: 0.12, roughness: 0.05 })
-  );
-  cristal.position.set(17.3, -2, 3.55);
-  grupoCaso.add(cristal);
-  grupoCaso.add(en(caja(0.6, 34.6, 9, oscuro), 17.3, -2, 3.55));
+  grupoCaso.add(en(caja(34, 0.6, 9, carcasa), 0, 15.3, 3.55));
+  grupoCaso.add(en(caja(34, 0.6, 9, carcasa), 0, -19.3, 3.55));
+  grupoCaso.add(en(caja(0.6, 34.6, 9, carcasa), -17.3, -2, 3.55));
+  // Lateral derecho: cristal o panel metálico.
+  if (modelo.cristal) {
+    const cristal = new THREE.Mesh(
+      new THREE.BoxGeometry(0.3, 34, 9),
+      new THREE.MeshPhysicalMaterial({ color: '#9FB3CC', transparent: true, opacity: 0.14, roughness: 0.05, clearcoat: 1 })
+    );
+    cristal.position.set(17.3, -2, 3.55);
+    grupoCaso.add(cristal);
+  } else {
+    grupoCaso.add(en(caja(0.6, 34.6, 9, carcasa), 17.3, -2, 3.55));
+  }
+  // Tiras de luz RGB en el marco superior y en el interior del lateral.
+  if (modelo.rgb) {
+    const luzTira = matPlastico('#88C0D0', { emissive: '#88C0D0', emissiveIntensity: 1.2 });
+    ledMats.push(luzTira);
+    grupoCaso.add(en(caja(30, 0.25, 0.25, luzTira), 0, 14.8, -0.2));
+    grupoCaso.add(en(caja(0.25, 30, 0.25, luzTira), 16.9, -2, -0.2));
+  }
+  chasisId = modelo.id;
 }
 
 // La placa se reconstruye cuando cambia el modelo (color, zócalo y memoria).
@@ -369,7 +387,7 @@ function construirPieza(p, pos) {
     const disipadorRam = matPlastico(ddr5 ? '#1B1F27' : '#1E222A', { roughness: 0.4 });
     g.add(en(caja(0.5, 10.6, 0.5, disipadorRam), 0, 1.0, 0.45));
     g.add(en(caja(0.52, 1.6, 0.52, matPlastico(ddr5 ? '#2E3440' : '#8B2E2E', { roughness: 0.4 })), 0, 4.9, 0.45));
-    if (ddr5) {
+    if (ddr5 && rgbActivo) {
       const luz = matPlastico('#88C0D0', { emissive: '#88C0D0', emissiveIntensity: 1.5 });
       ledMats.push(luz);
       g.add(en(caja(0.1, 9.8, 0.1, luz), 0.26, 1.0, 0.72));
@@ -484,7 +502,10 @@ function intentarColocar(p, x, y) {
   const sid = huecoEn(x, y, p);
   if (!sid) return;
   const placa = tabla();
-  if (p.kind !== 'board' && !placa) {
+  if (p.kind !== 'caja' && !piezaPlacada('caja')) {
+    return fallo('Primero elige la caja: sin chasis no hay dónde montar el equipo.');
+  }
+  if (p.kind !== 'caja' && p.kind !== 'board' && !placa) {
     return fallo('Primero fija la placa base en el chasis: sin ella no hay dónde montar el resto.');
   }
   if (occupied(sid)) return fallo(`El ${SLOTS[sid].nombre} ya está ocupado.`);
@@ -502,6 +523,7 @@ function intentarColocar(p, x, y) {
   }
   S.placed[p.id] = sid;
   const mensajes = {
+    caja: `${p.nombre} colocada: ${p.rgb ? 'tiene iluminación RGB' : 'no lleva iluminación RGB'}.`,
     board: `${p.nombre} fijada en el chasis: los separadores evitan que toque la caja (apuntes S08).`,
     cpu: `Procesador asentado en el socket ${p.socket}.`,
     ram: `${p.nombre} instalado en la ranura.`,
@@ -528,6 +550,7 @@ function intentarConectar(c, x, y, ruta) {
 function pasos() {
   const p = pedido().piezas;
   return [
+    { txt: `Coloca la caja: ${pieza(p.caja).nombre}.`, hecho: () => placed(p.caja) },
     { txt: `Fija la ${pieza(p.board).nombre} en el chasis.`, hecho: () => placed(p.board) },
     { txt: `Coloca el procesador ${pieza(p.cpu).socket} en su socket.`, hecho: () => placed(p.cpu) },
     { txt: `Instala los dos módulos de RAM ${pieza(p.ram[0]).gen}.`, hecho: () => p.ram.every(placed) },
@@ -544,9 +567,13 @@ function encender() {
   const pendientes = pasos().slice(0, -1).filter((p) => !p.hecho());
   if (pendientes.length) {
     S.errores++;
-    log('bad', `El equipo no arranca. Falta: ${pendientes[0].txt}`);
-    CABLES.filter((c) => !plugged(c.id)).forEach((c) => log('info', EXPLICA[c.id]));
-    destelloHasta = performance.now() + 4000;
+    if (S.dificil) {
+      log('bad', 'El equipo no arranca. Revisa el pedido y las conexiones.');
+    } else {
+      log('bad', `El equipo no arranca. Falta: ${pendientes[0].txt}`);
+      CABLES.filter((c) => !plugged(c.id)).forEach((c) => log('info', EXPLICA[c.id]));
+    }
+    destelloHasta = S.dificil ? 0 : performance.now() + 4000;
     pintarEscena();
     return;
   }
@@ -557,11 +584,12 @@ function encender() {
 }
 
 function cargarPedido(id) {
-  S = { pedido: id, placed: {}, plugged: {}, errores: 0, final: false };
+  S = { pedido: id, dificil: selectModo.value === 'dificil', placed: {}, plugged: {}, errores: 0, final: false };
   entradas = [];
   clienteEl.textContent = pedido().cliente;
   pintarEscena();
-  log('info', `Montaje nuevo: ${pedido().titulo}. Empieza arrastrando la placa base al chasis.`);
+  const pista = S.dificil ? 'Modo difícil: no hay pistas. Consulta el pedido del cliente.' : 'Empieza eligiendo la caja y arrastrándola al chasis.';
+  log('info', `Montaje nuevo: ${pedido().titulo}. ${pista}`);
 }
 
 function reiniciar() {
@@ -571,6 +599,11 @@ function reiniciar() {
 function pintarPanel() {
   const lista = pasos();
   const i = lista.findIndex((p) => !p.hecho());
+  if (S.dificil) {
+    objEl.textContent = S.final ? 'Equipo montado' : 'Monta el equipo que pide el cliente.';
+    progEl.textContent = `Errores: ${S.errores}`;
+    return;
+  }
   objEl.textContent = i < 0 ? 'Equipo montado' : lista[i].txt;
   const paso = i < 0 ? lista.length : i + 1;
   progEl.textContent = `Paso ${paso} de ${lista.length} · Errores: ${S.errores}`;
@@ -598,7 +631,7 @@ function pintarBandeja() {
       miniatura.style.background = it.color;
       miniatura.querySelector('img').remove();
     }, { once: true });
-    if (it.tipo === 'cable' && performance.now() < destelloHasta) el.classList.add('destacar');
+    if (it.tipo === 'cable' && !S.dificil && performance.now() < destelloHasta) el.classList.add('destacar');
     bandeja.appendChild(el);
   }
 }
@@ -623,6 +656,10 @@ function construirGuias() {
 }
 
 function actualizarGuias(hover) {
+  if (S.dificil) {
+    for (const m of [...Object.values(guiaSlot), ...Object.values(guiaPort)]) m.visible = false;
+    return;
+  }
   const hayPlaca = !!tabla();
   for (const [id, m] of Object.entries(guiaSlot)) {
     const s = SLOTS[id];
@@ -685,15 +722,21 @@ function dibujarPrevia(a, p) {
 
 // ---------- Dibujo de piezas montadas ----------
 function pintarEscena() {
+  ledMats.length = 0;
+  fans.length = 0;
+  const cajaPuesta = piezaPlacada('caja');
+  rgbActivo = !!cajaPuesta?.rgb;
+  grupoCaso.clear();
+  grupoCaso.visible = !!cajaPuesta;
+  if (cajaPuesta) construirCaso(cajaPuesta);
+
   const placa = tabla();
   if (placa && tableroId !== placa.id) construirTablero(placa);
   grupoTablero.visible = !!placa;
 
   grupoPiezas.clear();
-  fans.length = 0;
-  ledMats.length = 0;
   for (const id of Object.keys(S.placed)) {
-    if (pieza(id).kind === 'board') continue;
+    if (pieza(id).kind === 'board' || pieza(id).kind === 'caja') continue;
     grupoPiezas.add(construirPieza(pieza(id), posicionDe(id)));
   }
   for (const mat of ledMats) mat.emissiveIntensity = S.final ? 2.2 : 0.9;
@@ -805,7 +848,6 @@ renderer.setAnimationLoop(() => {
 });
 
 // ---------- Inicio ----------
-construirCaso();
 construirGuias();
 ajustarTamano();
 for (const p of PEDIDOS) {
@@ -815,6 +857,7 @@ for (const p of PEDIDOS) {
   selectPedido.appendChild(opcion);
 }
 selectPedido.addEventListener('change', reiniciar);
+selectModo.addEventListener('change', reiniciar);
 reiniciar();
 
 $('encender').addEventListener('click', encender);
