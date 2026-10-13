@@ -51,7 +51,7 @@ export const PIEZAS = [
   // Fuentes: la potencia debe cubrir lo que necesita el equipo.
   { id: 'psu', kind: 'psu', nombre: 'Fuente de 650 W', corto: 'Fuente 650 W', watts: 650, color: '#1E222A', comercial: 'Fuente Ruby' },
   { id: 'psu-750', kind: 'psu', nombre: 'Fuente de 750 W', corto: 'Fuente 750 W', watts: 750, color: '#1E222A', comercial: 'VITA' },
-  { id: 'psu-x', kind: 'psu', nombre: 'Fuente de 450 W', corto: 'Fuente 450 W', watts: 450, color: '#1E222A', sinFoto: true, comercial: 'Fuente Jade' }
+  { id: 'psu-x', kind: 'psu', nombre: 'Fuente de 450 W', corto: 'Fuente 450 W', watts: 450, color: '#1E222A', comercial: 'Fuente Jade' }
 ];
 
 // Cables de alimentación. El conector sale de la fuente y el alumno traza su recorrido.

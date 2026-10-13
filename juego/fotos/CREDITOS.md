@@ -24,3 +24,7 @@ Modelos de CPU, RAM, GPU, SSD y fuente generados por el equipo con Blender a par
 - caja-cristal.png — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/modern-transparent-pc-case-on-wooden-surface-33444592/ — Licencia de Pexels
 - caja-metal.png — Andrey Matveev (Pexels: https://www.pexels.com/@zeleboba/) — https://www.pexels.com/photo/lian-li-black-pc-case-on-wooden-desk-33693783/ — Licencia de Pexels
 - cpu-am4-b.png — Alexandre P. Junior (Pexels: https://www.pexels.com/@alexandrep-junior/) — https://www.pexels.com/photo/close-up-of-a-ryzen-cpu-on-motherboard-33798628/ — Licencia de Pexels
+
+## Foto de dominio público
+
+- psu-x.png — Dominio público (Wikimedia Commons: https://commons.wikimedia.org/wiki/File:ATX_PS_downside2.jpg). No requiere licencia ni cita; se indica el origen por transparencia.
