@@ -664,13 +664,13 @@
 
     // ---------- Etapas, títulos y orientación de difícil ----------
 
-    await prueba('Etapas: sin explicaciones debajo; en difícil van en la columna izquierda', async () => {
+    await prueba('Etapas: sin explicaciones debajo; en difícil van debajo del pedido', async () => {
       await cargar('am4', 'facil');
       afirmar(d.querySelectorAll('#etapas li').length === 4, 'cuatro etapas');
       afirmar(!d.querySelector('#etapas .explica'), 'las etapas no llevan explicación');
       afirmar(d.getElementById('etapas').closest('.centro'), 'en fácil el estado va bajo la escena');
       await cargar('am4', 'dificil');
-      afirmar(d.getElementById('etapas').closest('.columna-izq'), 'en difícil el estado va en la columna izquierda');
+      afirmar(d.getElementById('etapas').closest('.tarjeta').previousElementSibling === d.getElementById('pedido-titulo').closest('.tarjeta'), 'en difícil el estado va justo debajo del pedido');
       afirmar(d.body.classList.contains('modo-dificil'), 'la página marca el modo difícil');
       await cargar('am4', 'facil');
       afirmar(d.getElementById('etapas').closest('.centro'), 'al volver a fácil el estado vuelve bajo la escena');

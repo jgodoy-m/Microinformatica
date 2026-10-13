@@ -11,7 +11,7 @@ const mensajeEl = $('mensaje');
 const pasosEl = $('pasos');
 const etapasEl = $('etapas');
 const centroEl = document.querySelector('.centro');
-const columnaIzqEl = document.querySelector('.columna-izq');
+const pedidoEl = $('pedido-titulo').closest('.tarjeta');
 const nivelEl = $('nivel');
 const pistaContadorEl = $('pista-contador');
 const clienteEl = $('cliente');
@@ -1065,11 +1065,11 @@ function pintarPanel() {
     const actual = estado === 'actual' ? ' aria-current="step"' : '';
     return `<li data-estado="${estado}"${actual}><span class="circulo">${estado === 'hecho' ? '✓' : n + 1}</span><span class="etiqueta">${nombre}</span><span class="estado-etapa">${textoEstado[estado]}</span></li>`;
   }).join('');
-  // En difícil el estado del montaje va en vertical en la columna izquierda, bajo los botones.
+  // En difícil el estado del montaje va en vertical en la columna derecha, bajo el pedido.
   document.body.classList.toggle('modo-dificil', !esFacil());
   const estadoEl = $('estado-titulo').parentElement;
   if (esFacil() && estadoEl.parentElement !== centroEl) centroEl.prepend(estadoEl);
-  else if (!esFacil() && estadoEl.parentElement !== columnaIzqEl) columnaIzqEl.append(estadoEl);
+  else if (!esFacil() && estadoEl.previousElementSibling !== pedidoEl) pedidoEl.after(estadoEl);
 
   // En difícil no se orienta ni se avisa de errores: solo se anuncia el final.
   let texto = '';
