@@ -289,6 +289,7 @@
       <div class="modos" role="group" aria-label="Dificultad">
         <button type="button" class="boton" data-modo="facil" aria-pressed="true">Fácil</button>
         <button type="button" class="boton" data-modo="dificil" aria-pressed="false">Difícil</button>
+        <button type="button" class="boton" data-modo="diagnostico" aria-pressed="false">Diagnóstico</button>
       </div>
       <p class="cliente" id="cliente"></p>
       <ul class="espec" id="especificaciones" aria-label="Especificaciones del cliente"></ul>
@@ -304,6 +305,15 @@
         <p class="obj" style="font-size:15px;margin:0">Pieza seleccionada: colócala en</p>
         <div class="huecos" id="huecos"></div>
         <p class="ayuda">Esc cancela la selección.</p>
+      </section>
+      <section class="teclado" id="diagnostico" aria-label="Herramientas de diagnóstico" hidden>
+        <p class="obj" style="font-size:15px;margin:0">Herramientas</p>
+        <div class="huecos">
+          <button type="button" class="boton" id="comprobarConexiones">Comprobar conexiones</button>
+          <button type="button" class="boton" id="comprobarFuente">Comprobar fuente</button>
+        </div>
+        <p class="obj" style="font-size:15px;margin:8px 0 0">Retirar una pieza</p>
+        <div class="huecos" id="retirar"></div>
       </section>
       <p class="ayuda">Arrastra cada pieza de la bandeja al hueco que le corresponde en el chasis. Los cables se conectan arrastrándolos a su conector. Con teclado: Tab hasta una pieza, Intro para elegirla y después el hueco.</p>
     </aside>

@@ -5,7 +5,7 @@ import { SLOTS, SALIDA_CABLE, ALTURA_CABLE } from './geometria.js';
 import { hooks, esFacil, cable, estado, pieza, piezaPlacada, tabla } from './estado.js';
 import { $, bandeja, botonesModo, fantasma } from './dom.js';
 import { actualizarGuias, ajustarTamano, caja, camera, conectorCable, construirCaso, construirGuias, construirPieza, construirTablero, dibujarPrevia, fans, grupoCables, grupoCaso, grupoPiezas, grupoTablero, huecoEn, ledMats, modelosListos, posicionDe, puertoEn, puertoRect, puntosCable, renderer, tuboCable, vaciar, claveTablero } from './escena.js';
-import { cargarPedido, encender, intentarColocar, intentarConectar, log, pintarPanel, reiniciar } from './juego.js';
+import { encender, intentarColocar, intentarConectar, log, pintarPanel, reiniciar, comprobarConexiones, comprobarFuente } from './juego.js';
 import { pintarBandeja } from './bandeja.js';
 
 // ---------- Dibujo de piezas montadas ----------
@@ -125,11 +125,13 @@ reiniciar();
 modelosListos.then(() => pintarEscena());
 
 $('encender').addEventListener('click', encender);
+$('comprobarConexiones').addEventListener('click', comprobarConexiones);
+$('comprobarFuente').addEventListener('click', comprobarFuente);
 for (const b of botonesModo) {
   b.addEventListener('click', () => {
     estado.modo = b.dataset.modo;
     for (const o of botonesModo) o.setAttribute('aria-pressed', String(o === b));
-    cargarPedido(estado.S.pedido);
+    reiniciar();
   });
 }
 botonesModo.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.modo === estado.modo)));

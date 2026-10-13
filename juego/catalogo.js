@@ -101,6 +101,22 @@ export const PEDIDOS_FIJOS = [
   }
 ];
 
+// Averías del modo diagnóstico: el equipo ya está montado y el alumno debe encontrar y reparar la falla.
+// El síntoma es lo único que cuenta el cliente; las pruebas del alumno son comprobar conexiones,
+// comprobar la fuente y retirar piezas.
+export const DIAGNOSTICOS = [
+  {
+    id: 'diag-eps',
+    sintoma: '«Se enciende un segundo y se apaga solo. Lo montó mi sobrino y no sé qué ha hecho.»',
+    falla: { tipo: 'cable-sin-conectar', cable: 'c-eps' }
+  },
+  {
+    id: 'diag-fuente',
+    sintoma: '«Se apaga de golpe cuando juego, sobre todo con la gráfica al máximo.»',
+    falla: { tipo: 'fuente-insuficiente', pieza: 'psu-x' }
+  }
+];
+
 // Semilla fija: los pedidos aleatorios son siempre los mismos. Cámbiala para generar otros.
 export const SEMILLA_PEDIDOS = 2026;
 export const NUMERO_PEDIDOS_ALEATORIOS = 10;

@@ -1,9 +1,9 @@
 // Reglas de partida: colocar, conectar, pasos, encender, pedidos y panel.
-import { CABLES, PEDIDOS } from './catalogo.js';
+import { CABLES, PEDIDOS, PEDIDOS_FIJOS, DIAGNOSTICOS } from './catalogo.js';
 import { comprobarColocacion } from './reglas.js';
-import { SLOTS, PORTS, EXPLICA } from './geometria.js';
+import { SLOTS, PORTS, EXPLICA, SALIDA_CABLE } from './geometria.js';
 import { hooks, TDP_GPU, cable, cpuActual, enPedido, esFacil, estado, occupied, pedido, pieza, piezaPlacada, placed, plugged, pluggedPort, potenciaNecesaria, tabla } from './estado.js';
-import { bandeja, clienteEl, especEl, logEl, objEl, progEl } from './dom.js';
+import { $, bandeja, clienteEl, especEl, logEl, objEl, progEl } from './dom.js';
 import { caja, en, huecoEn, longitudCable, puertoEn, puertoRect } from './escena.js';
 
 // ---------- Reglas del montaje ----------
@@ -111,14 +111,64 @@ export function cargarPedido(id) {
     : 'Montaje nuevo. Lee lo que pide el cliente y monta el equipo.');
 }
 
-// Pedido al azar: no se puede elegir.
+// Pedido al azar: no se puede elegir. En modo diagnóstico, una avería al azar sobre un equipo montado.
 export function reiniciar() {
+  if (estado.modo === 'diagnostico') return cargarDiagnostico();
   cargarPedido(PEDIDOS[Math.floor(Math.random() * PEDIDOS.length)].id);
+}
+
+// Equipo ya montado (pedido 1) con una avería.
+export function cargarDiagnostico() {
+  const d = DIAGNOSTICOS[Math.floor(Math.random() * DIAGNOSTICOS.length)];
+  const base = PEDIDOS_FIJOS[0].piezas;
+  estado.S = { pedido: PEDIDOS_FIJOS[0].id, diag: d.id, placed: {}, plugged: {}, errores: 0, final: false };
+  estado.entradas = [];
+  estado.S.placed[base.caja] = 'caja';
+  estado.S.placed[base.board] = 'board';
+  estado.S.placed[base.cpu] = 'cpu';
+  estado.S.placed[base.ram[0]] = 'ram1';
+  estado.S.placed[base.ram[1]] = 'ram2';
+  estado.S.placed[base.gpu] = 'pcie';
+  estado.S.placed[base.nvme] = 'm2';
+  estado.S.placed[d.falla.tipo === 'fuente-insuficiente' ? d.falla.pieza : base.psu] = 'psu';
+  for (const c of CABLES) {
+    if (d.falla.tipo === 'cable-sin-conectar' && c.id === d.falla.cable) continue;
+    estado.S.plugged[c.id] = { port: c.port, ruta: [SALIDA_CABLE[c.id]] };
+  }
+  clienteEl.textContent = d.sintoma;
+  especEl.hidden = true;
+  hooks.pintarEscena();
+  log('info', 'Diagnóstico: el equipo ya está montado. Escucha al cliente y busca la avería.');
+}
+
+// Herramientas de diagnóstico (solo en modo diagnóstico).
+export function comprobarConexiones() {
+  for (const c of CABLES) log('info', `${c.nombre}: ${plugged(c.id) ? 'conectado' : 'NO conectado'}.`);
+}
+
+export function comprobarFuente() {
+  const psu = piezaPlacada('psu');
+  if (!psu) return log('info', 'No hay fuente instalada.');
+  log('info', `La fuente da ${psu.watts} W. Este equipo necesita al menos ${potenciaNecesaria()} W.`);
+}
+
+export function retirarPieza(id) {
+  delete estado.S.placed[id];
+  hooks.pintarEscena();
+  log('info', `${pieza(id).nombre} retirada del equipo.`);
 }
 
 export function pintarPanel() {
   const lista = pasos();
   const i = lista.findIndex((p) => !p.hecho());
+  const diag = $('diagnostico');
+  diag.hidden = estado.modo !== 'diagnostico';
+  if (!diag.hidden) {
+    objEl.textContent = estado.S.final ? 'Equipo funcionando' : 'Encuentra la avería y repárala.';
+    progEl.textContent = `Errores: ${estado.S.errores}`;
+    pintarRetirar();
+    return;
+  }
   if (!esFacil()) {
     objEl.textContent = estado.S.final ? 'Equipo montado' : 'Monta el equipo del pedido.';
     progEl.textContent = `Errores: ${estado.S.errores}`;
@@ -146,3 +196,19 @@ export function especificaciones() {
   ];
 }
 
+
+// Botones «Retirar» con las piezas montadas (sin la caja ni la placa).
+function pintarRetirar() {
+  const cont = $('retirar');
+  cont.innerHTML = '';
+  for (const id of Object.keys(estado.S.placed)) {
+    const p = pieza(id);
+    if (p.kind === 'caja' || p.kind === 'board') continue;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'boton';
+    b.textContent = `Retirar ${p.comercial ?? p.nombre}`;
+    b.addEventListener('click', () => retirarPieza(id));
+    cont.appendChild(b);
+  }
+}
