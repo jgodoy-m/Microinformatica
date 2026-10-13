@@ -483,29 +483,43 @@ function log(tipo, msg) {
 }
 function fallo(msg, corto) {
   S.errores++;
+  S.ultimoFallo = true;
   log('bad', esFacil() ? msg : (corto ?? 'No encaja con el pedido.'));
 }
-function ok(msg) { log('ok', msg); }
+function ok(msg) {
+  S.ultimoFallo = false;
+  log('ok', msg);
+}
+
+// Devuelve null si la pieza puede ir en ese hueco; si no, el motivo (largo y corto).
+function motivoColocar(p, sid) {
+  const placa = tabla();
+  if (p.kind !== 'board' && !placa) {
+    return { msg: 'Primero fija la placa base en el chasis: sin ella no hay dónde montar el resto.', corto: 'Primero la placa base.' };
+  }
+  if (occupied(sid)) return { msg: `El ${SLOTS[sid].nombre} ya está ocupado.`, corto: 'Ese hueco ya está ocupado.' };
+  if (p.kind === 'cpu' && p.socket !== placa.socket) {
+    return { msg: `${p.nombre} no encaja: es para socket ${p.socket} y la placa tiene ${placa.socket}. Cada socket admite solo sus familias de procesador (apuntes S11).`, corto: 'Ese procesador no encaja en esta placa.' };
+  }
+  if (p.kind === 'ram' && p.gen !== placa.gen) {
+    return { msg: `${p.nombre} no entra en una placa ${placa.gen}: las ranuras son distintas según la generación (apuntes S11).`, corto: 'Esa memoria no encaja en esta placa.' };
+  }
+  if (p.kind === 'psu' && p.watts < potenciaNecesaria()) {
+    return { msg: `La fuente de ${p.watts} W se queda corta: el equipo necesita al menos ${potenciaNecesaria()} W, según (TDP CPU + TDP GPU + 100 W) × 1,3 (apuntes S11).`, corto: 'Esa fuente no basta para este equipo.' };
+  }
+  if (!enPedido(p.id)) {
+    return { msg: `${p.nombre} no es el componente que pide el cliente en este pedido. Mira el pedido y elige otra pieza.`, corto: 'Esa pieza no es la que pide el cliente.' };
+  }
+  return null;
+}
 
 function intentarColocar(p, x, y) {
   const sid = huecoEn(x, y, p);
-  if (!sid) return;
-  const placa = tabla();
-  if (p.kind !== 'board' && !placa) {
-    return fallo('Primero fija la placa base en el chasis: sin ella no hay dónde montar el resto.', 'Primero la placa base.');
-  }
-  if (occupied(sid)) return fallo(`El ${SLOTS[sid].nombre} ya está ocupado.`, 'Ese hueco ya está ocupado.');
-  if (p.kind === 'cpu' && p.socket !== placa.socket) {
-    return fallo(`${p.nombre} no encaja: es para socket ${p.socket} y la placa tiene ${placa.socket}. Cada socket admite solo sus familias de procesador (apuntes S11).`, 'Ese procesador no encaja en esta placa.');
-  }
-  if (p.kind === 'ram' && p.gen !== placa.gen) {
-    return fallo(`${p.nombre} no entra en una placa ${placa.gen}: las ranuras son distintas según la generación (apuntes S11).`, 'Esa memoria no encaja en esta placa.');
-  }
-  if (p.kind === 'psu' && p.watts < potenciaNecesaria()) {
-    return fallo(`La fuente de ${p.watts} W se queda corta: el equipo necesita al menos ${potenciaNecesaria()} W, según (TDP CPU + TDP GPU + 100 W) × 1,3 (apuntes S11).`, 'Esa fuente no basta para este equipo.');
-  }
-  if (!enPedido(p.id)) {
-    return fallo(`${p.nombre} no es el componente que pide el cliente en este pedido. Mira el pedido y elige otra pieza.`, 'Esa pieza no es la que pide el cliente.');
+  if (!sid) return false;
+  const motivo = motivoColocar(p, sid);
+  if (motivo) {
+    fallo(motivo.msg, motivo.corto);
+    return false;
   }
   S.placed[p.id] = sid;
   const mensajes = {
@@ -517,18 +531,33 @@ function intentarColocar(p, x, y) {
     psu: `Fuente de ${p.watts} W: suficiente para los ${potenciaNecesaria()} W que necesita el equipo.`
   };
   ok(mensajes[p.kind]);
+  return true;
+}
+
+// Devuelve null si el cable puede conectarse a ese conector; si no, el motivo.
+function motivoConectar(c, pid) {
+  if (c.port !== pid) {
+    return { msg: `${c.nombre} no encaja en el conector ${PORTS[pid].etiqueta}: el número de pines y la forma son distintos (apuntes S07).`, corto: 'Ese cable no encaja en ese conector.' };
+  }
+  if (!piezaPlacada('psu')) return { msg: 'Antes de conectar los cables, instala la fuente: de ella salen.', corto: 'Primero la fuente.' };
+  if (pluggedPort(pid)) return { msg: `El conector ${PORTS[pid].etiqueta} ya tiene un cable.`, corto: 'Ese conector ya tiene cable.' };
+  return null;
 }
 
 function intentarConectar(c, x, y, ruta) {
   const pid = puertoEn(x, y);
-  if (!pid) return log('info', `${c.nombre} vuelve a la bandeja: suéltalo sobre su conector.`);
-  if (c.port !== pid) {
-    return fallo(`${c.nombre} no encaja en el conector ${PORTS[pid].etiqueta}: el número de pines y la forma son distintos (apuntes S07).`, 'Ese cable no encaja en ese conector.');
+  if (!pid) {
+    log('info', `${c.nombre} vuelve a la bandeja: suéltalo sobre su conector.`);
+    return false;
   }
-  if (!piezaPlacada('psu')) return fallo('Antes de conectar los cables, instala la fuente: de ella salen.', 'Primero la fuente.');
-  if (pluggedPort(pid)) return fallo(`El conector ${PORTS[pid].etiqueta} ya tiene un cable.`, 'Ese conector ya tiene cable.');
+  const motivo = motivoConectar(c, pid);
+  if (motivo) {
+    fallo(motivo.msg, motivo.corto);
+    return false;
+  }
   S.plugged[c.id] = { port: pid, ruta };
   ok(`${c.nombre} conectado.`);
+  return true;
 }
 
 // Pasos del pedido en curso (el texto depende de las piezas que pide el cliente).
@@ -693,7 +722,11 @@ function construirGuias() {
   }
 }
 
-function actualizarGuias(hover) {
+function actualizarGuias(hover, valido = false) {
+  const color = (id) => {
+    if (hover !== id) return '#EBCB8B';
+    return valido ? '#A3BE8C' : '#BF616A';
+  };
   if (!esFacil()) {
     for (const m of [...Object.values(guiaSlot), ...Object.values(guiaPort)]) m.visible = false;
     return;
@@ -706,6 +739,7 @@ function actualizarGuias(hover) {
     // La placa ocupa casi todo el chasis: su guía solo se marca de forma sutil.
     const base = id === 'board' ? 0.1 : 0.4;
     m.material.opacity = hover === id ? (id === 'board' ? 0.25 : 0.8) : base;
+    m.material.color.set(color(id));
     m.position.set(s.x, s.y, 0.06);
   }
   for (const [pid, m] of Object.entries(guiaPort)) {
@@ -716,6 +750,7 @@ function actualizarGuias(hover) {
       m.position.set(r.x, r.y, r.z + 0.06);
       m.scale.set(r.w + 0.8, r.h + 0.8, 1);
       m.material.opacity = hover === pid ? 0.9 : 0.55;
+      m.material.color.set(color(pid));
     }
   }
 }
@@ -809,36 +844,54 @@ function moverFantasma(clientX, clientY) {
   fantasma.style.top = `${clientY}px`;
 }
 
+let inicioPulsacion = null;
+let ignorarClick = false;
+let seleccion = null; // { id, tipo } de la pieza elegida con toque o teclado
+
 bandeja.addEventListener('pointerdown', (e) => {
   const el = e.target.closest('.ficha');
   if (!el) return;
-  e.preventDefault();
-  arrastre = { id: el.dataset.id, tipo: el.dataset.tipo, el, ruta: null };
+  arrastre = { id: el.dataset.id, tipo: el.dataset.tipo, el, ruta: null, movido: false };
+  inicioPulsacion = { x: e.clientX, y: e.clientY };
   if (arrastre.tipo === 'cable') arrastre.ruta = [SALIDA_CABLE[arrastre.id]];
-  el.style.opacity = '0.4';
-  fantasma.textContent = el.textContent;
-  fantasma.style.display = 'block';
-  moverFantasma(e.clientX, e.clientY);
+});
+
+// Un toque o una pulsación de teclado selecciona la pieza; después se elige su destino.
+bandeja.addEventListener('click', (e) => {
+  if (ignorarClick) { ignorarClick = false; return; }
+  const el = e.target.closest('.ficha');
+  if (!el) return;
+  alternarSeleccion({ id: el.dataset.id, tipo: el.dataset.tipo });
 });
 
 window.addEventListener('pointermove', (e) => {
   if (!arrastre) return;
+  if (!arrastre.movido) {
+    const d = Math.hypot(e.clientX - inicioPulsacion.x, e.clientY - inicioPulsacion.y);
+    if (d < 6) return;
+    arrastre.movido = true;
+    arrastre.el.style.opacity = '0.4';
+    arrastre.el.classList.add('arrastrando');
+    fantasma.textContent = arrastre.el.querySelector('.texto').textContent;
+    fantasma.style.display = 'block';
+  }
   moverFantasma(e.clientX, e.clientY);
   const p = puntoEnPlaca(e.clientX, e.clientY);
   let hover = null;
+  let valido = false;
   if (p) {
     if (arrastre.tipo === 'cable') {
       hover = puertoEn(p.x, p.y);
-      // El cable se mantiene dentro de la placa: los puntos fuera se llevan al borde.
-      const q = { x: Math.min(14.5, Math.max(-14.5, p.x)), y: Math.min(11.5, Math.max(-11.5, p.y)) };
+      valido = !!hover && !motivoConectar(cable(arrastre.id), hover);
       const ultimo = arrastre.ruta[arrastre.ruta.length - 1];
-      if (Math.hypot(q.x - ultimo[0], q.y - ultimo[1]) > 0.5) arrastre.ruta.push([q.x, q.y, ALTURA_CABLE]);
-      dibujarPrevia(arrastre, q);
+      if (Math.hypot(p.x - ultimo[0], p.y - ultimo[1]) > 0.5) arrastre.ruta.push([p.x, p.y, ALTURA_CABLE]);
+      dibujarPrevia(arrastre, p);
     } else {
       hover = huecoEn(p.x, p.y, pieza(arrastre.id));
+      valido = !!hover && !motivoColocar(pieza(arrastre.id), hover);
     }
   }
-  actualizarGuias(hover);
+  actualizarGuias(hover, valido);
 });
 
 function terminarArrastre(e, cancelado) {
@@ -846,13 +899,19 @@ function terminarArrastre(e, cancelado) {
   const a = arrastre;
   arrastre = null;
   fantasma.style.display = 'none';
-  if (!cancelado) {
-    const p = puntoEnPlaca(e.clientX, e.clientY);
-    if (a.tipo === 'cable' && !p) log('info', `${cable(a.id).nombre} vuelve a la bandeja: suéltalo sobre su conector.`);
-    if (p) {
-      if (a.tipo === 'cable') intentarConectar(cable(a.id), p.x, p.y, a.ruta);
-      else intentarColocar(pieza(a.id), p.x, p.y);
-    }
+  a.el.style.opacity = '';
+  a.el.classList.remove('arrastrando');
+  if (!a.movido || cancelado) {
+    // Fue un toque: el evento click se encarga de seleccionar.
+    actualizarGuias(null, false);
+    return;
+  }
+  ignorarClick = true;
+  const p = puntoEnPlaca(e.clientX, e.clientY);
+  if (a.tipo === 'cable' && !p) log('info', `${cable(a.id).nombre} vuelve a la bandeja: suéltalo sobre su conector.`);
+  if (p) {
+    if (a.tipo === 'cable') intentarConectar(cable(a.id), p.x, p.y, a.ruta);
+    else intentarColocar(pieza(a.id), p.x, p.y);
   }
   pintarEscena();
 }

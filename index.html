@@ -809,6 +809,66 @@
       }
     }
 
+    /* Navegación de cabecera */
+    .site-nav {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: auto;
+      margin-right: 12px;
+    }
+    .site-nav .header-link {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 10px;
+      border-radius: 8px;
+    }
+    .site-nav .header-link:hover { background: var(--surface); }
+    .header-link-destacado {
+      color: var(--accent) !important;
+      font-weight: 700;
+    }
+    .header-actions { gap: 12px; }
+
+    .hero-kicker {
+      margin: 0 0 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .hero h1 span { color: var(--accent); }
+    .secondary-button {
+      min-height: 50px;
+      display: inline-flex;
+      align-items: center;
+      padding: 12px 20px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .secondary-button:hover { border-color: var(--accent); color: var(--accent); }
+    .secondary-button:focus-visible,
+    .primary-button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+    @media (max-width: 760px) {
+      .header-inner { flex-wrap: wrap; padding-block: 8px; min-height: 0; }
+      .site-nav {
+        order: 3;
+        width: 100%;
+        margin: 0;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 2px 8px;
+        padding-bottom: 8px;
+      }
+      .site-nav .header-link { min-height: 40px; font-size: 0.9rem; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       html {
         scroll-behavior: auto;
@@ -837,8 +897,14 @@
         <span>Microinformática</span>
       </a>
 
+      <nav class="site-nav" aria-label="Principal">
+        <a class="header-link" href="#temas">Temario</a>
+        <a class="header-link" href="#practica">Prácticas</a>
+        <a class="header-link" href="averias.html">Simulador</a>
+        <a class="header-link header-link-destacado" href="juego/montaje.html">Montaje</a>
+      </nav>
+
       <div class="header-actions">
-        <a class="header-link" href="averias.html">Simulador <span aria-hidden="true">→</span></a>
 
         <button
           class="theme-toggle"
@@ -863,19 +929,20 @@
     <section class="hero" aria-labelledby="hero-title">
       <div class="container hero-inner">
         <div class="hero-copy">
+          <p class="hero-kicker">Formación Profesional · Montaje y reparación</p>
           <h1 id="hero-title">
-            Aprende a diagnosticar y reparar
-            <span>sistemas microinformáticos.</span>
+            Aprende. <span>Monta.</span> Diagnostica.
           </h1>
 
           <p class="hero-description">
-            Practica con casos basados en averías reales de una placa base, realiza pruebas
-            y aprende a identificar sus conectores.
+            Un laboratorio para practicar con equipos reales: monta un ordenador
+            pieza a pieza, localiza averías con pruebas guiadas y comprueba lo
+            aprendido en un simulacro.
           </p>
 
           <div class="hero-actions">
-            <a class="primary-button" href="averias.html">Practicar averías</a>
-            <a class="secondary-link" href="#temas">Ver temario</a>
+            <a class="primary-button" href="#practica">Empezar a practicar</a>
+            <a class="secondary-button" href="#temas">Explorar el temario</a>
           </div>
         </div>
 
@@ -891,11 +958,12 @@
       </div>
     </section>
 
-    <section class="practice" aria-labelledby="practice-title">
+    <section class="practice" id="practica" aria-labelledby="practice-title">
       <div class="container practice-inner">
         <div class="practice-intro">
           <p class="eyebrow">Práctica</p>
-          <h2 id="practice-title">Pon a prueba lo que aprendes</h2>
+          <h2 id="practice-title">Prácticas</h2>
+          <p>Tres actividades para aplicar lo que estudias en los apuntes.</p>
         </div>
 
         <div class="practice-grid">
