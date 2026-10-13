@@ -675,14 +675,16 @@
 
     // ---------- Etapas, títulos y orientación de difícil ----------
 
-    await prueba('Etapas: cada etapa explica lo que comprueba el juego, y «Comprobación» no atribuye verificaciones que no hace', async () => {
+    await prueba('Etapas: sin explicaciones debajo; en difícil van en la columna izquierda', async () => {
       await cargar('am4', 'facil');
-      const explicaciones = () => [...d.querySelectorAll('#etapas li .explica')].map((x) => x.textContent);
-      const e = explicaciones();
-      afirmar(e.length === 4 && e.every((t) => t.length > 0), `una explicación por etapa: ${e.length}`);
-      afirmar(/Con todo instalado y conectado, al encender se revisa que no falte nada/.test(e[2]), `Comprobación: ${e[2]}`);
-      afirmar(/La compatibilidad ya se comprobó al colocar cada pieza/.test(e[2]), 'la compatibilidad se atribuye a la colocación, no a la revisión final');
-      afirmar(!/compatib/i.test(e[3]) && /arranca/.test(e[3]), `Encendido: ${e[3]}`);
+      afirmar(d.querySelectorAll('#etapas li').length === 4, 'cuatro etapas');
+      afirmar(!d.querySelector('#etapas .explica'), 'las etapas no llevan explicación');
+      afirmar(d.getElementById('etapas').closest('.centro'), 'en fácil el estado va bajo la escena');
+      await cargar('am4', 'dificil');
+      afirmar(d.getElementById('etapas').closest('.columna-izq'), 'en difícil el estado va en la columna izquierda');
+      afirmar(d.body.classList.contains('modo-dificil'), 'la página marca el modo difícil');
+      await cargar('am4', 'facil');
+      afirmar(d.getElementById('etapas').closest('.centro'), 'al volver a fácil el estado vuelve bajo la escena');
     });
 
     // Títulos: deben describir la gráfica y la plataforma reales del pedido aleatorio.
@@ -860,16 +862,15 @@
       afirmar(d.getElementById('seleccion').hidden, 'no debe abrirse la selección para una pieza instalada');
     });
 
-    await prueba('Instrucciones: en fácil y en difícil se nombra cada pieza; en difícil no hay especificaciones', async () => {
+    await prueba('Instrucciones: en fácil se nombra cada pieza; en difícil no hay instrucciones, siguiente paso ni especificaciones', async () => {
       await cargar('am4', 'facil');
       const facil = d.getElementById('pasos').textContent;
       afirmar(/Placa base AM4 \(DDR4\)/.test(facil), 'en fácil la instrucción nombra la pieza');
       afirmar(d.querySelectorAll('#pasos li').length === 8, 'ocho pasos: la caja ya va montada');
       afirmar(d.querySelector('#pasos li[aria-current="step"]')?.dataset.estado === 'actual', 'el paso actual debe estar marcado');
       await cargar('am4', 'dificil');
-      const dificil = d.getElementById('pasos').textContent;
-      afirmar(/Placa base AM4 \(DDR4\)/.test(dificil), 'en difícil también se nombra la pieza');
-      afirmar(!/\d+ W/.test(dificil), `en difícil no deben aparecer datos de potencia: ${dificil.slice(0, 80)}`);
+      afirmar(d.getElementById('pasos').hidden, 'en difícil no se muestran las instrucciones');
+      afirmar(d.getElementById('mensaje').textContent.trim() === '', `en difícil no se indica el siguiente paso: ${d.getElementById('mensaje').textContent}`);
       afirmar(d.getElementById('especificaciones').hidden, 'en difícil no se muestran especificaciones');
     });
 

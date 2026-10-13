@@ -10,6 +10,8 @@ const progEl = $('progreso');
 const mensajeEl = $('mensaje');
 const pasosEl = $('pasos');
 const etapasEl = $('etapas');
+const centroEl = document.querySelector('.centro');
+const columnaIzqEl = document.querySelector('.columna-izq');
 const nivelEl = $('nivel');
 const pistaContadorEl = $('pista-contador');
 const clienteEl = $('cliente');
@@ -1043,6 +1045,9 @@ function pintarPanel() {
     ? (S.final ? `Equipo montado · Errores: ${S.errores}` : `Paso ${i < 0 ? lista.length : i + 1} de ${lista.length} · Errores: ${S.errores}`)
     : `Errores: ${S.errores}`;
 
+  // En difícil no hay instrucciones: la tarjeta se queda solo con las pistas.
+  pasosEl.hidden = !esFacil();
+  $('instrucciones-titulo').textContent = esFacil() ? 'Instrucciones' : 'Pistas';
   pasosEl.innerHTML = lista.map((p, n) => {
     const estado = p.hecho() ? 'hecho' : n === i ? 'actual' : 'pendiente';
     const texto = p.txt;
@@ -1056,25 +1061,29 @@ function pintarPanel() {
   const c1 = componentesListos();
   const c2 = conexionesListas();
   // Una etapa solo se completa si lo anterior también lo está (un componente retirado reabre Componentes).
-  // Lo que comprueba cada etapa. Coincide con lo que hace encender(): el POST exige que no falte nada,
-  // y la compatibilidad ya se comprobó al colocar cada pieza y al conectar cada cable.
   const etapas = [
-    ['Componentes', c1 ? 'hecho' : 'actual', 'Las piezas del pedido están instaladas en el chasis.'],
-    ['Conexiones', c1 && c2 ? 'hecho' : c1 ? 'actual' : 'pendiente', 'Los tres cables de alimentación están en sus conectores.'],
-    ['Comprobación', S.final ? 'hecho' : c1 && c2 ? 'actual' : 'pendiente', 'Con todo instalado y conectado, al encender se revisa que no falte nada. La compatibilidad ya se comprobó al colocar cada pieza.'],
-    ['Encendido', S.final ? 'hecho' : 'pendiente', 'Si no queda nada pendiente, el equipo arranca y la BIOS muestra la pantalla POST.']
+    ['Componentes', c1 ? 'hecho' : 'actual'],
+    ['Conexiones', c1 && c2 ? 'hecho' : c1 ? 'actual' : 'pendiente'],
+    ['Comprobación', S.final ? 'hecho' : c1 && c2 ? 'actual' : 'pendiente'],
+    ['Encendido', S.final ? 'hecho' : 'pendiente']
   ];
   const textoEstado = { hecho: 'Completado', actual: 'En curso', pendiente: 'Pendiente' };
-  etapasEl.innerHTML = etapas.map(([nombre, estado, explica], n) => {
+  etapasEl.innerHTML = etapas.map(([nombre, estado], n) => {
     const actual = estado === 'actual' ? ' aria-current="step"' : '';
-    return `<li data-estado="${estado}"${actual}><span class="circulo">${estado === 'hecho' ? '✓' : n + 1}</span><span class="etiqueta">${nombre}</span><span class="estado-etapa">${textoEstado[estado]}</span><span class="explica">${explica}</span></li>`;
+    return `<li data-estado="${estado}"${actual}><span class="circulo">${estado === 'hecho' ? '✓' : n + 1}</span><span class="etiqueta">${nombre}</span><span class="estado-etapa">${textoEstado[estado]}</span></li>`;
   }).join('');
+  // En difícil el estado del montaje va en vertical en la columna izquierda, bajo los botones.
+  document.body.classList.toggle('modo-dificil', !esFacil());
+  const estadoEl = $('estado-titulo').parentElement;
+  if (esFacil() && estadoEl.parentElement !== centroEl) centroEl.prepend(estadoEl);
+  else if (!esFacil() && estadoEl.parentElement !== columnaIzqEl) columnaIzqEl.append(estadoEl);
 
-  let texto;
+  // En difícil no se orienta sobre el siguiente paso: solo se avisa de errores y del final.
+  let texto = '';
   if (S.final) texto = `<strong>Montaje completado.</strong> El equipo arranca. Errores durante el montaje: ${S.errores}.`;
-  else if (seleccion) texto = '<strong>Pieza seleccionada.</strong> Elige un destino de la lista y confirma.';
-  else if (c1 && c2) texto = '<strong>Todo conectado.</strong> Pulsa «Encender equipo» para comprobar el montaje.';
-  else texto = `<strong>Siguiente paso.</strong> ${lista[i].txt}`;
+  else if (esFacil() && seleccion) texto = '<strong>Pieza seleccionada.</strong> Elige un destino de la lista y confirma.';
+  else if (esFacil() && c1 && c2) texto = '<strong>Todo conectado.</strong> Pulsa «Encender equipo» para comprobar el montaje.';
+  else if (esFacil()) texto = `<strong>Siguiente paso.</strong> ${lista[i].txt}`;
   if (ultimoAviso && !S.final) texto += ` <span class="aviso">${ultimoAviso}</span>`;
   mensajeEl.innerHTML = texto;
 
