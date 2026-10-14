@@ -59,22 +59,61 @@
     /* Paleta: negro violáceo de fondo, morado en superficies y naranja calabaza para acentos.
        Cubre los nombres de variable de todas las páginas (temario, simulacro, averías, montaje y apuntes). */
     ':root[data-halloween="on"]{color-scheme:dark;',
-    '--bg:#130A1B;--fondo:#130A1B;--surface:#22112E;--surface-hover:#301a42;--card:#22112E;--card-2:#301a42;',
-    '--panel:#22112E;--panel-2:#301a42;--panel-3:#301a42;--rack:#0B0510;--rack-fg:#F7EEE3;--rack-muted:#D9C6E8;',
-    '--btn:#301a42;--bar:#3A2150;--photo-bg:#0B0510;--off:#4A2E5E;',
-    '--text:#F7EEE3;--fg:#F7EEE3;--muted:#D9C6E8;--border:#6B4489;--line:#5A3A75;',
-    '--accent:#FF8A1F;--accent-2:#B57BE8;--accent-text:#1A0A00;--accent-ink:#1A0A00;--on-accent:#1A0A00;',
+    '--bg:#0A0614;--fondo:#0A0614;--surface:#140C24;--surface-hover:#1E1236;--card:#140C24;--card-2:#1E1236;',
+    '--panel:#140C24;--panel-2:#1E1236;--panel-3:#1E1236;--rack:#07040F;--rack-fg:#F3ECFF;--rack-muted:#CDBDF0;',
+    '--btn:#1E1236;--bar:#2A1A4A;--photo-bg:#07040F;--off:#3A2766;',
+    '--text:#F3ECFF;--fg:#F3ECFF;--muted:#CDBDF0;--border:#5B36A0;--line:#45297E;',
+    '--accent:#FF7A1A;--accent-2:#A259FF;--accent-text:#1A0A00;--accent-ink:#1A0A00;--on-accent:#1A0A00;',
     '--focus:#FFB15C;--link:#FFA04D;--acento-texto:#FFA04D;',
-    '--success:#A6E36B;--ok:#A6E36B;--ok-texto:#A6E36B;--lamp-ok:#7FD13B;',
+    '--success:#4DFF88;--ok:#4DFF88;--ok-texto:#4DFF88;--lamp-ok:#2EE86E;',
     '--warning:#FFCB4D;--warn:#FFCB4D;--aviso-texto:#FFCB4D;',
     '--danger:#FF7A7A;--bad:#FF6B6B;--error-texto:#FF9A9A;--lamp-bad:#E03B3B;',
-    '--alt:#B57BE8;--pista:#D7A8FF;--pill-ok:rgba(166,227,107,.16);--pill-acento:rgba(255,138,31,.16);',
+    '--alt:#A259FF;--pista:#D7A8FF;--pill-ok:rgba(77,255,136,.16);--pill-acento:rgba(255,138,31,.16);',
     '--zone-hover:rgba(255,138,31,.32);--zone-hit:rgba(166,227,107,.40);--zone-miss:rgba(224,59,59,.50);--zone-pulse:rgba(181,123,232,.30);',
     /* Portada (index.html): usa variables Nord propias y un hero azul con colores fijos. */
-    '--nord7:#B57BE8;--nord8:#FF8A1F;--nord9:#B57BE8;--nord10:#E06A00;--nord14:#A6E36B;--nord15:#B57BE8;--nord1:#22112E;--nord2:#301a42;--nord3:#5A3A75;--nord0-txt:#1A0A00;}',
-    ':root[data-halloween="on"] .hero{background:linear-gradient(180deg,#0B0510 0%,#1A0B26 62%,#22102F 84%,var(--bg) 100%)}',
-    ':root[data-halloween="on"] .hero-image{filter:hue-rotate(185deg) saturate(1.15)}',
-    ':root[data-halloween="on"] body{background:radial-gradient(1100px 520px at 50% 115%,rgba(255,110,20,.16),transparent 70%),radial-gradient(900px 500px at 50% -10%,rgba(123,63,176,.22),transparent 70%),var(--bg) fixed;}',
+    '--nord7:#A259FF;--nord8:#FF7A1A;--nord9:#A259FF;--nord10:#E06A00;--nord14:#4DFF88;--nord15:#A259FF;--nord1:#140C24;--nord2:#1E1236;--nord3:#45297E;--nord0-txt:#1A0A00;}',
+    /* ---------- Estilo neón (rediseño de Halloween) ---------- */
+    /* Fondo: negro azulado con brillos morado y naranja y una rejilla de circuito muy tenue. */
+    ':root[data-halloween="on"] body{background:radial-gradient(900px 480px at 85% -5%,rgba(162,89,255,.28),transparent 70%),radial-gradient(800px 420px at 0% 30%,rgba(110,40,200,.18),transparent 70%),radial-gradient(1100px 520px at 50% 110%,rgba(255,106,0,.16),transparent 70%),repeating-linear-gradient(0deg,rgba(162,89,255,.045) 0 1px,transparent 1px 56px),repeating-linear-gradient(90deg,rgba(162,89,255,.045) 0 1px,transparent 1px 56px),var(--bg);background-attachment:fixed}',
+    /* Cabeceras con una línea de neón naranja a morado. */
+    ':root[data-halloween="on"] .header,:root[data-halloween="on"] .barra,:root[data-halloween="on"] header.cabecera,:root[data-halloween="on"] body>header,:root[data-halloween="on"] .topbar{border-bottom:1px solid transparent;border-image:linear-gradient(90deg,#FF7A1A,#A259FF 55%,rgba(162,89,255,.15)) 1;box-shadow:0 10px 30px -18px rgba(162,89,255,.6)}',
+    ':root[data-halloween="on"] .header,:root[data-halloween="on"] header.cabecera,:root[data-halloween="on"] body>header{background:rgba(8,4,18,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}',
+    ':root[data-halloween="on"] .footer{border-top:1px solid transparent;border-image:linear-gradient(90deg,rgba(162,89,255,.15),#A259FF 45%,#FF7A1A) 1;background:rgba(8,4,18,.6)}',
+    /* Títulos con un halo suave. */
+    ':root[data-halloween="on"] h1,:root[data-halloween="on"] .titulo-grande{text-shadow:0 0 24px rgba(162,89,255,.35)}',
+    ':root[data-halloween="on"] .hero h1 span{background:linear-gradient(90deg,#FFB347,#FF7A1A 45%,#FF5A00);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 14px rgba(255,122,26,.55))}',
+    ':root[data-halloween="on"] .brand-mark,:root[data-halloween="on"] .marca svg{color:#FF7A1A;filter:drop-shadow(0 0 8px rgba(255,122,26,.7))}',
+    /* Paneles con borde y brillo de neón morado. */
+    ':root[data-halloween="on"] .card,:root[data-halloween="on"] .tarjeta,:root[data-halloween="on"] .rasgo,:root[data-halloween="on"] .banda,:root[data-halloween="on"] .tabla-wrap,:root[data-halloween="on"] .celda,:root[data-halloween="on"] .grupo,:root[data-halloween="on"] .q-op,:root[data-halloween="on"] .opcion,:root[data-halloween="on"] .feedback,:root[data-halloween="on"] .pasos li,:root[data-halloween="on"] iframe{border-color:rgba(162,89,255,.55)!important;box-shadow:0 0 0 1px rgba(162,89,255,.12),0 0 22px rgba(162,89,255,.18),inset 0 0 28px rgba(162,89,255,.06)}',
+    ':root[data-halloween="on"] .card,:root[data-halloween="on"] .tarjeta,:root[data-halloween="on"] .rasgo,:root[data-halloween="on"] .banda,:root[data-halloween="on"] .tabla-wrap,:root[data-halloween="on"] .celda{background:linear-gradient(180deg,rgba(28,16,52,.88),rgba(14,8,28,.92))}',
+    ':root[data-halloween="on"] .tabla-temario th{background:rgba(162,89,255,.10)}',
+    ':root[data-halloween="on"] .tabla-temario tbody tr:hover{background:rgba(255,122,26,.07)}',
+    ':root[data-halloween="on"] .codigo-sesion{background:rgba(255,122,26,.14);color:#FFB067;box-shadow:inset 0 0 0 1px rgba(255,122,26,.55)}',
+    /* Tarjetas de prácticas: morado, verde y naranja como en el diseño. */
+    ':root[data-halloween="on"] .practice-card.acento-cian{--acento:#A259FF}',
+    ':root[data-halloween="on"] .practice-card.acento-verde{--acento:#4DFF88}',
+    ':root[data-halloween="on"] .practice-card.acento-violeta{--acento:#FF7A1A}',
+    ':root[data-halloween="on"] .practice-card{background:linear-gradient(160deg,color-mix(in srgb,var(--acento) 14%,#120A22),#0C0718 70%);box-shadow:0 0 0 1px color-mix(in srgb,var(--acento) 35%,transparent),0 0 26px color-mix(in srgb,var(--acento) 30%,transparent),inset 0 0 34px color-mix(in srgb,var(--acento) 10%,transparent)}',
+    ':root[data-halloween="on"] .practice-card:hover{box-shadow:0 0 0 1px var(--acento),0 0 38px color-mix(in srgb,var(--acento) 50%,transparent)}',
+    ':root[data-halloween="on"] .practice-icon svg{filter:drop-shadow(0 0 6px var(--acento))}',
+    /* Botones: principal naranja brillante, secundario con borde morado. */
+    ':root[data-halloween="on"] .btn-primario,:root[data-halloween="on"] .btn-prim:not(:disabled),:root[data-halloween="on"] .boton.primario:not(:disabled),:root[data-halloween="on"] .wrap .btn:not(.secundario):not(:disabled),:root[data-halloween="on"] .btn.principal{background:linear-gradient(180deg,#FF9A3C,#FF6A00)!important;border-color:#FF8A2A!important;color:#1A0800!important;box-shadow:0 0 20px rgba(255,122,26,.55),inset 0 1px 0 rgba(255,255,255,.25)}',
+    ':root[data-halloween="on"] .btn-secundario,:root[data-halloween="on"] .btn-sec,:root[data-halloween="on"] .btn.secundario,:root[data-halloween="on"] .btn-simulador,:root[data-halloween="on"] body>header .btn:not(.principal){border-color:rgba(162,89,255,.75)!important;box-shadow:0 0 14px rgba(162,89,255,.3)}',
+    ':root[data-halloween="on"] .btn-simulador{border-color:#FF7A1A!important;box-shadow:0 0 14px rgba(255,122,26,.35)}',
+    /* Simulador de averías: barra lateral más oscura con borde de neón. */
+    ':root[data-halloween="on"] .side{background:linear-gradient(180deg,rgba(10,5,22,.96),rgba(6,3,14,.98));border-right:1px solid rgba(162,89,255,.5);box-shadow:8px 0 30px -16px rgba(162,89,255,.6)}',
+    ':root[data-halloween="on"] .nav-item[aria-current="page"]{box-shadow:inset 3px 0 0 #FF7A1A,0 0 18px rgba(255,122,26,.18)}',
+    ':root[data-halloween="on"] .flota{box-shadow:0 0 18px rgba(162,89,255,.45)}',
+    /* Fotos azules: se tiñen hacia morado y naranja. */
+    ':root[data-halloween="on"] .hero{background:linear-gradient(180deg,#07030F 0%,#120724 62%,#1A0A30 84%,var(--bg) 100%)}',
+    ':root[data-halloween="on"] .hero-image,:root[data-halloween="on"] .hero-fig img{filter:hue-rotate(60deg) saturate(1.6) contrast(1.05)}',
+    /* Calabazas brillantes en el hero de la portada. */
+    ':root[data-halloween="on"] .hero:has(.hero-image)::after{content:"";position:absolute;right:3%;bottom:6px;width:130px;height:104px;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 120 96%27%3E%3Cpath d=%27M60 18c0-8 4-13 10-15%27 fill=%27none%27 stroke=%27%234E8A2E%27 stroke-width=%275%27 stroke-linecap=%27round%27/%3E%3Cellipse cx=%2736%27 cy=%2756%27 rx=%2728%27 ry=%2736%27 fill=%27%23D9560B%27/%3E%3Cellipse cx=%2784%27 cy=%2756%27 rx=%2728%27 ry=%2736%27 fill=%27%23D9560B%27/%3E%3Cellipse cx=%2760%27 cy=%2756%27 rx=%2730%27 ry=%2738%27 fill=%27%23FF7A1A%27/%3E%3Cpath d=%27M34 46l12-10 6 14zM86 46l-12-10-6 14zM55 58l5-9 5 9zM30 66q30 24 60 0l-8 3-5 7-6-6-5 7-6-7-6 7-5-7-6 6-5-7z%27 fill=%27%23FFE27A%27/%3E%3C/svg%3E") no-repeat center/contain;filter:drop-shadow(0 0 18px rgba(255,122,26,.7));z-index:1}',
+    /* Pie con el lema. */
+    '.hw-pie{display:none}',
+    ':root[data-halloween="on"] .hw-pie{display:flex;align-items:center;gap:10px;padding:14px max(16px,env(safe-area-inset-left));padding-right:150px;font:500 13px/1.3 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#CDBDF0;border-top:1px solid rgba(162,89,255,.35);background:rgba(8,4,18,.75)}',
+    ':root[data-halloween="on"] .hw-pie svg{width:22px;height:22px;flex:none;filter:drop-shadow(0 0 6px rgba(255,122,26,.7))}',
+    '@media (max-width:480px){:root[data-halloween="on"] .hero:has(.hero-image)::after{width:84px;height:68px;right:12px}}',
     ':root[data-halloween="on"] ::selection{background:#FF8A1F;color:#1A0A00}',
     /* Los botones de claro/oscuro no se usan mientras dura Halloween. */
     ':root[data-halloween="on"] #theme-toggle,:root[data-halloween="on"] .tema-btn,:root[data-halloween="on"] button#tema,:root[data-halloween="on"] .fila-switch{display:none!important}',
@@ -277,6 +316,11 @@
     var tela = telarana();
     telas.innerHTML = '<div class="hw-tela izq">' + tela + '</div><div class="hw-tela der">' + tela + '</div><div class="hw-arana">' + ARANA + '</div>';
     document.body.appendChild(telas);
+
+    var pie = document.createElement('div');
+    pie.className = 'hw-pie';
+    pie.innerHTML = CALABAZA + '<span>La tecnología también tiene su lado oscuro…</span>';
+    document.body.appendChild(pie);
 
     var controles = document.createElement('div');
     controles.className = 'hw-controles';
