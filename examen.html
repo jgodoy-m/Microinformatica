@@ -89,6 +89,9 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
 .opcion:disabled{cursor:default}
 
 .feedback{margin-top:var(--s4);padding:var(--s4);border:1px solid var(--border);background:var(--surface-hover);border-radius:8px}
+.veredicto{display:inline-block;margin:var(--s3) 0 0;padding:4px 12px;border-radius:999px;font-weight:700;border:2px solid currentColor}
+.veredicto.ok{color:var(--success)}
+.veredicto.mal{color:var(--danger)}
 .feedback.ok{border-color:var(--success)}
 .feedback.mal{border-color:var(--danger)}
 .feedback strong{display:block;margin-bottom:var(--s1)}
@@ -178,6 +181,7 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
     <h2 class="titulo-grande">Resultado</h2>
     <div class="card">
       <div class="marcador"><span id="nota"></span><small id="porcentaje"></small></div>
+      <p class="veredicto" id="veredicto"></p>
       <p class="intro" id="mensaje" style="margin:var(--s3) 0 0"></p>
       <ul class="revision" id="revision"></ul>
       <div class="acciones" style="justify-content:flex-start;margin-top:var(--s5)">
@@ -205,6 +209,8 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
     { nombre: 'Componentes del equipo', ids: ['S07', 'S08', 'S09', 'S10'] },
     { nombre: 'Ampliación, diagnóstico y conexionado', ids: ['S11', 'S12', 'S13'] }
   ];
+  /* Porcentaje mínimo para aprobar el simulacro (el mismo que en el quiz de la placa). */
+  const APROBADO = 50;
   const LETRAS = ['A', 'B', 'C', 'D'];
   const $ = (id) => document.getElementById(id);
 
@@ -432,6 +438,9 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
     $('resultado').hidden = false;
     $('nota').textContent = nota + ' / ' + total;
     $('porcentaje').textContent = porcentaje + ' %';
+    const aprobado = porcentaje >= APROBADO;
+    $('veredicto').className = 'veredicto ' + (aprobado ? 'ok' : 'mal');
+    $('veredicto').textContent = (aprobado ? 'Aprobado' : 'Suspenso') + ' · se aprueba con un ' + APROBADO + ' % de aciertos';
     $('mensaje').textContent = porcentaje >= 80
       ? 'Muy buen resultado. Revisa los fallos: son los que más te van a costar en el examen.'
       : porcentaje >= 50
