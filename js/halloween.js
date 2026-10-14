@@ -156,6 +156,184 @@
   estilo.textContent = CSS;
   (document.head || root).appendChild(estilo);
 
+
+  /* ---------- Estructura del rediseño: menú común, títulos y portada ---------- */
+  var H = ':root[data-halloween="on"] ';
+  var CSS_ESTRUCTURA = [
+    /* Menú común: logo naranja a la izquierda y secciones con la activa subrayada en naranja. */
+    '.hw-nav{display:none}',
+    H + '.hw-nav{display:flex;align-items:center;gap:24px;position:relative;z-index:50;padding:10px max(16px,env(safe-area-inset-left));min-height:60px;background:rgba(8,4,18,.82);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid transparent;border-image:linear-gradient(90deg,#FF7A1A,#A259FF 55%,rgba(162,89,255,.15)) 1;box-shadow:0 10px 30px -18px rgba(162,89,255,.7);font:500 15px/1.2 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}',
+    '.hw-marca{display:inline-flex;align-items:center;gap:10px;color:#FF8A2A;text-decoration:none;font-weight:700;font-size:20px;letter-spacing:-.01em;text-shadow:0 0 12px rgba(255,122,26,.6);white-space:nowrap}',
+    '.hw-marca svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.8;filter:drop-shadow(0 0 6px rgba(255,122,26,.8))}',
+    '.hw-enlaces{display:flex;align-items:center;gap:6px;margin-left:auto}',
+    '.hw-enlaces a{display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:0 12px;color:#E6DCFF;text-decoration:none;border-radius:8px;position:relative}',
+    '.hw-enlaces a svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}',
+    '.hw-enlaces a:hover{color:#FF9A3C}',
+    '.hw-enlaces a[aria-current="page"]{color:#FF8A2A}',
+    '.hw-enlaces a[aria-current="page"]::after{content:"";position:absolute;left:10px;right:10px;bottom:2px;height:2px;border-radius:2px;background:#FF7A1A;box-shadow:0 0 8px #FF7A1A}',
+    '.hw-menu{display:none;margin-left:auto;width:44px;height:44px;border-radius:10px;border:1px solid rgba(162,89,255,.6);background:transparent;color:#E6DCFF;cursor:pointer}',
+    '.hw-menu svg{width:22px;height:22px;stroke:currentColor;stroke-width:2;stroke-linecap:round}',
+    '.hw-nav a:focus-visible,.hw-menu:focus-visible{outline:3px solid #FFB15C;outline-offset:2px}',
+    '@media (max-width:760px){' + H + '.hw-nav{flex-wrap:wrap;gap:8px}.hw-menu{display:inline-grid;place-items:center}.hw-enlaces{display:none;width:100%;flex-direction:column;align-items:stretch;margin:0;padding:6px 0}.hw-nav.abierto .hw-enlaces{display:flex}.hw-marca{font-size:18px}}',
+    /* Las cabeceras propias se sustituyen por el menú común. */
+    H + '.header,' + H + '.barra,' + H + 'header.cabecera,' + H + 'body>header a.volver,' + H + '.topbar .volver{display:none!important}',
+
+    /* Título de página con icono en caja de neón (simulacro y montaje). */
+    '.hw-titulo{display:none}',
+    H + '.hw-titulo{display:flex;align-items:center;gap:16px;max-width:1480px;margin:18px auto 14px;padding:0 16px}',
+    H + '.hw-titulo h1{font-size:clamp(24px,3.4vw,34px);line-height:1.1;margin:0}',
+    H + '.hw-titulo p{margin:4px 0 0;color:#CDBDF0;font-size:15px}',
+    '.hw-icono{flex:none;display:grid;place-items:center;width:58px;height:58px;border-radius:12px;color:#FF8A2A;border:1px solid rgba(255,122,26,.7);background:rgba(255,122,26,.08);box-shadow:0 0 18px rgba(255,122,26,.35),inset 0 0 14px rgba(255,122,26,.12)}',
+    '.hw-icono svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 5px rgba(255,122,26,.8))}',
+
+    /* Portada: titular en dos líneas, tarjetas compactas con el icono a la izquierda. */
+    '.hw-eyebrow{display:none}',
+    H + '.hw-eyebrow{display:block;margin:0 0 14px;font:600 13px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:#E6DCFF}',
+    H + '.hero h1{font-size:clamp(34px,3.7vw,54px);line-height:1.08}',
+    H + '.hero-copy{max-width:660px}',
+    H + '.wrap>.hw-titulo{margin:8px 0 18px;padding:0}',
+    H + '.side .marca{display:none}',
+    H + '.practice{padding-top:8px}',
+    H + '.practice .seccion-cabecera,' + H + '.etiqueta-practica,' + H + '.practice-deco,' + H + '.practice-link{display:none}',
+    H + '.practice-card{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto 1fr;column-gap:18px;row-gap:6px;align-items:start;min-height:0;padding:22px 22px 22px 26px}',
+    H + '.practice-card .practice-icon{grid-row:1/3;width:64px;height:64px}',
+    H + '.practice-card h3{margin:2px 0 0;font-size:19px}',
+    H + '.practice-card p{font-size:14px;max-width:none}',
+    /* Temario como lista de sesiones con código naranja y botón de descarga. */
+    H + '.tabla-temario thead{display:none}',
+    H + '.tabla-temario tbody tr{box-shadow:inset 3px 0 0 rgba(255,122,26,.0)}',
+    H + '.tabla-temario tbody tr:hover{box-shadow:inset 3px 0 0 #FF7A1A}',
+    H + '.codigo-sesion{border-radius:8px;font-size:15px;padding:9px 12px}',
+    H + '.enlace-apuntes{padding:0 14px;border:1px solid rgba(162,89,255,.6);border-radius:8px;min-height:38px;box-shadow:0 0 12px rgba(162,89,255,.25)}',
+    H + '.enlace-apuntes:hover{text-decoration:none;border-color:#FF7A1A}',
+
+    /* Simulacro: configuración a la izquierda e ilustración a la derecha. */
+    H + '#inicio>h1,' + H + '#inicio>.intro{display:none}',
+    H + '.wrap{width:min(1080px,calc(100% - 32px))}',
+    H + '#inicio{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:stretch}',
+    H + '#inicio>.card{margin:0}',
+    '.hw-ilustracion{display:none}',
+    H + '.hw-ilustracion{display:block;position:relative;margin:0;border-radius:8px;overflow:hidden;min-height:260px;border:1px solid rgba(162,89,255,.55);box-shadow:0 0 22px rgba(162,89,255,.25)}',
+    H + '.hw-ilustracion img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:hue-rotate(60deg) saturate(1.6) brightness(.85)}',
+    H + '.hw-ilustracion::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 80%,rgba(255,106,0,.35),transparent 60%),linear-gradient(180deg,transparent 40%,rgba(8,4,18,.8))}',
+    '@media (max-width:760px){' + H + '#inicio{grid-template-columns:1fr}' + H + '.hw-ilustracion{display:none}}'
+  ].join('');
+  estilo.textContent += CSS_ESTRUCTURA;
+
+  /* Carpeta raíz del sitio, a partir de la ruta de este script (las páginas de juego/ y apuntes/ están un nivel más abajo). */
+  var BASE = (function () {
+    var s = document.currentScript && document.currentScript.getAttribute('src');
+    return s ? s.replace(/js\/halloween\.js.*$/, '') : '';
+  })();
+
+  var ICONOS = {
+    chip: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg>',
+    casa: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 3l9 8M5 10v10h14V10"/></svg>',
+    libro: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H2zM22 5h-7a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h8z"/></svg>',
+    torre: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><circle cx="12" cy="15" r="3"/><path d="M9 6h6"/></svg>',
+    lupa: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6M7.5 10h1.5l1-2 1.5 4 1-2"/></svg>',
+    examen: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9zM8 11l1.5 1.5L12 10M8 16l1.5 1.5L12 15M14 11h2M14 16h2"/></svg>',
+    menu: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>'
+  };
+
+  function paginaActual() {
+    var p = location.pathname;
+    if (/montaje\.html$/.test(p)) return 'montaje';
+    if (/averias\.html$/.test(p)) return 'averias';
+    if (/examen\.html$/.test(p)) return 'examen';
+    if (/\/apuntes\//.test(p)) return 'temario';
+    return 'inicio';
+  }
+
+  function crearMenu() {
+    var actual = paginaActual();
+    var enlaces = [
+      ['inicio', 'index.html', 'Inicio', ICONOS.casa],
+      ['temario', 'index.html#temas', 'Temario', ICONOS.libro],
+      ['montaje', 'juego/montaje.html', 'Montaje', ICONOS.torre],
+      ['averias', 'averias.html', 'Averías', ICONOS.lupa],
+      ['examen', 'examen.html', 'Examen', ICONOS.examen]
+    ];
+    var nav = document.createElement('nav');
+    nav.className = 'hw-nav';
+    nav.setAttribute('aria-label', 'Secciones del temario');
+    nav.innerHTML =
+      '<a class="hw-marca" href="' + BASE + 'index.html">' + ICONOS.chip + 'Microinformática</a>' +
+      '<button type="button" class="hw-menu" aria-expanded="false" aria-label="Abrir menú">' + ICONOS.menu + '</button>' +
+      '<div class="hw-enlaces">' + enlaces.map(function (e) {
+        return '<a href="' + BASE + e[1] + '"' + (e[0] === actual ? ' aria-current="page"' : '') + '>' + e[3] + e[2] + '</a>';
+      }).join('') + '</div>';
+    var boton = nav.querySelector('.hw-menu');
+    boton.addEventListener('click', function () {
+      var abierto = nav.classList.toggle('abierto');
+      boton.setAttribute('aria-expanded', String(abierto));
+      boton.setAttribute('aria-label', abierto ? 'Cerrar menú' : 'Abrir menú');
+    });
+    document.body.insertBefore(nav, document.body.firstChild);
+  }
+
+  function titulo(icono, texto, sub) {
+    var d = document.createElement('div');
+    d.className = 'hw-titulo';
+    d.innerHTML = '<span class="hw-icono">' + icono + '</span><div><h1>' + texto + '</h1><p>' + sub + '</p></div>';
+    return d;
+  }
+
+  /* Textos de la portada en el modo Halloween; al quitarlo vuelven los originales. */
+  var TEXTOS = [
+    ['#hero-title', '¿Te atreves a<br><span>reparar este equipo?</span>'],
+    ['.hero-description', 'Bienvenido al laboratorio virtual de microinformática. Aquí podrás estudiar, practicar y enfrentarte a retos reales de forma interactiva y divertida.'],
+    ['#topics-title', 'Temario y apuntes']
+  ];
+  var originales = [];
+
+  function aplicarTextos() {
+    if (!document.body) return;
+    TEXTOS.forEach(function (t, i) {
+      var el = document.querySelector(t[0]);
+      if (!el) return;
+      if (originales[i] === undefined) originales[i] = el.innerHTML;
+      el.innerHTML = activo ? t[1] : originales[i];
+    });
+    /* Etiquetas de los botones del hero: se cambia solo el texto, sin tocar los iconos. */
+    [['.hero-actions .btn-primario', 'Comenzar ahora'], ['.hero-actions .btn-secundario', 'Ver temario']].forEach(function (b) {
+      var el = document.querySelector(b[0]);
+      if (!el) return;
+      var nodo = Array.prototype.find.call(el.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); });
+      if (!nodo) return;
+      if (!el.dataset.hwTexto) el.dataset.hwTexto = nodo.textContent;
+      nodo.textContent = activo ? b[1] : el.dataset.hwTexto;
+    });
+  }
+
+  function montarEstructura() {
+    crearMenu();
+    var pagina = paginaActual();
+    var hero = document.querySelector('.hero-copy h1');
+    if (hero && !document.querySelector('.hw-eyebrow')) {
+      var eb = document.createElement('p');
+      eb.className = 'hw-eyebrow';
+      eb.textContent = 'Laboratorio de microinformática';
+      hero.parentNode.insertBefore(eb, hero);
+    }
+    if (pagina === 'montaje') {
+      var main = document.querySelector('main.pagina');
+      if (main) main.parentNode.insertBefore(titulo(ICONOS.torre, 'Montaje del equipo', 'Construye tu equipo paso a paso. Sigue las instrucciones y conecta los componentes.'), main);
+    }
+    if (pagina === 'examen') {
+      var inicio = document.getElementById('inicio');
+      if (inicio) {
+        inicio.parentNode.insertBefore(titulo(ICONOS.examen, 'Simulacro de examen', 'Pon a prueba tus conocimientos y consigue tu puntuación.'), inicio);
+        var fig = document.createElement('figure');
+        fig.className = 'hw-ilustracion';
+        fig.setAttribute('aria-hidden', 'true');
+        fig.innerHTML = '<img src="' + BASE + 'hero-laboratorio.webp" alt="">';
+        inicio.appendChild(fig);
+      }
+    }
+    aplicarTextos();
+  }
+
   aplicarTema();
 
   /* ---------- Dibujos SVG ---------- */
@@ -321,6 +499,7 @@
     pie.className = 'hw-pie';
     pie.innerHTML = CALABAZA + '<span>La tecnología también tiene su lado oscuro…</span>';
     document.body.appendChild(pie);
+    montarEstructura();
 
     var controles = document.createElement('div');
     controles.className = 'hw-controles';
@@ -337,6 +516,7 @@
       activo = !activo;
       guardar(CLAVE, activo);
       aplicarTema();
+      aplicarTextos();
       pintarControles();
     });
     botonSustos.addEventListener('click', function () {
@@ -349,7 +529,7 @@
 
   /* Otra pestaña cambió el modo: se aplica aquí también. */
   window.addEventListener('storage', function (e) {
-    if (e.key === CLAVE) { activo = leer(CLAVE); aplicarTema(); pintarControles(); }
+    if (e.key === CLAVE) { activo = leer(CLAVE); aplicarTema(); aplicarTextos(); pintarControles(); }
     if (e.key === CLAVE_SIN_SUSTOS) { sinSustos = leer(CLAVE_SIN_SUSTOS); pintarControles(); }
   });
 
