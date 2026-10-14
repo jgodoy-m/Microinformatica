@@ -16,6 +16,7 @@
     document.documentElement.dataset.theme = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
   })();
 </script>
+<script src="js/halloween.js"></script>
 <style>
 :root{
   color-scheme:dark;
@@ -266,6 +267,8 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
   }
 
   function empezar() {
+    /* Modo Halloween: susto al empezar, salvo con «Sin sustos» (ver js/halloween.js). */
+    if (window.Halloween) window.Halloween.susto();
     const valor = document.querySelector('input[name="n"]:checked').value;
     modo = document.querySelector('input[name="formato"]:checked').value;
     const banco = bancoElegido();
