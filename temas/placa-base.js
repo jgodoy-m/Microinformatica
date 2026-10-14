@@ -6,7 +6,7 @@ window.TEMAS = window.TEMAS || [];
 window.TEMAS.push({
   id: 'placa-base',
   titulo: 'Averías en la placa base',
-  resumen: 'Cada partida te asigna cinco avisos al azar entre cuarenta clientes distintos. Diagnostícalos siguiendo el orden de la S12 y localiza cada conector en una placa real.',
+  resumen: 'Diagnostica, localiza y repara averías en la placa base siguiendo el orden de la S12 y demuestra tu habilidad como técnico.',
 
   /* Zonas sobre placa-quiz.webp (placa micro-ATX vista desde arriba, fondo transparente).
      n: nombre. d: qué es y qué hay que saber. f: para qué sirve sin decir su nombre (preguntas «Por su función»). */

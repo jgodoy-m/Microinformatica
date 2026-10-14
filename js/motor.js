@@ -54,6 +54,26 @@
     video: 'M3 5h18v11H3z M8 20h8 M12 16v4',
     manual: 'M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z M20 4h-4a2 2 0 0 0-2 2'
   };
+  /* Iconos de la portada y de la cuadrícula de casos, con el mismo trazo. */
+  var ICONO_UI = {
+    jugar: 'M7 4l13 8-13 8z',
+    lista: 'M9 6h12 M9 12h12 M9 18h12 M4 6h.01 M4 12h.01 M4 18h.01',
+    chev: 'M9 6l6 6-6 6',
+    izq: 'M19 12H5 M11 6l-6 6 6 6',
+    dcha: 'M5 12h14 M13 6l6 6-6 6',
+    chip: ICONO_PRUEBA.min,
+    llave: 'M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z',
+    hoja: 'M6 3h9l4 4v14H6z M9 11h7 M9 15h7 M9 7h3',
+    grafica: 'M3 3v18h18 M7 15l4-4 3 3 6-6 M16 8h4v4',
+    pulso: 'M3 12h4l2-6 4 12 2-6h6',
+    info: 'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0 M12 11v5 M12 8h.01',
+    casa: 'M3 11l9-8 9 8 M5 9v12h14V9 M10 21v-6h4v6',
+    ayuda: 'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0 M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.5V14 M12 17h.01',
+    ajustes: 'M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0 M12 2v3 M12 19v3 M2 12h3 M19 12h3 M4.9 4.9 7 7 M17 17l2.1 2.1 M4.9 19.1 7 17 M17 7l2.1-2.1'
+  };
+  function iconoUi(id) {
+    return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="' + ICONO_UI[id] + '"/></svg>';
+  }
   function icono(id) {
     return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="' + (ICONO_PRUEBA[id] || 'M5 12h14') + '"/></svg>';
   }
@@ -63,7 +83,7 @@
   /* Mejor nota de cada caso, por título, para la cuadrícula de casos. Se guarda en este navegador si se puede. */
   var CLAVE_RESULTADOS = 'averias-resultados';
 
-  function simulador(tema, raiz, pagina) {
+  function simulador(tema, raiz, pagina, avisar) {
     var C = tema.simulador;
     var q = function (s) { return raiz.querySelector(s); };
     var qa = function (s) { return raiz.querySelectorAll(s); };
@@ -495,33 +515,75 @@
     function enCurso() { return S && !S.terminada ? S.orden[S.i] : null; }
 
     /* Hay trabajo hecho en la partida que se perdería al empezar otra. */
-    function hayProgreso() { return S && !S.terminada && (S.i > 0 || S.used.size > 0 || S.diagOK); }
+    function hayProgreso() { return !!S && !S.terminada && (S.i > 0 || S.used.size > 0 || S.diagOK); }
 
+    /* Pantallas del simulador: portada (Inicio), cuadricula (Casos) y juego. */
+    var MODOS = ['portada', 'cuadricula', 'juego'];
     function modo(m) {
-      q('.juego').hidden = m !== 'juego';
-      q('.cuadricula').hidden = m !== 'cuadricula';
-      q('.m-azar').setAttribute('aria-pressed', String(m === 'juego' && !S.unico));
-      q('.m-cuadricula').setAttribute('aria-pressed', String(m === 'cuadricula'));
+      MODOS.forEach(function (x) { q('.' + x).hidden = x !== m; });
+      if (m === 'portada') pintarPortada();
+      if (avisar) avisar(m);
+      window.scrollTo(0, 0);
     }
-    function verJuego() { modo('juego'); }
+    function verJuego() { if (S) modo('juego'); else verPortada(); }
+    function verPortada() { modo('portada'); }
 
-    /* Cuadrícula de casos: verde aprobado, rojo suspenso, blanco sin hacer; el caso en curso lleva un anillo. */
-    function verCuadricula() {
+    /* Hay una partida al azar sin terminar a la que se puede volver. */
+    function azarEnCurso() { return S && !S.unico && !S.terminada; }
+
+    /* Inicio: el botón de jugar al azar y el aviso de abajo cambian si hay una partida a medias. */
+    function pintarPortada() {
+      q('.m-azar .btn-txt').textContent = azarEnCurso() ? 'Seguir la partida al azar' : 'Jugar ' + POR_RONDA + ' casos al azar';
+      var k = enCurso(), banda = q('.banda-portada');
+      if (k !== null) {
+        banda.querySelector('b').textContent = 'Tienes un caso en curso';
+        banda.querySelector('span.banda-sub').textContent = 'Caso ' + (k + 1) + ': ' + C.casos[k].t + '. Pulsa para seguir donde lo dejaste.';
+      } else {
+        banda.querySelector('b').textContent = '¿Listo para el reto?';
+        banda.querySelector('span.banda-sub').textContent = 'Tienes ' + C.casos.length + ' casos en total. Puedes jugar ' + POR_RONDA + ' al azar o explorar todos los casos disponibles.';
+      }
+    }
+
+    /* Estado de un caso del catálogo para la cuadrícula: aprobado, suspenso o pendiente (sin hacer). */
+    function estadoDe(k) {
+      var pts = resultados[C.casos[k].t];
+      return typeof pts !== 'number' ? 'pendiente' : pts >= APROBADO ? 'aprobado' : 'suspenso';
+    }
+    var filtro = 'todos';
+
+    /* Cuadrícula de casos: verde aprobado, rojo suspenso, blanco sin hacer; el caso en curso lleva un anillo.
+       Cada tarjeta lleva el nombre de la historia del caso, que no da pistas de la avería. */
+    function verCuadricula() { pintarCuadricula(); modo('cuadricula'); }
+    function pintarCuadricula() {
       var actual = enCurso();
-      var cuenta = { aprobado: 0, suspenso: 0, pendiente: 0 };
+      var cuenta = { todos: C.casos.length, aprobado: 0, suspenso: 0, pendiente: 0, 'en-curso': actual === null ? 0 : 1 };
+      var visibles = 0;
       q('.casos-grid').innerHTML = C.casos.map(function (c, k) {
         var pts = resultados[c.t];
-        var est = typeof pts !== 'number' ? 'pendiente' : pts >= APROBADO ? 'aprobado' : 'suspenso';
+        var est = estadoDe(k);
         cuenta[est]++;
         var curso = k === actual;
+        var ver = filtro === 'todos' || filtro === est || (filtro === 'en-curso' && curso);
+        if (ver) visibles++;
         var txt = est === 'pendiente' ? 'sin hacer' : (est === 'aprobado' ? 'aprobado' : 'suspenso') + ' con ' + pts + '/100';
-        var sub = curso ? 'En curso' : est === 'pendiente' ? 'Sin hacer' : pts + '/100';
-        return '<li><button type="button" class="celda ' + est + (curso ? ' en-curso' : '') + '" data-k="' + k + '"' +
-          ' title="' + escapar(c.t) + '" aria-label="Caso ' + (k + 1) + ': ' + escapar(c.t) + ', ' + txt + (curso ? ', en curso' : '') + '"' +
+        var badge = curso ? 'En curso' : est === 'pendiente' ? 'Sin hacer' : (est === 'aprobado' ? 'Aprobado' : 'Suspenso') + ' · ' + pts;
+        return '<li' + (ver ? '' : ' hidden') + '><button type="button" class="celda ' + est + (curso ? ' en-curso' : '') + '" data-k="' + k + '"' +
+          ' aria-label="Caso ' + (k + 1) + ': ' + escapar(c.t) + ', ' + txt + (curso ? ', en curso' : '') + '"' +
           (curso ? ' aria-current="true"' : '') + '>' +
-          '<span class="punto" aria-hidden="true"></span><span class="celda-n">' + (k + 1) + '</span><span class="celda-sub" aria-hidden="true">' + sub + '</span></button></li>';
+          '<span class="celda-top" aria-hidden="true"><span class="punto"></span><span class="celda-n">' + (k + 1) + '</span>' +
+          '<span class="celda-est">' + badge + '</span></span>' +
+          '<span class="celda-t" aria-hidden="true">' + escapar(c.t) + '</span></button></li>';
       }).join('');
-      q('.cuad-resumen').textContent = 'Aprobados: ' + cuenta.aprobado + ' · Suspensos: ' + cuenta.suspenso + ' · Sin hacer: ' + cuenta.pendiente + ' de ' + C.casos.length;
+      q('.sin-casos').hidden = visibles > 0;
+      qa('.filtro').forEach(function (b) {
+        b.setAttribute('aria-pressed', String(b.dataset.f === filtro));
+        b.querySelector('.filtro-n').textContent = cuenta[b.dataset.f];
+      });
+      var hechos = cuenta.aprobado + cuenta.suspenso;
+      q('.prog-txt').textContent = hechos + ' / ' + C.casos.length + ' casos completados';
+      q('.prog-det').textContent = 'Aprobados: ' + cuenta.aprobado + ' · Suspensos: ' + cuenta.suspenso;
+      q('.prog-bar b').style.width = Math.round(hechos / C.casos.length * 100) + '%';
+      q('.prog-bar').setAttribute('aria-valuenow', String(hechos));
       qa('.celda').forEach(function (b) {
         b.onclick = function () {
           var k = +b.dataset.k;
@@ -530,27 +592,70 @@
           empezar([k]);
         };
       });
-      modo('cuadricula');
     }
 
+    var FILTROS = [
+      ['todos', 'Todos los casos', ''],
+      ['aprobado', 'Aprobado (' + APROBADO + '/100 o más)', 'aprobado'],
+      ['suspenso', 'Suspenso', 'suspenso'],
+      ['pendiente', 'Sin hacer', 'pendiente'],
+      ['en-curso', 'En curso', 'en-curso']
+    ];
+    var RASGOS = [
+      ['chip', 'Diagnóstico real', 'Analiza componentes, lee las mediciones y encuentra el origen del fallo.'],
+      ['llave', 'Reparación', 'Aplica la solución correcta y verifica que la placa vuelve a funcionar.'],
+      ['hoja', 'Puntuación', 'Completa cada caso con la mejor nota posible y mejora tus resultados.'],
+      ['grafica', 'Aprende', 'Cada caso incluye pistas y explicaciones para que mejores.']
+    ];
 
     raiz.innerHTML =
-      '<div class="modes modo-sim" role="group" aria-label="Cómo quieres jugar">' +
-        '<button type="button" class="m-azar" aria-pressed="true">Jugar ' + POR_RONDA + ' casos al azar</button>' +
-        '<button type="button" class="m-cuadricula" aria-pressed="false">Ver todos los casos</button>' +
-      '</div>' +
-      '<section class="cuadricula" hidden>' +
-        '<p class="cuad-resumen"></p>' +
-        '<ul class="leyenda" aria-label="Leyenda">' +
-          '<li><span class="punto aprobado"></span>Aprobado (' + APROBADO + '/100 o más)</li>' +
-          '<li><span class="punto suspenso"></span>Suspenso</li>' +
-          '<li><span class="punto"></span>Sin hacer</li>' +
-          '<li><span class="punto en-curso"></span>En curso</li>' +
-        '</ul>' +
-        '<ul class="casos-grid" aria-label="Casos del simulador"></ul>' +
-        '<p class="foot">Pulsa un caso para jugarlo. Cuenta la mejor nota de cada caso y se guarda en este navegador. El caso en curso te lleva a donde lo dejaste.</p>' +
+      '<section class="portada">' +
+        '<div class="hero">' +
+          '<div class="hero-txt">' +
+            '<p class="eyebrow">Bienvenido al simulador</p>' +
+            '<h1>' + escapar(tema.titulo) + '</h1>' +
+            '<p class="intro">' + escapar(tema.resumen) + '</p>' +
+            '<div class="hero-acciones">' +
+              '<button type="button" class="btn-grande btn-prim m-azar">' + iconoUi('jugar') + '<span class="btn-txt"></span>' + iconoUi('chev') + '</button>' +
+              '<button type="button" class="btn-grande btn-sec m-cuadricula">' + iconoUi('lista') + '<span class="btn-txt">Ver todos los casos</span>' + iconoUi('chev') + '</button>' +
+            '</div>' +
+          '</div>' +
+          '<figure class="hero-fig" aria-hidden="true">' +
+            '<img src="hero-placa.webp" alt="" width="1500" height="1000">' +
+            '<span class="flota f-chip">' + iconoUi('chip') + '</span>' +
+            '<span class="flota f-pulso">' + iconoUi('pulso') + '</span>' +
+            '<span class="flota f-llave">' + iconoUi('llave') + '</span>' +
+          '</figure>' +
+        '</div>' +
+        '<ul class="rasgos">' + RASGOS.map(function (r) {
+          return '<li class="rasgo"><span class="rasgo-ico">' + iconoUi(r[0]) + '</span><h2>' + r[1] + '</h2><p>' + r[2] + '</p></li>';
+        }).join('') + '</ul>' +
+        '<button type="button" class="banda banda-portada">' + iconoUi('info') +
+          '<span class="banda-txt"><b></b><span class="banda-sub"></span></span>' + iconoUi('dcha') + '</button>' +
       '</section>' +
-      '<div class="juego">' +
+      '<section class="cuadricula" hidden>' +
+        '<button type="button" class="enlace a-inicio">' + iconoUi('izq') + 'Volver al inicio</button>' +
+        '<div class="casos-cab">' +
+          '<header><h1>' + escapar(tema.titulo) + '</h1>' +
+            '<p class="intro">Elige un caso para diagnosticar y reparar la avería. Cada caso es un cliente distinto con su propia historia.</p></header>' +
+          '<div class="card progreso">' + iconoUi('info') +
+            '<div class="prog-cuerpo"><b>Progreso</b><span class="prog-txt"></span>' +
+            '<span class="prog-bar" role="progressbar" aria-label="Casos completados" aria-valuemin="0" aria-valuemax="' + C.casos.length + '"><b></b></span>' +
+            '<span class="prog-det"></span></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="filtros" role="group" aria-label="Filtrar casos por estado">' + FILTROS.map(function (f) {
+          return '<button type="button" class="filtro" data-f="' + f[0] + '" aria-pressed="false">' +
+            (f[2] ? '<span class="punto ' + f[2] + '" aria-hidden="true"></span>' : '') + f[1] +
+            ' <span class="filtro-n"></span></button>';
+        }).join('') + '</div>' +
+        '<ul class="casos-grid" aria-label="Casos del simulador"></ul>' +
+        '<p class="sin-casos" hidden>No hay casos en este estado.</p>' +
+        '<div class="banda">' + iconoUi('info') +
+          '<span class="banda-txt"><span class="banda-sub">Pulsa un caso para jugarlo. Cuenta la mejor nota de cada caso y se guarda en este navegador. El caso en curso te lleva a donde lo dejaste.</span></span></div>' +
+      '</section>' +
+      '<div class="juego" hidden>' +
+      '<button type="button" class="enlace a-casos">' + iconoUi('izq') + 'Volver a los casos</button>' +
       '<ol class="pasos" aria-label="Progreso de los casos"></ol>' +
       '<div class="caso-wrap">' +
         '<div class="caso-col">' +
@@ -646,22 +751,29 @@
 
     /* «Jugar al azar» vuelve a la partida al azar en curso; si no la hay, empieza una nueva. */
     q('.m-azar').onclick = function () {
-      if (!S.unico && !S.terminada) { verJuego(); return; }
+      if (azarEnCurso()) { verJuego(); return; }
       if (hayProgreso() && !window.confirm('Tienes un caso a medias. Si empiezas una partida al azar, se perderá. ¿Continuar?')) return;
       empezar(null);
     };
     q('.m-cuadricula').onclick = verCuadricula;
+    q('.a-inicio').onclick = verPortada;
+    q('.a-casos').onclick = verCuadricula;
+    q('.banda-portada').onclick = function () { if (enCurso() !== null) verJuego(); else verCuadricula(); };
+    qa('.filtro').forEach(function (b) {
+      b.onclick = function () { filtro = b.dataset.f; pintarCuadricula(); };
+    });
 
-    nuevo();
-    render();
+    /* La partida no empieza hasta que se elige en Inicio o en Casos. */
+    verPortada();
     return {
       /* Reinicio desde Ajustes: empieza una partida nueva con otros casos al azar. */
       reiniciar: function () { empezar(null); },
-      verJuego: verJuego,
+      verPortada: verPortada,
+      verCuadricula: verCuadricula,
       borrarResultados: function () {
         resultados = {};
         try { localStorage.removeItem(CLAVE_RESULTADOS); } catch (e) { /* nada guardado */ }
-        if (!q('.cuadricula').hidden) verCuadricula();
+        if (!q('.cuadricula').hidden) pintarCuadricula();
       }
     };
   }
@@ -970,8 +1082,10 @@
 
   function iniciar(root, temas) {
     if (!temas || !temas.length) { root.textContent = 'No hay temas registrados.'; return; }
-    /* Vista a la que lleva cada elemento de navegación. «caso» muestra la vista de inicio y se desplaza al caso. */
-    var DESTINO = { inicio: 'inicio', caso: 'inicio', mapa: 'mapa', ayuda: 'ayuda', ajustes: 'ajustes' };
+    /* Vista del shell que muestra cada destino. Inicio, Casos y el juego son pantallas del simulador. */
+    var DESTINO = { inicio: 'sim', casos: 'sim', juego: 'sim', mapa: 'mapa', ayuda: 'ayuda', ajustes: 'ajustes' };
+    /* Destino de la navegación que corresponde a cada pantalla del simulador. */
+    var PANTALLA = { portada: 'inicio', cuadricula: 'casos', juego: 'juego' };
     var sim = null;
 
     /* Tema: si el usuario eligió uno antes, se aplica; si no, el predeterminado es el oscuro (ver :root en averias.html). */
@@ -991,15 +1105,15 @@
           '<aside class="side">' +
             '<div class="marca">' + ICONO_CHIP + '<div><b>Microinformática</b><small>Simulador de averías</small></div></div>' +
             '<nav class="nav" aria-label="Secciones">' +
-              '<button type="button" class="nav-item" data-v="inicio">Inicio</button>' +
-              '<button type="button" class="nav-item" data-v="caso">Caso actual</button>' +
-              '<button type="button" class="nav-item" data-v="mapa">Quiz de la placa</button>' +
-              '<button type="button" class="nav-item" data-v="ayuda">Ayuda</button>' +
+              '<button type="button" class="nav-item" data-v="inicio">' + iconoUi('casa') + 'Inicio</button>' +
+              '<button type="button" class="nav-item" data-v="casos">' + iconoUi('lista') + 'Casos</button>' +
+              '<button type="button" class="nav-item" data-v="mapa">' + iconoUi('hoja') + 'Quiz de la placa</button>' +
+              '<button type="button" class="nav-item" data-v="ayuda">' + iconoUi('ayuda') + 'Ayuda</button>' +
             '</nav>' +
             '<div class="side-pie">' +
               '<div class="fila-switch"><span id="lbl-tema">Tema claro</span>' +
               '<button type="button" class="switch" role="switch" aria-labelledby="lbl-tema" aria-checked="false"></button></div>' +
-              '<button type="button" class="nav-item" data-v="ajustes">Ajustes</button>' +
+              '<button type="button" class="nav-item" data-v="ajustes">' + iconoUi('ajustes') + 'Ajustes</button>' +
             '</div>' +
           '</aside>' +
           '<div class="principal">' +
@@ -1008,8 +1122,7 @@
               '<div class="stats"><span>Tiempo extra: <b class="tiempo-extra">0 min</b></span><span>Pistas: <b class="pistas-n">0</b></span></div>' +
             '</header>' +
             navTemas +
-            '<section class="vista" data-v="inicio">' +
-              '<header class="cabecera-pag"><h1>' + escapar(tema.titulo) + '</h1><p class="intro">' + escapar(tema.resumen) + '</p></header>' +
+            '<section class="vista" data-v="sim">' +
               '<div class="sim-raiz"></div>' +
             '</section>' +
             '<section class="vista" data-v="mapa" hidden><div class="mapa-raiz"></div></section>' +
@@ -1032,9 +1145,9 @@
           '</div>' +
         '</div>';
 
-      /* Navegación entre secciones. «Caso actual» lleva a la vista de inicio y se desplaza al caso. */
+      /* Navegación entre secciones. Inicio y Casos las pinta el simulador, que avisa de vuelta con su pantalla. */
       function ir(destino) {
-        var vista = DESTINO[destino] || 'inicio';
+        var vista = DESTINO[destino] || 'sim';
         root.querySelectorAll('.vista').forEach(function (s) { s.hidden = s.dataset.v !== vista; });
         root.querySelectorAll('.nav-item').forEach(function (b) {
           if (b.dataset.v === destino) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
@@ -1042,8 +1155,9 @@
       }
       root.querySelectorAll('.nav-item').forEach(function (b) {
         b.onclick = function () {
-          ir(b.dataset.v);
-          if (b.dataset.v === 'caso') { sim.verJuego(); var c = root.querySelector('.caso-wrap'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+          if (b.dataset.v === 'inicio') sim.verPortada();
+          else if (b.dataset.v === 'casos') sim.verCuadricula();
+          else ir(b.dataset.v);
         };
       });
       root.querySelectorAll('.tema').forEach(function (b) {
@@ -1060,13 +1174,12 @@
       };
       pintarSwitch();
 
-      sim = simulador(tema, root.querySelector('.sim-raiz'), root);
+      sim = simulador(tema, root.querySelector('.sim-raiz'), root, function (m) { ir(PANTALLA[m]); });
       mapa(tema, root.querySelector('.mapa-raiz'));
-      root.querySelector('#reiniciar-sim').onclick = function () { sim.reiniciar(); ir('inicio'); };
+      root.querySelector('#reiniciar-sim').onclick = function () { sim.reiniciar(); };
       root.querySelector('#borrar-resultados').onclick = function () {
         if (window.confirm('¿Borrar la nota guardada de todos los casos?')) sim.borrarResultados();
       };
-      ir('inicio');
     }
 
     try {
