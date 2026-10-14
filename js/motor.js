@@ -58,6 +58,11 @@
     return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="' + (ICONO_PRUEBA[id] || 'M5 12h14') + '"/></svg>';
   }
 
+  /* Nota mínima para aprobar un caso del simulador y el quiz (la misma que en el simulacro de examen). */
+  var APROBADO = 50;
+  /* Mejor nota de cada caso, por título, para la cuadrícula de casos. Se guarda en este navegador si se puede. */
+  var CLAVE_RESULTADOS = 'averias-resultados';
+
   function simulador(tema, raiz, pagina) {
     var C = tema.simulador;
     var q = function (s) { return raiz.querySelector(s); };
@@ -67,6 +72,15 @@
     var POR_RONDA = Math.min(C.porRonda || C.casos.length, C.casos.length);
     /* Bolsa de casos sin jugar: al repetir no salen casos ya vistos hasta haber pasado por todos. */
     var bolsa = [];
+    var resultados = {};
+    try { resultados = JSON.parse(localStorage.getItem(CLAVE_RESULTADOS)) || {}; } catch (e) { /* sin almacenamiento: la cuadrícula dura solo esta visita */ }
+
+    function guardarResultado(k, pts) {
+      var t = C.casos[k].t;
+      if (typeof resultados[t] === 'number' && resultados[t] >= pts) return;
+      resultados[t] = pts;
+      try { localStorage.setItem(CLAVE_RESULTADOS, JSON.stringify(resultados)); } catch (e) { /* se conserva en memoria */ }
+    }
 
     function barajar(a) {
       for (var i = a.length - 1; i > 0; i--) {
@@ -99,8 +113,13 @@
     }
     function caso() { return casoEn(S.i, S.variante); }
 
-    function nuevo() {
-      S = { i: 0, orden: sacarCasos(), pts: [], desglose: [], varHist: [], repAceptada: null };
+    /* Partida nueva: «orden» es la lista de casos (índices del catálogo); sin ella, «porRonda» casos al azar. */
+    function nuevo(orden) {
+      S = { i: 0, orden: orden || sacarCasos(), unico: !!orden, terminada: false, pts: [], desglose: [], varHist: [], repAceptada: null };
+      q('.pasos').innerHTML = S.orden.map(function (k, i) {
+        return '<li class="paso" data-i="' + i + '"><span class="paso-n">' + (i + 1) + '</span><span class="paso-t">' + (i === 0 ? 'Caso actual' : 'Caso ' + (i + 1)) + '</span></li>';
+      }).join('');
+      q('.pasos').hidden = S.orden.length < 2;
       reiniciarCaso();
     }
 
@@ -256,8 +275,9 @@
 
     function render() {
       var c = caso();
-      q('.caso-n').textContent = 'Caso ' + (S.i + 1) + ' de ' + S.orden.length;
-      q('.caso-t').textContent = 'Caso ' + (S.i + 1) + ': ' + c.t;
+      var n = S.orden[S.i] + 1;
+      q('.caso-n').textContent = S.unico ? 'Caso n.º ' + n + ' de ' + C.casos.length : 'Caso ' + (S.i + 1) + ' de ' + S.orden.length + ' · n.º ' + n;
+      q('.caso-t').textContent = 'Caso ' + (S.unico ? n : S.i + 1) + ': ' + c.t;
       q('.caso-s').textContent = c.s;
       pintarPasos();
       q('.next').hidden = true;
@@ -423,7 +443,8 @@
       var res = puntuarCaso(c);
       S.pts.push(res.total);
       S.desglose.push(res.partes);
-      log('<span class="ok">Verificado.</span> ' + v.res + ' <b>Puntuación del caso: ' + res.total + '/100</b>');
+      guardarResultado(S.orden[S.i], res.total);
+      log('<span class="ok">Verificado.</span> ' + v.res + ' <b>Puntuación del caso: ' + res.total + '/100 · ' + (res.total >= APROBADO ? 'Aprobado' : 'Suspenso') + '</b>');
       mostrarInforme(c, v);
       actualizarEstado();
       var n = q('.next');
@@ -437,6 +458,7 @@
       var msg = media >= 80 ? 'Muy buen diagnóstico: piensas por orden y mides antes de cambiar.'
         : media >= 50 ? 'Bien, pero en algún caso has cambiado piezas de más.'
         : 'Repasa el orden de las pruebas de la S12 y vuelve a intentarlo.';
+      S.terminada = true;
       q('.caso-wrap').hidden = true;
       var f = q('.fin');
       f.hidden = false;
@@ -446,24 +468,90 @@
         var desglose = (S.desglose[i] || []).map(function (p) {
           return '<li>' + escapar(p.n) + ': <span class="val">' + (p.pts >= 0 ? '+' : '') + p.pts + '</span></li>';
         }).join('');
-        return '<li><span class="repaso-t">' + escapar(c.t) + '</span> <span class="val">' + S.pts[i] + '/100</span>' +
+        var aprobado = S.pts[i] >= APROBADO;
+        return '<li><span class="repaso-t">Caso n.º ' + (k + 1) + ': ' + escapar(c.t) + '</span> <span class="val">' + S.pts[i] + '/100</span> ' +
+          '<span class="' + (aprobado ? 'ok' : 'bad') + '">' + (aprobado ? 'Aprobado' : 'Suspenso') + '</span>' +
           '<ul class="desglose">' + desglose + '</ul><p>' + leccion + '</p></li>';
       }).join('');
-      f.innerHTML = '<h2>Media: ' + media + '/100</h2><p>' + msg + '</p>' +
+      f.innerHTML = '<h2>' + (S.unico ? 'Nota' : 'Media') + ': ' + media + '/100</h2><p>' + msg + '</p>' +
         '<h3 class="label">Repaso de las averías</h3><ol class="repaso">' + repaso + '</ol>' +
-        '<button class="btn-prim repetir" type="button">Repetir</button>';
+        '<div class="q-acciones"><button class="btn-prim repetir" type="button">' + (S.unico ? 'Repetir este caso' : 'Repetir') + '</button>' +
+        '<button class="btn-sec ver-cuadricula" type="button">Ver la cuadrícula de casos</button></div>';
       f.querySelector('.repetir').onclick = function () {
-        nuevo();
-        q('.caso-wrap').hidden = false;
-        f.hidden = true;
-        render();
+        empezar(S.unico ? S.orden.slice() : null);
       };
+      f.querySelector('.ver-cuadricula').onclick = function () { verCuadricula(); };
     }
 
+    function empezar(orden) {
+      nuevo(orden);
+      q('.caso-wrap').hidden = false;
+      q('.fin').hidden = true;
+      render();
+      verJuego();
+    }
+
+    /* Caso que se está jugando (índice del catálogo), o null si la partida ha terminado. */
+    function enCurso() { return S && !S.terminada ? S.orden[S.i] : null; }
+
+    /* Hay trabajo hecho en la partida que se perdería al empezar otra. */
+    function hayProgreso() { return S && !S.terminada && (S.i > 0 || S.used.size > 0 || S.diagOK); }
+
+    function modo(m) {
+      q('.juego').hidden = m !== 'juego';
+      q('.cuadricula').hidden = m !== 'cuadricula';
+      q('.m-azar').setAttribute('aria-pressed', String(m === 'juego' && !S.unico));
+      q('.m-cuadricula').setAttribute('aria-pressed', String(m === 'cuadricula'));
+    }
+    function verJuego() { modo('juego'); }
+
+    /* Cuadrícula de casos: verde aprobado, rojo suspenso, blanco sin hacer; el caso en curso lleva un anillo. */
+    function verCuadricula() {
+      var actual = enCurso();
+      var cuenta = { aprobado: 0, suspenso: 0, pendiente: 0 };
+      q('.casos-grid').innerHTML = C.casos.map(function (c, k) {
+        var pts = resultados[c.t];
+        var est = typeof pts !== 'number' ? 'pendiente' : pts >= APROBADO ? 'aprobado' : 'suspenso';
+        cuenta[est]++;
+        var curso = k === actual;
+        var txt = est === 'pendiente' ? 'sin hacer' : (est === 'aprobado' ? 'aprobado' : 'suspenso') + ' con ' + pts + '/100';
+        var sub = curso ? 'En curso' : est === 'pendiente' ? 'Sin hacer' : pts + '/100';
+        return '<li><button type="button" class="celda ' + est + (curso ? ' en-curso' : '') + '" data-k="' + k + '"' +
+          ' title="' + escapar(c.t) + '" aria-label="Caso ' + (k + 1) + ': ' + escapar(c.t) + ', ' + txt + (curso ? ', en curso' : '') + '"' +
+          (curso ? ' aria-current="true"' : '') + '>' +
+          '<span class="punto" aria-hidden="true"></span><span class="celda-n">' + (k + 1) + '</span><span class="celda-sub" aria-hidden="true">' + sub + '</span></button></li>';
+      }).join('');
+      q('.cuad-resumen').textContent = 'Aprobados: ' + cuenta.aprobado + ' · Suspensos: ' + cuenta.suspenso + ' · Sin hacer: ' + cuenta.pendiente + ' de ' + C.casos.length;
+      qa('.celda').forEach(function (b) {
+        b.onclick = function () {
+          var k = +b.dataset.k;
+          if (k === enCurso()) { verJuego(); return; }
+          if (hayProgreso() && !window.confirm('Tienes un caso a medias. Si empiezas el caso ' + (k + 1) + ', se perderá. ¿Continuar?')) return;
+          empezar([k]);
+        };
+      });
+      modo('cuadricula');
+    }
+
+
     raiz.innerHTML =
-      '<ol class="pasos" aria-label="Progreso de los casos">' + C.casos.slice(0, POR_RONDA).map(function (c, i) {
-        return '<li class="paso" data-i="' + i + '"><span class="paso-n">' + (i + 1) + '</span><span class="paso-t">' + (i === 0 ? 'Caso actual' : 'Caso ' + (i + 1)) + '</span></li>';
-      }).join('') + '</ol>' +
+      '<div class="modes modo-sim" role="group" aria-label="Cómo quieres jugar">' +
+        '<button type="button" class="m-azar" aria-pressed="true">Jugar ' + POR_RONDA + ' casos al azar</button>' +
+        '<button type="button" class="m-cuadricula" aria-pressed="false">Ver todos los casos</button>' +
+      '</div>' +
+      '<section class="cuadricula" hidden>' +
+        '<p class="cuad-resumen"></p>' +
+        '<ul class="leyenda" aria-label="Leyenda">' +
+          '<li><span class="punto aprobado"></span>Aprobado (' + APROBADO + '/100 o más)</li>' +
+          '<li><span class="punto suspenso"></span>Suspenso</li>' +
+          '<li><span class="punto"></span>Sin hacer</li>' +
+          '<li><span class="punto en-curso"></span>En curso</li>' +
+        '</ul>' +
+        '<ul class="casos-grid" aria-label="Casos del simulador"></ul>' +
+        '<p class="foot">Pulsa un caso para jugarlo. Cuenta la mejor nota de cada caso y se guarda en este navegador. El caso en curso te lleva a donde lo dejaste.</p>' +
+      '</section>' +
+      '<div class="juego">' +
+      '<ol class="pasos" aria-label="Progreso de los casos"></ol>' +
       '<div class="caso-wrap">' +
         '<div class="caso-col">' +
           '<section class="card cabecera">' +
@@ -528,7 +616,8 @@
           '<p class="foot">Cambia una sola cosa cada vez. Cambiar una pieza sin medir antes resta puntos de evidencia.</p>' +
         '</aside>' +
       '</div>' +
-      '<div class="card fin" hidden></div>';
+      '<div class="card fin" hidden></div>' +
+      '</div>';
 
     q('.pista').onclick = pista;
     q('.dx-sel').onchange = function () { q('.dx-btn').disabled = !this.value; };
@@ -555,15 +644,24 @@
       }
     };
 
+    /* «Jugar al azar» vuelve a la partida al azar en curso; si no la hay, empieza una nueva. */
+    q('.m-azar').onclick = function () {
+      if (!S.unico && !S.terminada) { verJuego(); return; }
+      if (hayProgreso() && !window.confirm('Tienes un caso a medias. Si empiezas una partida al azar, se perderá. ¿Continuar?')) return;
+      empezar(null);
+    };
+    q('.m-cuadricula').onclick = verCuadricula;
+
     nuevo();
     render();
-    /* Reinicio desde Ajustes: empieza una partida nueva con otros casos al azar. */
     return {
-      reiniciar: function () {
-        nuevo();
-        q('.caso-wrap').hidden = false;
-        q('.fin').hidden = true;
-        render();
+      /* Reinicio desde Ajustes: empieza una partida nueva con otros casos al azar. */
+      reiniciar: function () { empezar(null); },
+      verJuego: verJuego,
+      borrarResultados: function () {
+        resultados = {};
+        try { localStorage.removeItem(CLAVE_RESULTADOS); } catch (e) { /* nada guardado */ }
+        if (!q('.cuadricula').hidden) verCuadricula();
       }
     };
   }
@@ -582,7 +680,7 @@
   };
   var PREGUNTAS_QUIZ = 12;
   /* Porcentaje mínimo de puntos para aprobar el quiz (el mismo que en el simulacro de examen). */
-  var APROBADO_QUIZ = 50;
+  var APROBADO_QUIZ = APROBADO;
 
   function mapa(tema, raiz) {
     var F = tema.mapa.foto, Z = tema.mapa.zonas;
@@ -926,8 +1024,10 @@
             '</section>' +
             '<section class="vista" data-v="ajustes" hidden>' +
               '<h1>Ajustes</h1>' +
-              '<div class="card"><p>Reinicia el simulador para empezar una partida nueva con otros casos al azar. El progreso no se guarda en este navegador.</p>' +
+              '<div class="card"><p>Reinicia el simulador para empezar una partida nueva con otros casos al azar. La partida en curso no se guarda al cerrar la página.</p>' +
               '<button type="button" class="btn-sec" id="reiniciar-sim">Reiniciar simulación</button></div>' +
+              '<div class="card"><p>La cuadrícula de casos guarda en este navegador la mejor nota de cada caso. Puedes borrarla para empezar de cero.</p>' +
+              '<button type="button" class="btn-sec" id="borrar-resultados">Borrar resultados de los casos</button></div>' +
             '</section>' +
           '</div>' +
         '</div>';
@@ -943,7 +1043,7 @@
       root.querySelectorAll('.nav-item').forEach(function (b) {
         b.onclick = function () {
           ir(b.dataset.v);
-          if (b.dataset.v === 'caso') { var c = root.querySelector('.caso-wrap'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+          if (b.dataset.v === 'caso') { sim.verJuego(); var c = root.querySelector('.caso-wrap'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
         };
       });
       root.querySelectorAll('.tema').forEach(function (b) {
@@ -963,6 +1063,9 @@
       sim = simulador(tema, root.querySelector('.sim-raiz'), root);
       mapa(tema, root.querySelector('.mapa-raiz'));
       root.querySelector('#reiniciar-sim').onclick = function () { sim.reiniciar(); ir('inicio'); };
+      root.querySelector('#borrar-resultados').onclick = function () {
+        if (window.confirm('¿Borrar la nota guardada de todos los casos?')) sim.borrarResultados();
+      };
       ir('inicio');
     }
 

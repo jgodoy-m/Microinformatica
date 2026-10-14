@@ -320,6 +320,24 @@ svg.mapa .z.miss rect{fill:var(--zone-miss);stroke:var(--lamp-bad);stroke-width:
   .mapa-panel{position:static}
 }
 .mapa-raiz .credit{margin-top:var(--s2);padding-top:var(--s2)}
+/* Inicio: elegir entre la partida al azar y la cuadrícula de casos */
+.modo-sim{margin-bottom:var(--s3)}
+.cuad-resumen{margin:0 0 var(--s2);font-weight:600}
+.leyenda{list-style:none;margin:0 0 var(--s3);padding:0;display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4);font-size:14px;color:var(--muted)}
+.leyenda li{display:flex;align-items:center;gap:var(--s2)}
+.punto{display:inline-block;flex:none;width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid var(--muted)}
+.punto.aprobado,.celda.aprobado .punto{background:var(--lamp-ok);border-color:var(--lamp-ok)}
+.punto.suspenso,.celda.suspenso .punto{background:var(--lamp-bad);border-color:var(--lamp-bad)}
+.punto.en-curso{box-shadow:0 0 0 3px var(--accent)}
+.casos-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:var(--s2)}
+.celda{display:grid;justify-items:center;gap:2px;width:100%;min-height:84px;padding:var(--s2) var(--s1);border:1px solid var(--line);border-radius:var(--r);background:var(--card);color:var(--fg);cursor:pointer}
+.celda:hover{border-color:var(--accent)}
+.celda .punto{width:20px;height:20px}
+.celda-n{font:700 18px/1.2 var(--mono)}
+.celda-sub{font:500 12px/1.2 var(--sans);color:var(--muted);white-space:nowrap}
+.celda.en-curso{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
+.celda.en-curso .celda-sub{color:var(--accent);font-weight:700}
+.cuadricula .foot{margin-top:var(--s3)}
 </style>
 </head>
 <body>
