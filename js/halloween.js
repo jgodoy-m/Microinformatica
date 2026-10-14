@@ -106,14 +106,11 @@
     ':root[data-halloween="on"] .flota{box-shadow:0 0 18px rgba(162,89,255,.45)}',
     /* Fotos azules: se tiñen hacia morado y naranja. */
     ':root[data-halloween="on"] .hero{background:linear-gradient(180deg,#07030F 0%,#120724 62%,#1A0A30 84%,var(--bg) 100%)}',
-    ':root[data-halloween="on"] .hero-image,:root[data-halloween="on"] .hero-fig img{filter:hue-rotate(60deg) saturate(1.6) contrast(1.05)}',
     /* Calabazas brillantes en el hero de la portada. */
-    ':root[data-halloween="on"] .hero:has(.hero-image)::after{content:"";position:absolute;right:3%;bottom:6px;width:130px;height:104px;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 120 96%27%3E%3Cpath d=%27M60 18c0-8 4-13 10-15%27 fill=%27none%27 stroke=%27%234E8A2E%27 stroke-width=%275%27 stroke-linecap=%27round%27/%3E%3Cellipse cx=%2736%27 cy=%2756%27 rx=%2728%27 ry=%2736%27 fill=%27%23D9560B%27/%3E%3Cellipse cx=%2784%27 cy=%2756%27 rx=%2728%27 ry=%2736%27 fill=%27%23D9560B%27/%3E%3Cellipse cx=%2760%27 cy=%2756%27 rx=%2730%27 ry=%2738%27 fill=%27%23FF7A1A%27/%3E%3Cpath d=%27M34 46l12-10 6 14zM86 46l-12-10-6 14zM55 58l5-9 5 9zM30 66q30 24 60 0l-8 3-5 7-6-6-5 7-6-7-6 7-5-7-6 6-5-7z%27 fill=%27%23FFE27A%27/%3E%3C/svg%3E") no-repeat center/contain;filter:drop-shadow(0 0 18px rgba(255,122,26,.7));z-index:1}',
     /* Pie con el lema. */
     '.hw-pie{display:none}',
     ':root[data-halloween="on"] .hw-pie{display:flex;align-items:center;gap:10px;padding:14px max(16px,env(safe-area-inset-left));padding-right:150px;font:500 13px/1.3 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#CDBDF0;border-top:1px solid rgba(162,89,255,.35);background:rgba(8,4,18,.75)}',
     ':root[data-halloween="on"] .hw-pie svg{width:22px;height:22px;flex:none;filter:drop-shadow(0 0 6px rgba(255,122,26,.7))}',
-    '@media (max-width:480px){:root[data-halloween="on"] .hero:has(.hero-image)::after{width:84px;height:68px;right:12px}}',
     ':root[data-halloween="on"] ::selection{background:#FF8A1F;color:#1A0A00}',
     /* Los botones de claro/oscuro no se usan mientras dura Halloween. */
     ':root[data-halloween="on"] #theme-toggle,:root[data-halloween="on"] .tema-btn,:root[data-halloween="on"] button#tema,:root[data-halloween="on"] .fila-switch{display:none!important}',
@@ -214,8 +211,8 @@
     H + '#inicio>.card{margin:0}',
     '.hw-ilustracion{display:none}',
     H + '.hw-ilustracion{display:block;position:relative;margin:0;border-radius:8px;overflow:hidden;min-height:260px;border:1px solid rgba(162,89,255,.55);box-shadow:0 0 22px rgba(162,89,255,.25)}',
-    H + '.hw-ilustracion img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:hue-rotate(60deg) saturate(1.6) brightness(.85)}',
-    H + '.hw-ilustracion::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 80%,rgba(255,106,0,.35),transparent 60%),linear-gradient(180deg,transparent 40%,rgba(8,4,18,.8))}',
+    H + '.hw-ilustracion img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}',
+    H + '.hw-ilustracion::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(8,4,18,.55))}',
     '@media (max-width:760px){' + H + '#inicio{grid-template-columns:1fr}' + H + '.hw-ilustracion{display:none}}'
   ].join('');
   estilo.textContent += CSS_ESTRUCTURA;
@@ -225,6 +222,15 @@
     var s = document.currentScript && document.currentScript.getAttribute('src');
     return s ? s.replace(/js\/halloween\.js.*$/, '') : '';
   })();
+
+  /* Ilustraciones de Halloween (img/halloween/): sustituyen a las fotos de la portada y del simulador de averías. */
+  estilo.textContent += [
+    H + '.hero-image-wrap{background:url("' + BASE + 'img/halloween/portada.webp") center/cover no-repeat;-webkit-mask-image:linear-gradient(to right,transparent 0,#000 22%);mask-image:linear-gradient(to right,transparent 0,#000 22%)}',
+    H + '.hero-image{opacity:0}',
+    H + '.hero-fig img{opacity:0}',
+    H + '.hero-fig::before{content:"";position:absolute;inset:16px;border-radius:14px;background:url("' + BASE + 'img/halloween/placa.webp") center/cover no-repeat;box-shadow:0 0 30px rgba(162,89,255,.35);-webkit-mask-image:radial-gradient(ellipse at center,#000 55%,transparent 100%);mask-image:radial-gradient(ellipse at center,#000 55%,transparent 100%)}',
+    '@media (max-width:760px){' + H + '.hero-image-wrap{-webkit-mask-image:none;mask-image:none;border-radius:12px}}'
+  ].join('');
 
   var ICONOS = {
     chip: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg>',
@@ -327,7 +333,7 @@
         var fig = document.createElement('figure');
         fig.className = 'hw-ilustracion';
         fig.setAttribute('aria-hidden', 'true');
-        fig.innerHTML = '<img src="' + BASE + 'hero-laboratorio.webp" alt="">';
+        fig.innerHTML = '<img src="' + BASE + 'img/halloween/simulacro.webp" alt="">';
         inicio.appendChild(fig);
       }
     }
