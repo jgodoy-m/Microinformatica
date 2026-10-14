@@ -581,6 +581,8 @@
     funcion: { n: 'Por su función', d: 'Te digo para qué sirve y eliges cuál es.' }
   };
   var PREGUNTAS_QUIZ = 12;
+  /* Porcentaje mínimo de puntos para aprobar el quiz (el mismo que en el simulacro de examen). */
+  var APROBADO_QUIZ = 50;
 
   function mapa(tema, raiz) {
     var F = tema.mapa.foto, Z = tema.mapa.zonas;
@@ -833,6 +835,7 @@
       panel.innerHTML =
         '<h2 class="label">Resultado</h2>' +
         '<p class="q-nota"><span class="val">' + pct + ' %</span> ' + escapar(nota) + '</p>' +
+        '<p class="q-veredicto ' + (pct >= APROBADO_QUIZ ? 'ok' : 'bad') + '">' + (pct >= APROBADO_QUIZ ? 'Aprobado' : 'Suspenso') + ' · se aprueba con un ' + APROBADO_QUIZ + ' % de los puntos</p>' +
         '<ul class="desglose">' +
           '<li><span>Puntos</span><span class="val">' + fmt(Q.puntos) + ' / ' + total + '</span></li>' +
           porTipo +

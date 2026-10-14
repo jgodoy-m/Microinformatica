@@ -63,6 +63,8 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
 .opciones-n span{display:inline-flex;align-items:center;min-height:44px;padding:var(--s2) var(--s4);border:1px solid var(--border);border-radius:8px;background:var(--surface-hover);color:var(--text);font-weight:600;cursor:pointer}
 .opciones-n input:checked + span{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}
 .opciones-n input:focus-visible + span{outline:3px solid var(--focus);outline-offset:2px}
+.selector-tema{display:block;width:100%;max-width:420px;min-height:44px;padding:var(--s2) var(--s3);margin-bottom:var(--s4);font:inherit;font-weight:600;color:var(--text);background:var(--surface-hover);border:1px solid var(--border);border-radius:8px;cursor:pointer}
+.selector-tema:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:var(--s2) var(--s4);border:1px solid var(--accent);border-radius:8px;background:var(--accent);color:var(--accent-text);font-weight:700;cursor:pointer}
 .btn:hover:not(:disabled){filter:brightness(1.06)}
 .btn:disabled{opacity:.45;cursor:default}
@@ -87,6 +89,9 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
 .opcion:disabled{cursor:default}
 
 .feedback{margin-top:var(--s4);padding:var(--s4);border:1px solid var(--border);background:var(--surface-hover);border-radius:8px}
+.veredicto{display:inline-block;margin:var(--s3) 0 0;padding:4px 12px;border-radius:999px;font-weight:700;border:2px solid currentColor}
+.veredicto.ok{color:var(--success)}
+.veredicto.mal{color:var(--danger)}
 .feedback.ok{border-color:var(--success)}
 .feedback.mal{border-color:var(--danger)}
 .feedback strong{display:block;margin-bottom:var(--s1)}
@@ -126,9 +131,11 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
   <!-- Inicio del simulacro -->
   <section id="inicio">
     <h1>Simulacro de examen</h1>
-    <p class="intro">Preguntas al azar de todos los apuntes: fuente, chasis, tarjetas de expansión, GPU y sonido, ampliaciones, diagnóstico y conexionado. Cada pregunta indica de qué apunte sale, para que puedas repasarla.</p>
+    <p class="intro">Preguntas al azar de los apuntes: fuente, chasis, tarjetas de expansión, GPU y sonido, ampliaciones, diagnóstico y conexionado. Elige un apunte en el desplegable o mézclalos todos. Cada pregunta indica de qué apunte sale, para que puedas repasarla.</p>
 
     <div class="card">
+      <label class="label" for="tema-sel">Apunte</label>
+      <select id="tema-sel" class="selector-tema"></select>
       <p class="label">Formato</p>
       <div class="opciones-n" role="radiogroup" aria-label="Formato de las preguntas">
         <label><input type="radio" name="formato" value="test" checked><span>Test (4 opciones)</span></label>
@@ -174,6 +181,7 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
     <h2 class="titulo-grande">Resultado</h2>
     <div class="card">
       <div class="marcador"><span id="nota"></span><small id="porcentaje"></small></div>
+      <p class="veredicto" id="veredicto"></p>
       <p class="intro" id="mensaje" style="margin:var(--s3) 0 0"></p>
       <ul class="revision" id="revision"></ul>
       <div class="acciones" style="justify-content:flex-start;margin-top:var(--s5)">
@@ -196,6 +204,13 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
     S12: { nombre: 'Apuntes S12 · Diagnóstico guiado de averías', ver: 'ver-s12.html' },
     S13: { nombre: 'Apuntes S13 · Conexionado interno y externo', ver: 'ver-s13.html' }
   };
+  /* Grupos del desplegable de apuntes. «todos» mezcla preguntas de todos los apuntes. */
+  const GRUPOS = [
+    { nombre: 'Componentes del equipo', ids: ['S07', 'S08', 'S09', 'S10'] },
+    { nombre: 'Ampliación, diagnóstico y conexionado', ids: ['S11', 'S12', 'S13'] }
+  ];
+  /* Porcentaje mínimo para aprobar el simulacro (el mismo que en el quiz de la placa). */
+  const APROBADO = 50;
   const LETRAS = ['A', 'B', 'C', 'D'];
   const $ = (id) => document.getElementById(id);
 
@@ -221,12 +236,42 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
     };
   }
 
+  /* Preguntas del apunte elegido en el desplegable (o de todos). */
+  function bancoElegido() {
+    const tema = $('tema-sel').value;
+    return tema === 'todos' ? window.BANCO : window.BANCO.filter((q) => q.fuente === tema);
+  }
+
+  function rellenarTemas() {
+    const sel = $('tema-sel');
+    const cuantas = (id) => window.BANCO.filter((q) => q.fuente === id).length;
+    const opcion = (valor, texto) => {
+      const o = document.createElement('option');
+      o.value = valor;
+      o.textContent = texto;
+      return o;
+    };
+    sel.appendChild(opcion('todos', 'Todos los apuntes (' + window.BANCO.length + ' preguntas)'));
+    GRUPOS.forEach((g) => {
+      const grupo = document.createElement('optgroup');
+      grupo.label = g.nombre;
+      g.ids.forEach((id) => grupo.appendChild(opcion(id, APUNTES[id].nombre.replace('Apuntes ', '') + ' (' + cuantas(id) + ')')));
+      sel.appendChild(grupo);
+    });
+    sel.onchange = pintarTotal;
+  }
+
+  function pintarTotal() {
+    $('total').textContent = bancoElegido().length + ' preguntas en el banco' + ($('tema-sel').value === 'todos' ? '.' : ' para este apunte.');
+  }
+
   function empezar() {
     const valor = document.querySelector('input[name="n"]:checked').value;
     modo = document.querySelector('input[name="formato"]:checked').value;
-    const todas = window.BANCO.length;
+    const banco = bancoElegido();
+    const todas = banco.length;
     const n = valor === 'todas' ? todas : Math.min(parseInt(valor, 10), todas);
-    items = barajar(window.BANCO).slice(0, n).map(preparar);
+    items = barajar(banco).slice(0, n).map(preparar);
     i = 0; aciertos = 0;
     $('inicio').hidden = true;
     $('resultado').hidden = true;
@@ -393,6 +438,9 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
     $('resultado').hidden = false;
     $('nota').textContent = nota + ' / ' + total;
     $('porcentaje').textContent = porcentaje + ' %';
+    const aprobado = porcentaje >= APROBADO;
+    $('veredicto').className = 'veredicto ' + (aprobado ? 'ok' : 'mal');
+    $('veredicto').textContent = (aprobado ? 'Aprobado' : 'Suspenso') + ' · se aprueba con un ' + APROBADO + ' % de aciertos';
     $('mensaje').textContent = porcentaje >= 80
       ? 'Muy buen resultado. Revisa los fallos: son los que más te van a costar en el examen.'
       : porcentaje >= 50
@@ -436,7 +484,7 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
     $('resultado').hidden = true;
     $('prueba').hidden = true;
     $('inicio').hidden = false;
-    $('total').textContent = window.BANCO.length + ' preguntas en el banco.';
+    pintarTotal();
   }
 
   $('empezar').onclick = empezar;
@@ -445,7 +493,8 @@ h2{font-size:22px;line-height:1.25;margin:0 0 var(--s3)}
   $('ver').onclick = corregir;
   $('salir').onclick = terminar;
   $('repetir').onclick = volverAlInicio;
-  $('total').textContent = window.BANCO.length + ' preguntas en el banco.';
+  rellenarTemas();
+  pintarTotal();
 
   /* Tema claro/oscuro: misma clave que el temario. */
   function temaActual() {
