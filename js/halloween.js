@@ -190,6 +190,7 @@
     H + '.hero-copy{max-width:660px}',
     H + '.wrap>.hw-titulo{margin:8px 0 18px;padding:0}',
     H + '.side .marca{display:none}',
+    H + '.uf-actual+.hw-eyebrow{display:none!important}',
     H + '.practice{padding-top:8px}',
     H + '.practice .seccion-cabecera,' + H + '.etiqueta-practica,' + H + '.practice-deco,' + H + '.practice-link{display:none}',
     H + '.practice-card{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto 1fr;column-gap:18px;row-gap:6px;align-items:start;min-height:0;padding:22px 22px 22px 26px}',
@@ -255,7 +256,7 @@
     var actual = paginaActual();
     var enlaces = [
       ['inicio', 'index.html', 'Inicio', ICONOS.casa],
-      ['temario', 'index.html#temas', 'Temario', ICONOS.libro],
+      ['temario', 'index.html#uf0864', 'UF0864', ICONOS.libro],
       ['montaje', 'juego/montaje.html', 'Montaje', ICONOS.torre],
       ['averias', 'averias.html', 'Averías', ICONOS.lupa],
       ['examen', 'examen.html', 'Examen', ICONOS.examen]
@@ -288,8 +289,7 @@
   /* Textos de la portada en el modo Halloween; al quitarlo vuelven los originales. */
   var TEXTOS = [
     ['#hero-title', '¿Te atreves a<br><span>reparar este equipo?</span>'],
-    ['.hero-description', 'Bienvenido al laboratorio virtual de microinformática. Aquí podrás estudiar, practicar y enfrentarte a retos reales de forma interactiva y divertida.'],
-    ['#topics-title', 'Temario y apuntes']
+    ['.hero-description', 'Bienvenido al laboratorio virtual de microinformática. Aquí podrás estudiar, practicar y enfrentarte a retos reales de forma interactiva y divertida.']
   ];
   var originales = [];
 
@@ -302,7 +302,7 @@
       el.innerHTML = activo ? t[1] : originales[i];
     });
     /* Etiquetas de los botones del hero: se cambia solo el texto, sin tocar los iconos. */
-    [['.hero-actions .btn-primario', 'Comenzar ahora'], ['.hero-actions .btn-secundario', 'Ver temario']].forEach(function (b) {
+    [['.hero-actions .btn-primario', 'Comenzar ahora'], ['.hero-actions .btn-secundario', 'UF anteriores']].forEach(function (b) {
       var el = document.querySelector(b[0]);
       if (!el) return;
       var nodo = Array.prototype.find.call(el.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); });

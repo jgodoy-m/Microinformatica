@@ -955,7 +955,7 @@
     @media (max-width: 480px) {
       .practice-deco { display: none; }
       .seccion-cabecera { flex-wrap: wrap; row-gap: 8px; }
-      .seccion-cabecera h2 { white-space: nowrap; }
+      .seccion-cabecera h2 { font-size: 22px; }
       .hero-description { font-size: 17px; }
       .btn-primario, .btn-secundario { width: 100%; justify-content: center; }
     }
@@ -977,6 +977,18 @@
     html[data-theme="light"] .practice-card.acento-cian { --acento: #3B6EA0; }
     html[data-theme="light"] .practice-card.acento-verde { --acento: #4C7A3E; }
     html[data-theme="light"] .practice-card.acento-violeta { --acento: #7B4F95; }
+    /* UF actual y UF anteriores */
+    .uf-actual { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 18px; font: 600 13px/1 ui-monospace, "SFMono-Regular", Menlo, monospace; letter-spacing: .06em; color: var(--muted); }
+    .uf-actual span { padding: 6px 10px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--text); border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); text-transform: uppercase; }
+    .uf-nueva { padding: 40px 0 8px; }
+    .uf-aviso { display: flex; align-items: center; gap: 20px; padding: 24px 26px; border-radius: 16px; border: 1px dashed color-mix(in srgb, var(--accent) 60%, transparent); background: color-mix(in srgb, var(--accent) 7%, var(--surface)); --acento: var(--accent); }
+    .uf-aviso .practice-icon { flex: none; }
+    .uf-aviso p { margin: 0; color: var(--muted); }
+    .uf-aviso .uf-aviso-titulo { color: var(--text); font-weight: 700; font-size: 19px; margin-bottom: 4px; }
+    .uf-anteriores { margin-top: 48px; padding: 28px 0 0; border-top: 1px solid var(--border); }
+    .uf-anteriores-etiqueta { margin: 0 0 6px; font: 600 12px/1 ui-monospace, "SFMono-Regular", Menlo, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+    .uf-anteriores-texto { margin: 0; color: var(--muted); }
+    @media (max-width: 480px) { .uf-aviso { flex-direction: column; align-items: flex-start; } }
 </style>
 </head>
 
@@ -997,10 +1009,10 @@
       <nav class="header-nav" aria-label="Principal">
         <a href="#inicio" class="is-active">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 3l9 8M5 10v10h14V10"/></svg>Inicio</a>
-        <a href="#temas">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H2zM22 5h-7a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h8z"/></svg>Temario</a>
-        <a href="#practicas">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.4 2.4-2.4-.6-.6-2.4z"/></svg>Prácticas</a>
+        <a href="#uf0864">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H2zM22 5h-7a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h8z"/></svg>UF0864</a>
+        <a href="#anteriores">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2"/></svg>UF anteriores</a>
       </nav>
 
       <div class="header-actions">
@@ -1030,15 +1042,16 @@
     <section class="hero" aria-labelledby="hero-title">
       <div class="container hero-inner">
         <div class="hero-copy">
+          <p class="uf-actual"><span>Ahora</span> UF0864 · Resolución de averías lógicas</p>
           <h1 id="hero-title">Aprende. Monta.<br><span>Diagnostica.</span></h1>
           <p class="hero-description">Domina el hardware con prácticas interactivas, apuntes actualizados y un entorno de aprendizaje pensado para ti.</p>
           <div class="hero-actions">
-            <a class="btn-primario" href="#practicas">
+            <a class="btn-primario" href="#uf0864">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z"/></svg>Empezar a practicar
               <svg class="flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
             </a>
-            <a class="btn-secundario" href="#temas">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H2zM22 5h-7a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h8z"/></svg>Explorar temario
+            <a class="btn-secundario" href="#anteriores">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H2zM22 5h-7a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h8z"/></svg>UF anteriores
             </a>
           </div>
         </div>
@@ -1048,11 +1061,32 @@
       </div>
     </section>
 
+    <section class="uf-nueva" id="uf0864" aria-labelledby="uf0864-title">
+      <div class="container">
+        <div class="seccion-cabecera">
+          <h2 id="uf0864-title">UF0864 · Averías lógicas</h2>
+        </div>
+        <div class="uf-aviso">
+          <span class="practice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M9 8l-2 2 2 2M15 8l2 2-2 2"/></svg></span>
+          <div>
+            <p class="uf-aviso-titulo">Empezamos UF nueva</p>
+            <p>Aquí irán los apuntes, el simulacro y las prácticas de la UF0864 a medida que avancen las sesiones.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="uf-anteriores" id="anteriores">
+      <div class="container">
+        <p class="uf-anteriores-etiqueta">UF anteriores</p>
+        <p class="uf-anteriores-texto">UF0861 (montaje) y UF0863 (reparación de hardware). Siguen disponibles para repasar.</p>
+      </div>
+    </div>
+
     <section class="practice" id="practicas" aria-labelledby="practice-title">
       <div class="container">
         <div class="seccion-cabecera">
-          <h2 id="practice-title">Tus prácticas</h2>
-          <a class="enlace-seccion" href="#practicas">Ver todas las prácticas <span aria-hidden="true">→</span></a>
+          <h2 id="practice-title">Prácticas de UF0861 y UF0863</h2>
         </div>
 
         <div class="practice-grid">
@@ -1089,8 +1123,7 @@
     <section class="topics" id="temas" aria-labelledby="topics-title">
       <div class="container">
         <div class="seccion-cabecera">
-          <h2 id="topics-title">Temario</h2>
-          <a class="enlace-seccion" href="#temas">Ver todo el temario <span aria-hidden="true">→</span></a>
+          <h2 id="topics-title">Temario de UF0861 y UF0863</h2>
         </div>
 
         <div class="tabla-wrap">
