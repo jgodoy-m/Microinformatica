@@ -50,13 +50,13 @@ iframe{flex:1;width:100%;min-height:72vh;border:0;background:#fff}
   </div>
 </header>
 <main>
-  <p class="bloqueado"><strong>Disponible a partir del 16 de octubre</strong>Estos apuntes se abren mañana.</p>
+  <p class="bloqueado"><strong>Disponible a partir del 19 de octubre</strong>Estos apuntes se abren el día de la clase.</p>
   <iframe data-src="s16-discos.pdf" title="Apuntes S16 · Discos, particiones y sistemas de archivos"></iframe>
   <p class="ayuda">Si el documento no se muestra aquí, usa «Abrir en pestaña» o «Descargar PDF».</p>
 </main>
 <script>
-  /* La S16 se desbloquea el 16 de octubre de 2026 (hora del navegador). */
-  if (new Date() >= new Date(2026, 9, 16)) {
+  /* La S16 se desbloquea el 19 de octubre de 2026 (hora del navegador). */
+  if (new Date() >= new Date(2026, 9, 19)) {
     document.querySelector(".bloqueado").remove();
     document.querySelector(".acciones").hidden = false;
     const f = document.querySelector("iframe");

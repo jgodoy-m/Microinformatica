@@ -32,6 +32,9 @@ h1{font-size:17px;margin:0;font-weight:700}
 .btn:hover{border-color:var(--accent)}
 main{flex:1;display:flex;flex-direction:column}
 iframe{flex:1;width:100%;min-height:72vh;border:0;background:#fff}
+.acciones[hidden]{display:none}
+.bloqueado{margin:auto;padding:40px 20px;text-align:center;color:var(--muted)}
+.bloqueado strong{display:block;margin-bottom:6px;color:var(--text);font-size:20px}
 .ayuda{padding:12px 20px;color:var(--muted);font-size:14px;margin:0}
 </style>
 </head>
@@ -41,14 +44,27 @@ iframe{flex:1;width:100%;min-height:72vh;border:0;background:#fff}
     <a class="volver" href="../temario-uf0864.html">← Temario UF0864</a>
     <h1>Apuntes S15 · El arranque del equipo</h1>
   </div>
-  <div class="acciones">
+  <div class="acciones" hidden>
     <a class="btn" href="s15-arranque.pdf" target="_blank" rel="noopener">Abrir en pestaña</a>
     <a class="btn principal" href="s15-arranque.pdf" download>Descargar PDF</a>
   </div>
 </header>
 <main>
-  <iframe src="s15-arranque.pdf" title="Apuntes S15 · El arranque del equipo"></iframe>
+  <p class="bloqueado"><strong>Disponible a partir del 16 de octubre</strong>Estos apuntes se abren el día de la clase.</p>
+  <iframe data-src="s15-arranque.pdf" title="Apuntes S15 · El arranque del equipo"></iframe>
   <p class="ayuda">Si el documento no se muestra aquí, usa «Abrir en pestaña» o «Descargar PDF».</p>
 </main>
+<script>
+  /* La S15 se desbloquea el 16 de octubre de 2026 (hora del navegador). */
+  if (new Date() >= new Date(2026, 9, 16)) {
+    document.querySelector(".bloqueado").remove();
+    document.querySelector(".acciones").hidden = false;
+    const f = document.querySelector("iframe");
+    f.src = f.dataset.src;
+  } else {
+    document.querySelector("iframe").remove();
+    document.querySelector(".ayuda").remove();
+  }
+</script>
 </body>
 </html>

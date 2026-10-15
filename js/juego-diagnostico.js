@@ -252,7 +252,7 @@
       solucion: "Se ha lanzado explorer.exe desde el Administrador de tareas y se ha desinstalado el optimizador en modo seguro."
     },
     {
-      sesion: "S16", desde: "2026-10-16", titulo: "El disco invisible", arranca: true,
+      sesion: "S16", desde: "2026-10-19", titulo: "El disco invisible", arranca: true,
       pantalla: { tipo: "dialogo", titulo: "Este equipo", texto: "Solo aparece la unidad C:. El disco nuevo no se ve.", codigo: "" },
       sintoma: "El cliente ha montado un disco nuevo y no aparece en el Explorador.",
       pruebas: {
@@ -277,7 +277,7 @@
       solucion: "Se ha inicializado en GPT, se ha creado un volumen NTFS y ya aparece en el Explorador."
     },
     {
-      sesion: "S16", desde: "2026-10-16", titulo: "«Debe formatear el disco»", arranca: true,
+      sesion: "S16", desde: "2026-10-19", titulo: "«Debe formatear el disco»", arranca: true,
       pantalla: { tipo: "dialogo", titulo: "Microsoft Windows", texto: "Debe formatear el disco de la unidad E: antes de usarlo.", codigo: "¿Desea formatearlo?" },
       sintoma: "Al conectar un disco externo, Windows pide formatearlo.",
       pruebas: {
@@ -302,7 +302,7 @@
       solucion: "No se ha formateado: con el disco sano, se ha recuperado la estructura con TestDisk y las fotos vuelven a verse."
     },
     {
-      sesion: "S16", desde: "2026-10-16", titulo: "Los 2 TB que faltan", arranca: true,
+      sesion: "S16", desde: "2026-10-19", titulo: "Los 2 TB que faltan", arranca: true,
       pantalla: { tipo: "dialogo", titulo: "Administración de discos", texto: "Disco 1: 2048 GB en uso · 1678 GB No asignado", codigo: "" },
       sintoma: "Un disco de 4 TB solo deja usar 2 TB.",
       pruebas: {
@@ -327,7 +327,7 @@
       solucion: "Se han copiado los datos fuera, se ha pasado el disco a GPT y ya se pueden usar los 4 TB."
     },
     {
-      sesion: "S16", desde: "2026-10-16", titulo: "La película que no cabe", arranca: true,
+      sesion: "S16", desde: "2026-10-19", titulo: "La película que no cabe", arranca: true,
       pantalla: { tipo: "dialogo", titulo: "Copiar archivo", texto: "El archivo es demasiado grande para el sistema de archivos de destino.", codigo: "pelicula.mkv · 6,2 GB" },
       sintoma: "Un pendrive de 64 GB vacío no deja copiar un archivo de 6 GB.",
       pruebas: {
