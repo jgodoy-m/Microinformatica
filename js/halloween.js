@@ -190,7 +190,6 @@
     H + '.hero-copy{max-width:660px}',
     H + '.wrap>.hw-titulo{margin:8px 0 18px;padding:0}',
     H + '.side .marca{display:none}',
-    H + '.uf-actual+.hw-eyebrow{display:none!important}',
     H + '.practice{padding-top:8px}',
     H + '.practice .seccion-cabecera,' + H + '.etiqueta-practica,' + H + '.practice-deco,' + H + '.practice-link{display:none}',
     H + '.practice-card{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto 1fr;column-gap:18px;row-gap:6px;align-items:start;min-height:0;padding:22px 22px 22px 26px}',
@@ -240,6 +239,7 @@
     torre: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><circle cx="12" cy="15" r="3"/><path d="M9 6h6"/></svg>',
     lupa: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6M7.5 10h1.5l1-2 1.5 4 1-2"/></svg>',
     examen: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9zM8 11l1.5 1.5L12 10M8 16l1.5 1.5L12 15M14 11h2M14 16h2"/></svg>',
+    codigo: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="m9 9-2.5 2.5L9 14M15 9l2.5 2.5L15 14M8 21h8"/></svg>',
     menu: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>'
   };
 
@@ -248,7 +248,8 @@
     if (/montaje\.html$/.test(p)) return 'montaje';
     if (/averias\.html$/.test(p)) return 'averias';
     if (/examen\.html$/.test(p)) return 'examen';
-    if (/\/apuntes\//.test(p)) return 'temario';
+    if (/software\.html$/.test(p)) return 'software';
+    if (/hardware\.html$/.test(p) || /\/apuntes\//.test(p)) return 'hardware';
     return 'inicio';
   }
 
@@ -256,7 +257,8 @@
     var actual = paginaActual();
     var enlaces = [
       ['inicio', 'index.html', 'Inicio', ICONOS.casa],
-      ['temario', 'index.html#uf0864', 'UF0864', ICONOS.libro],
+      ['hardware', 'hardware.html', 'Hardware', ICONOS.libro],
+      ['software', 'software.html', 'Software', ICONOS.codigo],
       ['montaje', 'juego/montaje.html', 'Montaje', ICONOS.torre],
       ['averias', 'averias.html', 'Averías', ICONOS.lupa],
       ['examen', 'examen.html', 'Examen', ICONOS.examen]
@@ -289,7 +291,8 @@
   /* Textos de la portada en el modo Halloween; al quitarlo vuelven los originales. */
   var TEXTOS = [
     ['#hero-title', '¿Te atreves a<br><span>reparar este equipo?</span>'],
-    ['.hero-description', 'Bienvenido al laboratorio virtual de microinformática. Aquí podrás estudiar, practicar y enfrentarte a retos reales de forma interactiva y divertida.']
+    ['.hero-description', 'Bienvenido al laboratorio virtual de microinformática. Aquí podrás estudiar, practicar y enfrentarte a retos reales de forma interactiva y divertida.'],
+    ['#topics-title', 'Temario y apuntes']
   ];
   var originales = [];
 
@@ -302,7 +305,7 @@
       el.innerHTML = activo ? t[1] : originales[i];
     });
     /* Etiquetas de los botones del hero: se cambia solo el texto, sin tocar los iconos. */
-    [['.hero-actions .btn-primario', 'Comenzar ahora'], ['.hero-actions .btn-secundario', 'UF anteriores']].forEach(function (b) {
+    [['.hero-actions .btn-primario', 'Comenzar ahora'], ['.hero-actions .btn-secundario', 'Ver temario']].forEach(function (b) {
       var el = document.querySelector(b[0]);
       if (!el) return;
       var nodo = Array.prototype.find.call(el.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); });
