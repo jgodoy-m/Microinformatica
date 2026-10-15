@@ -21,14 +21,14 @@
       titulo: "Diagnóstico de averías lógicas",
       descripcion: "Cómo arranca un equipo, en qué fase se para y qué distingue una avería lógica de una física.",
       sesiones: [
-        { id: "s15", codigo: "S15", titulo: "El arranque del equipo", resumen: "Del botón al escritorio, BIOS, UEFI y Secure Boot, particiones y gestor de arranque, y averías de arranque.", url: "apuntes/ver-s15.html", pdf: "apuntes/s15-arranque.pdf" }
+        { id: "s15", codigo: "S15", titulo: "El arranque del equipo", resumen: "Del botón al escritorio, BIOS, UEFI y Secure Boot, particiones y gestor de arranque, y averías de arranque.", url: "apuntes/ver-s15.html", pdf: "apuntes/s15-arranque.pdf", desde: "2026-10-16" }
       ]
     },
     {
       titulo: "Recuperación de datos",
       descripcion: "Discos, particiones y sistemas de archivos: lo que hay que entender antes de recuperar nada.",
       sesiones: [
-        { id: "s16", codigo: "S16", titulo: "Discos, particiones y sistemas de archivos", resumen: "Particiones y volúmenes, sistemas de archivos, administración de discos y diskpart, y averías lógicas del disco.", url: "apuntes/ver-s16.html", pdf: "apuntes/s16-discos.pdf", desde: "2026-10-16" },
+        { id: "s16", codigo: "S16", titulo: "Discos, particiones y sistemas de archivos", resumen: "Particiones y volúmenes, sistemas de archivos, administración de discos y diskpart, y averías lógicas del disco.", url: "apuntes/ver-s16.html", pdf: "apuntes/s16-discos.pdf", desde: "2026-10-19" },
         { id: "s20", codigo: "S20", titulo: "Copias de seguridad, imágenes y restauración", resumen: "Regla 3-2-1, copia completa, incremental y diferencial, imagen del sistema con Clonezilla y puntos de restauración.", url: "apuntes/ver-s20.html", pdf: "apuntes/s20-copias.pdf", desde: "2026-10-23" },
         { id: "s21", codigo: "S21", titulo: "Recuperación de datos y documentación de la reparación", resumen: "Borrado lógico o fallo físico, Recuva, TestDisk y PhotoRec, los datos del cliente y la hoja de incidencia.", url: "apuntes/ver-s21.html", pdf: "apuntes/s21-recuperacion.pdf", desde: "2026-10-26" }
       ]
