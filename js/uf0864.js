@@ -28,15 +28,36 @@
       titulo: "Recuperación de datos",
       descripcion: "Discos, particiones y sistemas de archivos: lo que hay que entender antes de recuperar nada.",
       sesiones: [
-        { id: "s16", codigo: "S16", titulo: "Discos, particiones y sistemas de archivos", resumen: "Particiones y volúmenes, sistemas de archivos, administración de discos y diskpart, y averías lógicas del disco.", url: "apuntes/ver-s16.html", pdf: "apuntes/s16-discos.pdf", desde: "2026-10-16" }
+        { id: "s16", codigo: "S16", titulo: "Discos, particiones y sistemas de archivos", resumen: "Particiones y volúmenes, sistemas de archivos, administración de discos y diskpart, y averías lógicas del disco.", url: "apuntes/ver-s16.html", pdf: "apuntes/s16-discos.pdf", desde: "2026-10-16" },
+        { id: "s20", codigo: "S20", titulo: "Copias de seguridad, imágenes y restauración", resumen: "Regla 3-2-1, copia completa, incremental y diferencial, imagen del sistema con Clonezilla y puntos de restauración.", url: "apuntes/ver-s20.html", pdf: "apuntes/s20-copias.pdf", desde: "2026-10-23" },
+        { id: "s21", codigo: "S21", titulo: "Recuperación de datos y documentación de la reparación", resumen: "Borrado lógico o fallo físico, Recuva, TestDisk y PhotoRec, los datos del cliente y la hoja de incidencia.", url: "apuntes/ver-s21.html", pdf: "apuntes/s21-recuperacion.pdf", desde: "2026-10-26" }
       ]
     },
-    { titulo: "Reparación del sistema operativo", descripcion: "Herramientas de reparación, restauración y reinstalación del sistema.", sesiones: [] },
-    { titulo: "Antivirus y malware", descripcion: "Detección, eliminación y prevención de software malicioso.", sesiones: [] },
+    {
+      titulo: "Reparación del sistema operativo",
+      descripcion: "Herramientas de reparación, restauración y reinstalación del sistema.",
+      sesiones: [
+        { id: "s17", codigo: "S17", titulo: "Averías de Windows: pantallazos, modo seguro y recuperación", resumen: "Pantallazos azules, modo seguro, entorno de recuperación (WinRE) y archivos del sistema dañados con SFC y DISM.", url: "apuntes/ver-s17.html", pdf: "apuntes/s17-windows.pdf", desde: "2026-10-20" },
+        { id: "s18", codigo: "S18", titulo: "Drivers, servicios y registro de eventos", resumen: "Controladores y Administrador de dispositivos, DDU, servicios y programas de inicio, Visor de eventos y Monitor de confiabilidad.", url: "apuntes/ver-s18.html", pdf: "apuntes/s18-drivers.pdf", desde: "2026-10-21" }
+      ]
+    },
+    {
+      titulo: "Antivirus y malware",
+      descripcion: "Detección, eliminación y prevención de software malicioso.",
+      sesiones: [
+        { id: "s19", codigo: "S19", titulo: "Malware: detección, eliminación y prevención", resumen: "Tipos de malware, síntomas y protocolo de limpieza, Defender sin conexión y segunda opinión, persistencia y prevención.", url: "apuntes/ver-s19.html", pdf: "apuntes/s19-malware.pdf", desde: "2026-10-22" }
+      ]
+    },
     { titulo: "Casos prácticos", descripcion: "Situaciones reales de averías lógicas resueltas paso a paso.", sesiones: [] },
-    { titulo: "Examen final", descripcion: "Repaso y examen de la unidad.", sesiones: [] }
+    {
+      titulo: "Examen final",
+      descripcion: "Repaso y examen de la unidad.",
+      sesiones: [
+        { id: "s22", codigo: "S22", titulo: "Repaso general y simulacro", resumen: "Lo que hay que saberse de S15 a S21, mapa de diagnóstico y simulacro de examen tipo test y respuesta corta.", url: "apuntes/ver-s22.html", pdf: "apuntes/s22-repaso.pdf", desde: "2026-10-27" }
+      ]
+    }
   ];
-  const TOTAL_TEORIA = 6;
+  const TOTAL_TEORIA = TEMAS.reduce((n, t) => n + t.sesiones.length, 0);
 
   const disponible = (s) => {
     if (!s.desde) return true;
