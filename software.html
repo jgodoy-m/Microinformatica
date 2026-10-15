@@ -35,7 +35,6 @@
     </a>
 
     <nav class="menu-superior" aria-label="Principal">
-      <a href="index.html">Inicio</a>
       <a href="software.html" aria-current="page">UF0864</a>
       <a href="temario-uf0864.html">Temario</a>
       <a href="software.html#examen">Examen</a>
@@ -60,7 +59,6 @@
   <div class="cuerpo">
     <aside class="lateral">
       <nav class="menu-lateral" aria-label="Secciones">
-        <a href="index.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 3l9 8M5 10v10h5v-6h4v6h5V10"/></svg>Inicio</a>
         <a href="software.html" aria-current="page"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>UF0864</a>
         <a href="temario-uf0864.html"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H2zM22 5h-7a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h8z"/></svg>Temario</a>
         <a href="software.html#examen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v15H6zM14 2v5h5M9 12h6M9 15h6M9 18h4"/></svg>Examen</a>
@@ -109,8 +107,7 @@
               <p class="bloque-num">02</p>
               <h3>Prácticas</h3>
               <p>Pon en práctica lo aprendido con casos reales y simulaciones de averías lógicas.</p>
-              <button class="boton" type="button" data-pronto>Ver prácticas <svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-              <p class="pronto" role="status"></p>
+              <a class="boton" href="juego-diagnostico.html">Ver prácticas <svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
             </div>
             <span class="bloque-icono" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.4 2.4-2.4-.6-.6-2.4z"/></svg></span>
           </article>
@@ -154,27 +151,6 @@
             <li><svg class="i" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9zM8 11h8M8 15h8M8 19h5"/></svg>Teoría<span class="cuenta" data-cuenta="teoria">0 / 6</span></li>
             <li><svg class="i" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.4 2.4-2.4-.6-.6-2.4z"/></svg>Prácticas<span class="cuenta" data-cuenta="practicas">0 / 4</span></li>
             <li><svg class="i" viewBox="0 0 24 24"><path d="M6 2h8l5 5v15H6zM14 2v5h5M9 12h6M9 15h6M9 18h4"/></svg>Examen<span class="cuenta" data-cuenta="examen">0 / 1</span></li>
-          </ul>
-        </section>
-
-        <section class="panel" aria-labelledby="temario-titulo">
-          <h2 class="panel-titulo" id="temario-titulo"><svg class="i" viewBox="0 0 24 24"><path d="M2 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H2zM22 5h-7a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h8zM5 9h3M5 12h3M16 9h3M16 12h3"/></svg>Temario</h2>
-          <ol class="temario">
-            <li><a href="temario-uf0864.html#tema-1">Diagnóstico de averías lógicas</a></li>
-            <li><a href="temario-uf0864.html#tema-2">Recuperación de datos</a></li>
-            <li><a href="temario-uf0864.html#tema-3">Reparación del sistema operativo</a></li>
-            <li><a href="temario-uf0864.html#tema-4">Antivirus y malware</a></li>
-            <li><a href="temario-uf0864.html#tema-5">Casos prácticos</a></li>
-            <li><a href="temario-uf0864.html#tema-6">Examen final</a></li>
-          </ol>
-        </section>
-
-        <section class="panel" aria-labelledby="recursos-titulo">
-          <h2 class="panel-titulo" id="recursos-titulo"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="12" height="16" rx="2"/><path d="M15 8h4a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-4M7 9h4M7 13h4M7 17h2"/></svg>Recursos adicionales</h2>
-          <ul class="recursos">
-            <li><a href="apuntes/s15-arranque.pdf" download><svg class="i" viewBox="0 0 24 24"><path d="M6 2h8l5 5v15H6zM14 2v5h5M12 11v6M9 14l3 3 3-3"/></svg>Descargar guía (PDF)</a></li>
-            <li><span class="pendiente" title="Disponible pronto"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="12" rx="2"/><path d="M8 19h8M12 15v4M7 22h10"/></svg>Herramientas recomendadas</span></li>
-            <li><span class="pendiente" title="Disponible pronto"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 8 8 8M16 8l-8 8"/></svg>Enlaces de interés</span></li>
           </ul>
         </section>
 

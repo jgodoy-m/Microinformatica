@@ -368,13 +368,6 @@ html[data-halloween="on"] .boton { box-shadow: 0 0 10px rgba(59, 168, 255, .2); 
 .temario a { color: var(--text); text-decoration: none; }
 .temario a:hover { color: var(--accent); text-decoration: underline; }
 
-.recursos { margin: 0; padding: 0; list-style: none; }
-.recursos li { min-height: 31px; display: flex; align-items: center; }
-.recursos a, .recursos span { display: flex; align-items: center; gap: 16px; font-size: 12.5px; color: var(--text); text-decoration: none; }
-.recursos a:hover { color: var(--accent); }
-.recursos svg { width: 20px; height: 20px; color: var(--accent); margin-left: 6px; }
-.recursos .pendiente { color: var(--muted); }
-
 .frase { min-height: 158px; display: flex; align-items: center; padding: 22px 24px !important; }
 .frase blockquote { margin: 0; font-size: 16px; font-style: italic; line-height: 1.5; }
 .frase blockquote::before { content: "“"; display: block; height: 26px; color: var(--accent); font-size: 48px; font-style: normal; line-height: 1; }
@@ -513,6 +506,108 @@ html[data-halloween="on"] .frase blockquote { position: absolute; width: 1px; he
 .sesion .candado-texto { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; white-space: nowrap; }
 .sesion .candado-texto svg { width: 16px; height: 16px; }
 .sin-sesiones { padding: 18px; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); font-size: 14px; }
+
+/* ---------- Minijuegos ---------- */
+.juego { padding: 20px 24px 24px; }
+.juego-marcador { display: flex; align-items: center; gap: 18px; margin-bottom: 20px; font-size: 14px; color: var(--muted); }
+.juego-marcador strong { color: var(--text); }
+.juego-progreso { flex: 1; height: 8px; border-radius: 999px; background: var(--border-soft); overflow: hidden; }
+.juego-progreso span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+
+.juego-portada p { margin: 0 0 12px; font-size: 16px; }
+.juego-portada ul { margin: 0 0 16px; padding-left: 20px; }
+.juego-portada li { margin-bottom: 6px; }
+.juego-nota { color: var(--muted); font-size: 14px !important; }
+.juego .boton.lleno { min-height: 42px; padding: 0 22px; font-size: 14px; }
+
+.caso-cabecera { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.caso-cabecera h2 { margin: 2px 0 0; font-size: 22px; }
+.sintoma-etiqueta { color: var(--accent); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.reloj { flex: none; width: 130px; text-align: right; }
+.reloj strong { font: 700 26px/1 ui-monospace, "SFMono-Regular", Menlo, monospace; }
+.reloj-barra { height: 6px; margin-top: 8px; border-radius: 999px; background: var(--border-soft); overflow: hidden; }
+.reloj-barra span { display: block; height: 100%; background: var(--accent); transition: width 1s linear; }
+.reloj.urgente strong { color: #E5707A; }
+.reloj.urgente .reloj-barra span { background: #E5707A; }
+
+.sintoma { padding: 16px 18px; border-left: 4px solid var(--accent); border-radius: 0 10px 10px 0; background: var(--accent-soft); }
+.sintoma p { margin: 0; font-size: 17px; font-weight: 500; }
+
+.juego-subtitulo { margin: 22px 0 10px; font-size: 15px; }
+.juego-subtitulo small { color: var(--muted); font-weight: 400; }
+
+.acciones-juego { display: flex; flex-wrap: wrap; gap: 10px; }
+.accion {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.accion svg { width: 20px; height: 20px; color: var(--accent); }
+.accion:hover:not(:disabled) { border-color: var(--accent); }
+.accion:disabled { opacity: .5; cursor: default; }
+
+.pistas { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
+.pistas li { padding: 10px 14px; border: 1px dashed var(--border); border-radius: 8px; font-size: 14px; }
+.pistas strong { color: var(--accent); }
+
+.opciones { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.opcion {
+  min-height: 56px;
+  padding: 10px 14px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.opcion:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.opcion:disabled { cursor: default; }
+.opcion.correcta { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 16%, transparent); }
+.opcion.fallo { border-color: #E5707A; background: rgba(229, 112, 122, .14); }
+
+.respuesta:empty { display: none; }
+.respuesta { margin-top: 18px; padding: 16px 18px; border-radius: 10px; border: 1px solid var(--border); }
+.respuesta.bien { border-color: var(--ok); }
+.respuesta.mal { border-color: #E5707A; }
+.respuesta p { margin: 0 0 8px; font-size: 14px; }
+.respuesta-titulo { font-size: 17px !important; font-weight: 700; }
+.respuesta.bien .respuesta-titulo { color: var(--ok); }
+.respuesta.mal .respuesta-titulo { color: #E5707A; }
+.respuesta .boton { margin-top: 6px; }
+
+.resultado-nota { margin: 0; color: var(--accent); font-size: 40px; font-weight: 800; }
+.resultado-texto { margin: 4px 0 14px; font-size: 16px; }
+.resultado-aviso { padding: 10px 14px; border-radius: 8px; background: var(--accent-soft); font-size: 14px; }
+.repaso { display: grid; gap: 8px; margin: 16px 0 20px; padding: 0; list-style: none; }
+.repaso li { display: flex; gap: 12px; padding: 10px 14px; border: 1px solid var(--border-soft); border-radius: 8px; font-size: 14px; }
+.repaso .marca { font-weight: 800; }
+.repaso .bien .marca { color: var(--ok); }
+.repaso .mal .marca { color: #E5707A; }
+.repaso small { display: block; color: var(--muted); }
+.resultado-acciones { display: flex; flex-wrap: wrap; gap: 10px; }
+.resultado-acciones .boton { min-height: 42px; }
+
+@media (max-width: 640px) {
+  .juego { padding: 16px; }
+  .opciones { grid-template-columns: minmax(0, 1fr); }
+  .caso-cabecera { flex-direction: column; }
+  .reloj { width: 100%; text-align: left; }
+  .accion { flex: 1 1 45%; }
+  .boton-halloween { padding: 0 7px; }
+  .boton-halloween span { display: none; }
+}
 
 /* ---------- Pantallas medianas y móviles ---------- */
 @media (max-width: 1280px) {

@@ -50,7 +50,7 @@
 
   /* ---------- Perfiles y progreso ---------- */
   const CLAVE_PERFILES = "uf0864-perfiles";
-  const vacio = () => ({ teoria: [], practicas: [], examen: [] });
+  const vacio = () => ({ teoria: [], practicas: [], examen: [], notas: {} });
 
   let datos;
   try { datos = JSON.parse(leer(CLAVE_PERFILES, "null")); } catch (_) { datos = null; }
@@ -297,6 +297,21 @@
   });
 
   const actualizar = () => { pintarPerfil(); pintarProgreso(); };
+
+  /* Para los minijuegos: marcan la práctica como hecha en el perfil actual y guardan la mejor nota. */
+  window.UF0864 = {
+    practicaHecha(id, aciertos, total) {
+      const p = progreso();
+      if (!p.practicas.includes(id)) p.practicas.push(id);
+      p.notas = Object.assign({}, p.notas);
+      const previa = p.notas[id];
+      if (!previa || aciertos / total > previa[0] / previa[1]) p.notas[id] = [aciertos, total];
+      datos.perfiles[datos.actual] = p;
+      guardarDatos();
+      actualizar();
+    },
+    nombre: () => datos.actual
+  };
 
   /* Al volver con el botón Atrás desde unos apuntes, la página puede salir de la caché. */
   window.addEventListener("pageshow", () => {
