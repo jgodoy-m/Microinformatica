@@ -1118,7 +1118,7 @@
           '</aside>' +
           '<div class="principal">' +
             '<header class="topbar">' +
-              '<a class="volver" href="index.html">← Volver al temario</a>' +
+              '<a class="volver" href="hardware.html">← Volver al temario</a>' +
               '<div class="stats"><span>Tiempo extra: <b class="tiempo-extra">0 min</b></span><span>Pistas: <b class="pistas-n">0</b></span></div>' +
             '</header>' +
             navTemas +

@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="Aprende a diagnosticar averías y reconocer conectores de una placa base. Temario interactivo de montaje y reparación de sistemas microinformáticos.">
+  <title>Microinformática | Temario interactivo</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2032%2032%27%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20rx%3D%276%27%20fill%3D%27%232E3440%27%2F%3E%3Cg%20fill%3D%27none%27%20stroke%3D%27%2388C0D0%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%3E%3Crect%20x%3D%277%27%20y%3D%277%27%20width%3D%2718%27%20height%3D%2718%27%20rx%3D%273%27%2F%3E%3Cpath%20d%3D%27M12%2012h8v8h-8zM12%202v3M20%202v3M12%2027v3M20%2027v3M2%2012h3M2%2020h3M27%2012h3M27%2020h3%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
+
+  <script>
+    (() => {
+      try {
+        const saved = localStorage.getItem("temario-tema");
+        if (saved === "dark" || saved === "light") {
+          document.documentElement.dataset.theme = saved;
+          return;
+        }
+      } catch (_) {}
+
+      document.documentElement.dataset.theme =
+        matchMedia("(prefers-color-scheme: light)").matches
+          ? "light"
+          : "dark";
+    })();
+  </script>
+
+  <script src="js/halloween.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #2E3440;
+      --surface: #3B4252;
+      --surface-hover: #434C5E;
+      --text: #ECEFF4;
+      --muted: #D8DEE9;
+      --border: #596579;
+      --accent: #88C0D0;
+      --accent-text: #24313A;
+      --focus: #88C0D0;
+      --success: #A3BE8C;
+      --warning: #EBCB8B;
+      --content: 1080px;
+      --link: #88C0D0;
+    }
+
+    html[data-theme="light"] {
+      color-scheme: light;
+      --bg: #ECEFF4;
+      --surface: #E5E9F0;
+      --surface-hover: #D8DEE9;
+      --text: #2E3440;
+      --muted: #434C5E;
+      --border: #A0AAB9;
+      --accent: #5E81AC;
+      --accent-text: #FFFFFF;
+      --focus: #5E81AC;
+      --success: #426B35;
+      --warning: #76530B;
+      --link: #3B5F8A;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-width: 320px;
+      scroll-behavior: smooth;
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: inherit;
+      text-underline-offset: 4px;
+      text-decoration-thickness: 1px;
+    }
+
+    a:hover {
+      color: var(--accent);
+    }
+
+    a:focus-visible,
+    button:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 4px;
+      border-radius: 4px;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .container {
+      width: min(var(--content), calc(100% - 48px));
+      margin-inline: auto;
+    }
+
+    /* Cabecera */
+
+    .header {
+      position: relative;
+      z-index: 2;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-inner {
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 11px;
+      color: var(--text);
+      font-weight: 750;
+      font-size: 1.05rem;
+      letter-spacing: -0.035em;
+      text-decoration: none;
+    }
+
+    .brand-mark {
+      width: 27px;
+      height: 27px;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+    }
+
+    .header-link {
+      font-size: 0.875rem;
+      color: var(--muted);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .header-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 18px;
+      font-size: 15px;
+    }
+    .header-nav a {
+      color: var(--muted);
+      text-decoration: none;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+    }
+    .header-nav a:hover { color: var(--accent); }
+    .header-nav a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 4px; }
+    #practicas, #temas { scroll-margin-top: 84px; }
+    .header-link:hover {
+      color: var(--accent);
+    }
+
+    .theme-toggle {
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .theme-toggle:hover {
+      background: var(--surface);
+      border-color: var(--accent);
+    }
+
+    .theme-toggle svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .moon {
+      display: none;
+    }
+
+    html[data-theme="light"] .sun {
+      display: none;
+    }
+
+    html[data-theme="light"] .moon {
+      display: block;
+    }
+
+    /* Hero */
+
+    .hero {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+    }
+
+    .hero-inner {
+      min-height: 490px;
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      align-items: center;
+      gap: 32px;
+      padding-block: 60px;
+    }
+
+    .hero-copy {
+      position: relative;
+      z-index: 1;
+      padding-block: 12px;
+    }
+
+    .hero h1 {
+      max-width: 560px;
+      margin: 0;
+      font-size: clamp(2.8rem, 5.2vw, 4.4rem);
+      line-height: 1.04;
+      letter-spacing: -0.065em;
+      font-weight: 780;
+    }
+
+    .hero h1 span {
+      color: var(--accent);
+    }
+
+    .hero-description {
+      max-width: 420px;
+      margin: 22px 0 0;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      margin-top: 30px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .primary-button {
+      min-height: 50px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 20px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      background: var(--accent);
+      color: var(--accent-text);
+      font-weight: 750;
+      text-decoration: none;
+      transition: background-color 150ms ease, border-color 150ms ease;
+    }
+
+    .primary-button:hover {
+      background: var(--text);
+      border-color: var(--text);
+      color: var(--bg);
+    }
+
+    .primary-button svg {
+      width: 19px;
+      height: 19px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .secondary-link {
+      font-size: 0.9rem;
+      color: var(--muted);
+      text-decoration: underline;
+    }
+
+    .hero-image-wrap {
+      position: relative;
+      min-width: 0;
+    }
+
+    .hero-image {
+      position: relative;
+      display: block;
+      width: 100%;
+      aspect-ratio: 1 / 0.92;
+      object-fit: cover;
+      object-position: center;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+
+    /* Temas */
+
+    .topics {
+      padding-block: 48px 58px;
+    }
+
+    .section-heading {
+      margin-bottom: 22px;
+    }
+
+    .section-heading h2 {
+      margin: 0;
+      font-size: clamp(1.65rem, 3vw, 2rem);
+      line-height: 1.2;
+      letter-spacing: -0.045em;
+    }
+
+    .section-heading p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .topic-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .topic {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 20px;
+      padding: 18px 20px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      transition: border-color 150ms ease, background-color 150ms ease;
+    }
+
+    .topic.available {
+      border-color: var(--accent);
+    }
+
+    .topic:hover {
+      background: var(--surface-hover);
+    }
+
+    .topic-main {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: 16px;
+    }
+
+    .topic-icon {
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      color: var(--accent-text);
+      background: var(--accent);
+      border-radius: 8px;
+    }
+
+    .topic-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .topic-icon.muted-icon {
+      color: var(--text);
+      background: #596579;
+    }
+
+    html[data-theme="light"] .topic-icon.muted-icon {
+      color: #FFFFFF;
+      background: #596579;
+    }
+
+    .topic h3 {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.4;
+      font-weight: 700;
+    }
+
+    .topic p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    .topic-end {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 27px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 0.76rem;
+      line-height: 1.3;
+      white-space: nowrap;
+      font-weight: 700;
+    }
+
+    .status.available {
+      background: var(--success);
+      color: #24313A;
+    }
+
+    .status.upcoming {
+      background: var(--warning);
+      color: #3B3020;
+    }
+
+    .topic-arrow {
+      width: 20px;
+      height: 20px;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .topic-arrow svg {
+      width: 100%;
+      height: 100%;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .pdf-link {
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .pdf-link:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .topic-end {
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .topic-link {
+      display: block;
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .topic-link:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 5px;
+      border-radius: 4px;
+    }
+
+    /* Práctica */
+
+    .practice {
+      padding-block: 56px 0;
+    }
+
+    .practice-inner {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 24px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--link);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .practice-intro h2 {
+      margin: 0;
+      font-size: clamp(1.5rem, 2.6vw, 1.9rem);
+      line-height: 1.2;
+      letter-spacing: -0.04em;
+    }
+
+    .practice-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .practice-card {
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 16px;
+      padding: 20px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      text-decoration: none;
+      transition: background-color 150ms ease;
+    }
+
+    .practice-card:hover {
+      background: var(--surface-hover);
+      color: var(--text);
+    }
+
+    .practice-card:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 5px;
+      border-radius: 8px;
+    }
+
+    .practice-card h3 {
+      margin: 0 0 4px;
+      font-size: 1rem;
+      line-height: 1.3;
+    }
+
+    .practice-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    .practice-icon {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--accent);
+      color: var(--accent-text);
+    }
+
+    .practice-icon svg,
+    .practice-arrow svg {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .practice-arrow {
+      width: 20px;
+      height: 20px;
+      color: var(--link);
+    }
+
+    .practice-arrow svg {
+      width: 100%;
+      height: 100%;
+      stroke-width: 2;
+    }
+
+    .topic-action {
+      color: var(--link);
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .topic-action:hover {
+      color: var(--link);
+      text-decoration: underline;
+    }
+
+    /* Pie */
+
+    .footer {
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-inner {
+      min-height: 84px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+      padding-block: 22px;
+    }
+
+    .footer-title {
+      margin: 0 0 4px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .credits {
+      max-width: 740px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.75rem;
+      line-height: 1.6;
+    }
+
+    .credits a {
+      color: var(--muted);
+    }
+
+    .credits a:hover {
+      color: var(--accent);
+    }
+
+    .back-top {
+      flex-shrink: 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-decoration: none;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .hero-image {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: auto;
+      object-fit: contain;
+      border: 0;
+      border-radius: 0;
+      background: none;
+    }
+
+    @media (min-width: 761px) {
+      .hero-inner {
+        padding-block: 54px;
+      }
+    }
+
+    @media (min-width: 761px) and (max-width: 1000px) {
+      .practice-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media (max-width: 760px) {
+      .container {
+        width: calc(100% - 32px);
+      }
+
+      .header-inner {
+        min-height: 64px;
+        gap: 12px;
+      }
+
+      .brand {
+        gap: 8px;
+        font-size: 0.95rem;
+      }
+
+      .brand-mark {
+        width: 24px;
+        height: 24px;
+      }
+
+      .header-actions {
+        gap: 12px;
+      }
+
+      .theme-toggle {
+        width: 44px;
+        height: 44px;
+      }
+
+      .hero-inner {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 34px;
+        padding-block: 52px 40px;
+      }
+
+      .hero h1 {
+        max-width: 580px;
+        font-size: clamp(2.65rem, 10vw, 4rem);
+      }
+
+      .hero-description {
+        max-width: 480px;
+        font-size: 1rem;
+      }
+
+      .hero-image-wrap {
+        max-width: 600px;
+      }
+
+      .hero-image {
+        aspect-ratio: 1.25 / 1;
+      }
+
+      .topics {
+        padding-block: 40px 48px;
+      }
+
+      .practice-inner {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
+      }
+
+      .practice-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .topic {
+        padding: 16px;
+        gap: 12px;
+      }
+
+      .topic-main {
+        gap: 12px;
+      }
+
+      .topic-icon {
+        width: 42px;
+        height: 42px;
+      }
+
+      .footer-inner {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 16px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero h1 {
+        font-size: clamp(2.45rem, 10.5vw, 3.2rem);
+      }
+
+      .hero-actions {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .primary-button {
+        width: 100%;
+      }
+
+      .secondary-link {
+        align-self: flex-start;
+      }
+
+      .topic {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+      }
+
+      .topic-end {
+        padding-left: 54px;
+        justify-content: space-between;
+      }
+
+      .topic p {
+        font-size: 0.825rem;
+      }
+
+      .topic h3 {
+        font-size: 0.95rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      *,
+      *::before,
+      *::after {
+        transition-duration: 0.01ms !important;
+      }
+    }
+  
+    /* Composición de referencia (rediseño Nord). Variables Nord reutilizadas de :root. */
+    :root {
+      --nord7: #8FBCBB; --nord8: #88C0D0; --nord9: #81A1C1; --nord10: #5E81AC;
+      --nord14: #A3BE8C; --nord15: #B48EAD; --nord1: #3B4252; --nord2: #434C5E; --nord3: #4C566A;
+    }
+    :root { --content: 1392px; }
+    .header-inner { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 24px; }
+    .header-nav { justify-content: center; gap: 30px; font-size: 16px; }
+    .header-nav a { gap: 8px; min-height: 44px; position: relative; color: var(--muted); }
+    .header-nav a svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .header-nav a.is-active { color: var(--nord8); }
+    .header-nav a.is-active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -10px; height: 2px; background: var(--nord8); border-radius: 2px; }
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .btn-simulador { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 20px; border: 1px solid var(--nord8); border-radius: 10px; color: var(--nord8); text-decoration: none; font-weight: 600; }
+    .btn-simulador svg { width: 16px; height: 16px; fill: currentColor; }
+    .btn-simulador:hover { background: rgba(136, 192, 208, .12); }
+    .btn-simulador:focus-visible, .btn-primario:focus-visible, .btn-secundario:focus-visible, .enlace-seccion:focus-visible, .practice-card:focus-visible, .enlace-apuntes:focus-visible { outline: 3px solid var(--nord8); outline-offset: 3px; border-radius: 10px; }
+
+    /* Fondo del hero: tonos de la propia imagen (arriba oscuro, abajo azul marino) que se funden con el fondo de la página. */
+    .hero { position: relative; overflow: hidden; padding: 56px 0 52px; min-height: 0; background: linear-gradient(180deg, #041524 0%, #0c2034 62%, #10253b 84%, var(--bg) 100%); }
+    .hero-inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 32px; align-items: center; }
+    .hero-copy { max-width: 560px; }
+    .eyebrow-line { display: flex; align-items: center; gap: 12px; margin: 0 0 22px; font: 500 13px/1 ui-monospace, "SFMono-Regular", Menlo, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--nord8); }
+    .eyebrow-line span { width: 36px; height: 2px; background: var(--nord14); display: inline-block; }
+    .hero h1 { font-size: clamp(44px, 5.4vw, 76px); line-height: 1.02; letter-spacing: -.02em; margin: 0 0 22px; color: var(--text); font-weight: 700; }
+    .hero h1 span { color: var(--nord8); }
+    .hero-description { font-size: 19px; line-height: 1.55; color: var(--muted); margin: 0 0 34px; max-width: 470px; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 16px; }
+    .btn-primario, .btn-secundario { display: inline-flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 26px; border-radius: 12px; font-size: 17px; font-weight: 600; text-decoration: none; }
+    .btn-primario { background: var(--nord8); color: var(--nord0-txt, #2E3440); }
+    .btn-primario svg, .btn-secundario svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .btn-primario svg:first-child { fill: currentColor; stroke: none; }
+    .btn-primario .flecha { margin-left: 10px; }
+    .btn-primario:hover { filter: brightness(1.06); color: #000; }
+    .btn-secundario { border: 1px solid var(--nord8); color: var(--text); background: rgba(59, 66, 82, .5); }
+    .btn-secundario:hover { background: rgba(136, 192, 208, .12); }
+    .hero-image-wrap { position: relative; }
+    /* Imagen a sangre en la mitad derecha, fundida hacia el texto y hacia el fondo */
+    .hero-image-wrap { position: absolute; top: 0; right: 0; bottom: 0; left: 44%; z-index: 0; }
+    .hero-copy { position: relative; z-index: 1; }
+    .hero-inner { padding-block: 0; min-height: 0; }
+    .hero-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 60% 50%; display: block; -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 28%, #000 88%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 14%, #000 80%, transparent 100%); -webkit-mask-composite: source-in; mask-image: linear-gradient(to right, transparent 0%, #000 28%, #000 88%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 14%, #000 80%, transparent 100%); mask-composite: intersect; }
+
+    .seccion-cabecera { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin: 0 0 24px; }
+    .seccion-cabecera h2 { font-size: 26px; font-weight: 700; margin: 0; color: var(--text); }
+    .seccion-cabecera h2::before { content: ""; display: inline-block; width: 28px; height: 2px; margin-right: 14px; vertical-align: middle; background: var(--nord8); border-radius: 2px; }
+    .enlace-seccion { color: var(--nord8); text-decoration: none; font-size: 15px; font-weight: 500; white-space: nowrap; min-height: 44px; display: inline-flex; align-items: center; }
+    .enlace-seccion:hover { text-decoration: underline; }
+
+    .practice { padding: 40px 0 16px; }
+    .practice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+    .practice-card { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 12px; min-height: 212px; padding: 26px 26px 24px 30px; border-radius: 16px; border: 1px solid var(--acento); background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--acento) 20%, transparent), transparent 60%), linear-gradient(180deg, color-mix(in srgb, var(--acento) 10%, var(--surface)), var(--surface)); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--acento) 30%, transparent), 0 0 0 1px color-mix(in srgb, var(--acento) 12%, transparent); color: var(--text); text-decoration: none; transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+    .practice-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--acento); }
+    .practice-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,.25); border-color: var(--acento); }
+    .practice-card.acento-cian { --acento: var(--nord8); }
+    .practice-card.acento-verde { --acento: var(--nord14); }
+    .practice-card.acento-violeta { --acento: var(--nord15); }
+    .etiqueta-practica { position: absolute; top: 18px; right: 18px; font: 600 12px/1 ui-monospace, "SFMono-Regular", Menlo, monospace; letter-spacing: .08em; color: var(--acento); border: 1px solid color-mix(in srgb, var(--acento) 50%, transparent); border-radius: 6px; padding: 5px 9px; text-transform: uppercase; }
+    .practice-icon { width: 56px; height: 56px; border-radius: 12px; display: grid; place-items: center; background: color-mix(in srgb, var(--acento) 18%, transparent); border: 1px solid color-mix(in srgb, var(--acento) 45%, transparent); }
+    .practice-icon svg { width: 28px; height: 28px; fill: none; stroke: var(--acento); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .practice-card h3 { margin: 6px 0 0; font-size: 22px; font-weight: 700; color: var(--text); }
+    .practice-card p { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.5; max-width: 300px; }
+    .practice-link { margin-top: auto; color: var(--acento); font-weight: 600; font-size: 16px; }
+    .practice-deco { position: absolute; right: 16px; bottom: 16px; width: 96px; height: auto; fill: none; stroke: var(--acento); stroke-width: 2; opacity: .18; pointer-events: none; }
+    .practice-card p { position: relative; }
+
+    .topics { padding: 48px 0 72px; }
+    .tabla-wrap { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--surface); }
+    .tabla-temario { width: 100%; border-collapse: collapse; font-size: 16px; }
+    .tabla-temario th { text-align: left; font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 16px 22px; border-bottom: 1px solid var(--border); background: rgba(46,52,64,.35); }
+    .tabla-temario td { padding: 0 22px; height: 64px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+    .tabla-temario tr:last-child td { border-bottom: 0; }
+    .tabla-temario tbody tr:hover { background: rgba(136,192,208,.06); }
+    .tabla-temario td:nth-child(1) { width: 110px; }
+    .tabla-temario td:nth-child(2) { font-weight: 600; width: 260px; }
+    .tabla-temario td:nth-child(3) { color: var(--muted); font-size: 15px; }
+    .tabla-temario td:nth-child(4) { width: 190px; text-align: right; }
+    .codigo-sesion { display: inline-block; min-width: 64px; text-align: center; padding: 7px 12px; border-radius: 999px; background: rgba(76,86,106,.55); color: var(--text); font: 600 14px/1 ui-monospace, "SFMono-Regular", Menlo, monospace; }
+    .enlace-apuntes { display: inline-flex; align-items: center; gap: 8px; color: var(--nord8); text-decoration: none; font-weight: 500; min-height: 44px; }
+    .enlace-apuntes svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+    .enlace-apuntes:hover { text-decoration: underline; }
+
+    @media (max-width: 1000px) {
+      .header-inner { grid-template-columns: auto 1fr auto; }
+      .header-nav { gap: 18px; font-size: 15px; }
+      .hero-inner { grid-template-columns: 1fr; }
+      .practice-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      .header-inner { grid-template-columns: 1fr auto; }
+      .header-nav { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; flex-wrap: nowrap; }
+      .btn-simulador { padding: 0 14px; font-size: 15px; }
+      .tabla-temario thead { display: none; }
+      .tabla-temario, .tabla-temario tbody, .tabla-temario tr, .tabla-temario td { display: block; width: 100% !important; }
+      .tabla-temario tr { padding: 14px 18px; border-bottom: 1px solid var(--border); }
+      .tabla-temario tr:last-child { border-bottom: 0; }
+      .tabla-temario td { height: auto; padding: 4px 0; border: 0; text-align: left !important; }
+      .tabla-temario td::before { content: attr(data-label); display: block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+      .tabla-temario td[data-label="Sesión"]::before { display: none; }
+      .hero { padding: 36px 0 44px; }
+      .hero-image-wrap { display: none; }
+      .header-inner { grid-template-columns: minmax(0, 1fr) auto; min-height: 0; padding: 12px 0 0; row-gap: 0; }
+      .brand-mark { display: none; }
+      .header-actions { gap: 8px; }
+      .header-nav { gap: 0 16px; font-size: 14px; justify-content: space-between; margin-top: 4px; border-top: 1px solid var(--border); }
+      .header-nav a { min-height: 42px; }
+      .header-nav a.is-active::after { bottom: 0; }
+    }
+    @media (max-width: 1000px) {
+      .hero { min-height: 0; }
+      .hero-image-wrap { position: relative; inset: auto; margin-top: 28px; }
+      .hero-image { position: relative; height: auto; object-fit: contain; -webkit-mask-image: none; mask-image: none; border-radius: 12px; }
+      .tabla-temario td:nth-child(4), .tabla-temario th:nth-child(4) { width: 130px; }
+      .tabla-temario td:nth-child(3) { font-size: 14px; }
+    }
+    @media (max-width: 480px) {
+      .practice-deco { display: none; }
+      .seccion-cabecera { flex-wrap: wrap; row-gap: 8px; }
+      .seccion-cabecera h2 { white-space: nowrap; }
+      .hero-description { font-size: 17px; }
+      .btn-primario, .btn-secundario { width: 100%; justify-content: center; }
+    }
+    /* Modo claro: el hero conserva su fondo oscuro, así que su texto va en claro; el resto usa tonos Nord 10 legibles */
+    html[data-theme="light"] .hero {
+      --text: #ECEFF4;
+      --muted: #D8DEE9;
+      --border: #596579;
+      --link: #88C0D0;
+      background: linear-gradient(180deg, #041524 0%, #0c2034 62%, #10253b 100%);
+    }
+    html[data-theme="light"] .btn-simulador { color: #3B5F8A; border-color: #5E81AC; }
+    html[data-theme="light"] .btn-simulador:hover { background: rgba(94, 129, 172, .12); }
+    html[data-theme="light"] .header-nav a.is-active { color: #3B5F8A; }
+    html[data-theme="light"] .header-nav a.is-active::after { background: #5E81AC; }
+    html[data-theme="light"] .seccion-cabecera h2::before { background: #5E81AC; }
+    html[data-theme="light"] .enlace-seccion,
+    html[data-theme="light"] .enlace-apuntes { color: #3B5F8A; }
+    html[data-theme="light"] .practice-card.acento-cian { --acento: #3B6EA0; }
+    html[data-theme="light"] .practice-card.acento-verde { --acento: #4C7A3E; }
+    html[data-theme="light"] .practice-card.acento-violeta { --acento: #7B4F95; }
+</style>
+</head>
+
+<body>
+  <header class="header" id="inicio">
+    <div class="container header-inner">
+      <a class="brand" href="index.html" aria-label="Microinformática, inicio">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <rect x="7" y="7" width="18" height="18" rx="3"
+                fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="M12 12h8v8h-8zM12 2v3M20 2v3M12 27v3M20 27v3M2 12h3M2 20h3M27 12h3M27 20h3"
+                fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round"/>
+        </svg>
+        <span>Microinformática</span>
+      </a>
+
+      <nav class="header-nav" aria-label="Principal">
+        <a href="#inicio" class="is-active">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 3l9 8M5 10v10h14V10"/></svg>Inicio</a>
+        <a href="#temas">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H2zM22 5h-7a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h8z"/></svg>Temario</a>
+        <a href="#practicas">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.4 2.4-2.4-.6-.6-2.4z"/></svg>Prácticas</a>
+      </nav>
+
+      <div class="header-actions">
+        <a class="btn-simulador" href="averias.html">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z"/></svg>Simulador
+        </a>
+        <button
+          class="theme-toggle"
+          id="theme-toggle"
+          type="button"
+          aria-label="Cambiar al tema claro"
+          title="Cambiar al tema claro"
+        >
+          <svg class="sun" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/>
+          </svg>
+          <svg class="moon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="container hero-inner">
+        <div class="hero-copy">
+          <h1 id="hero-title">Aprende. Monta.<br><span>Diagnostica.</span></h1>
+          <p class="hero-description">Domina el hardware con prácticas interactivas, apuntes actualizados y un entorno de aprendizaje pensado para ti.</p>
+          <div class="hero-actions">
+            <a class="btn-primario" href="#practicas">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z"/></svg>Empezar a practicar
+              <svg class="flecha" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+            <a class="btn-secundario" href="#temas">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H2zM22 5h-7a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h8z"/></svg>Explorar temario
+            </a>
+          </div>
+        </div>
+        <div class="hero-image-wrap">
+          <img class="hero-image" src="hero-laboratorio.webp" alt="Mesa de laboratorio con fuente de alimentación, tarjeta gráfica, placa base, memoria RAM, procesador, juego de destornilladores y tornillos, sobre fondo azul oscuro." width="1536" height="1024">
+        </div>
+      </div>
+    </section>
+
+    <section class="practice" id="practicas" aria-labelledby="practice-title">
+      <div class="container">
+        <div class="seccion-cabecera">
+          <h2 id="practice-title">Tus prácticas</h2>
+          <a class="enlace-seccion" href="#practicas">Ver todas las prácticas <span aria-hidden="true">→</span></a>
+        </div>
+
+        <div class="practice-grid">
+          <a class="practice-card acento-cian" href="averias.html">
+            <span class="etiqueta-practica">Práctica 1</span>
+            <span class="practice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M6 10h3l1.5-2 2 4 1.5-2H18"/></svg></span>
+            <h3>Simulador de averías</h3>
+            <p>Investiga fallos, analiza síntomas y diagnostica el problema.</p>
+            <span class="practice-link">Acceder <span aria-hidden="true">→</span></span>
+            <svg class="practice-deco" viewBox="0 0 200 80" aria-hidden="true"><path d="M0 60h40l12-40 16 60 14-30 12 10h60"/></svg>
+          </a>
+
+          <a class="practice-card acento-verde" href="juego/montaje.html">
+            <span class="etiqueta-practica">Práctica 2</span>
+            <span class="practice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg></span>
+            <h3>Montaje de un equipo</h3>
+            <p>Instala componentes, conecta cables y enciende el equipo paso a paso.</p>
+            <span class="practice-link">Acceder <span aria-hidden="true">→</span></span>
+            <svg class="practice-deco" viewBox="0 0 120 160" aria-hidden="true"><rect x="10" y="8" width="100" height="144" rx="6"/><rect x="24" y="22" width="72" height="112" rx="3"/><circle cx="96" cy="60" r="4"/><circle cx="96" cy="78" r="4"/></svg>
+          </a>
+
+          <a class="practice-card acento-violeta" href="examen.html">
+            <span class="etiqueta-practica">Práctica 3</span>
+            <span class="practice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9zM8 11l1.5 1.5L12 10M8 16l1.5 1.5L12 15M14 11h2M14 16h2"/></svg></span>
+            <h3>Simulacro de examen</h3>
+            <p>Pon a prueba tus conocimientos con preguntas tipo test y de respuesta corta. <span id="total-preguntas"></span></p>
+            <span class="practice-link">Acceder <span aria-hidden="true">→</span></span>
+            <svg class="practice-deco" viewBox="0 0 120 160" aria-hidden="true"><rect x="12" y="10" width="96" height="140" rx="6"/><path d="M30 50h60M30 80h60M30 110h60"/></svg>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="topics" id="temas" aria-labelledby="topics-title">
+      <div class="container">
+        <div class="seccion-cabecera">
+          <h2 id="topics-title">Temario</h2>
+          <a class="enlace-seccion" href="#temas">Ver todo el temario <span aria-hidden="true">→</span></a>
+        </div>
+
+        <div class="tabla-wrap">
+          <table class="tabla-temario">
+            <caption class="sr-only">Temario: sesiones, temas, descripción y apuntes en PDF</caption>
+            <thead>
+              <tr><th scope="col">Sesión</th><th scope="col">Tema</th><th scope="col">Descripción</th><th scope="col">Apuntes</th></tr>
+            </thead>
+            <tbody>
+              <tr><td data-label="Sesión"><span class="codigo-sesion">S07</span></td><td data-label="Tema">Fuente de alimentación</td><td data-label="Descripción">Voltajes, conectores, 80 Plus y señales de fallo.</td><td data-label="Apuntes"><a class="enlace-apuntes" href="apuntes/ver-s07.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v15H6zM14 2v5h5M9 12h6M9 15h6M9 18h4"/></svg>Apuntes<span aria-hidden="true">→</span><span class="sr-only"> de Fuente de alimentación</span></a></td></tr>
+              <tr><td data-label="Sesión"><span class="codigo-sesion">S08</span></td><td data-label="Tema">El chasis</td><td data-label="Descripción">Tipos de chasis, flujo de aire, instalación de la placa y cable management.</td><td data-label="Apuntes"><a class="enlace-apuntes" href="apuntes/ver-s08.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v15H6zM14 2v5h5M9 12h6M9 15h6M9 18h4"/></svg>Apuntes<span aria-hidden="true">→</span><span class="sr-only"> de El chasis</span></a></td></tr>
+              <tr><td data-label="Sesión"><span class="codigo-sesion">S09</span></td><td data-label="Tema">Tarjetas de expansión</td><td data-label="Descripción">GPU, slots PCIe, otras tarjetas y formatos de compra.</td><td data-label="Apuntes"><a class="enlace-apuntes" href="apuntes/ver-s09.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v15H6zM14 2v5h5M9 12h6M9 15h6M9 18h4"/></svg>Apuntes<span aria-hidden="true">→</span><span class="sr-only"> de Tarjetas de expansión</span></a></td></tr>
+              <tr><td data-label="Sesión"><span class="codigo-sesion">S10</span></td><td data-label="Tema">GPU y sonido</td><td data-label="Descripción">Anatomía de la GPU, averías y descarte, y tarjeta de sonido.</td><td data-label="Apuntes"><a class="enlace-apuntes" href="apuntes/ver-s10.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v15H6zM14 2v5h5M9 12h6M9 15h6M9 18h4"/></svg>Apuntes<span aria-hidden="true">→</span><span class="sr-only"> de GPU y sonido</span></a></td></tr>
+              <tr><td data-label="Sesión"><span class="codigo-sesion">S11</span></td><td data-label="Tema">Ampliaciones</td><td data-label="Descripción">Memoria, almacenamiento y compatibilidad de CPU, GPU, fuente y refrigeración.</td><td data-label="Apuntes"><a class="enlace-apuntes" href="apuntes/ver-s11.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v15H6zM14 2v5h5M9 12h6M9 15h6M9 18h4"/></svg>Apuntes<span aria-hidden="true">→</span><span class="sr-only"> de Ampliaciones</span></a></td></tr>
+              <tr><td data-label="Sesión"><span class="codigo-sesion">S12</span></td><td data-label="Tema">Diagnóstico</td><td data-label="Descripción">Método en seis pasos y práctica en taller.</td><td data-label="Apuntes"><a class="enlace-apuntes" href="apuntes/ver-s12.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v15H6zM14 2v5h5M9 12h6M9 15h6M9 18h4"/></svg>Apuntes<span aria-hidden="true">→</span><span class="sr-only"> de Diagnóstico</span></a></td></tr>
+              <tr><td data-label="Sesión"><span class="codigo-sesion">S13</span></td><td data-label="Tema">Conexionado</td><td data-label="Descripción">Conectores internos, conectores externos y práctica de conexionado.</td><td data-label="Apuntes"><a class="enlace-apuntes" href="apuntes/ver-s13.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v15H6zM14 2v5h5M9 12h6M9 15h6M9 18h4"/></svg>Apuntes<span aria-hidden="true">→</span><span class="sr-only"> de Conexionado</span></a></td></tr>
+              <tr><td data-label="Sesión"><span class="codigo-sesion">S14</span></td><td data-label="Tema">Repaso general</td><td data-label="Descripción">Mapa de lo visto, datos que hay que saberse y simulacro del examen.</td><td data-label="Apuntes"><a class="enlace-apuntes" href="apuntes/ver-s14.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v15H6zM14 2v5h5M9 12h6M9 15h6M9 18h4"/></svg>Apuntes<span aria-hidden="true">→</span><span class="sr-only"> de Repaso general</span></a></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>
+        <p class="footer-title">Microinformática · Formación Profesional</p>
+        <p class="credits">
+          Imagen de cabecera: aportada por el responsable del proyecto.
+          Foto del mapa del simulador: PantheraLeo1359531, Wikimedia Commons, <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="license noopener noreferrer">CC BY 4.0</a>.
+        </p>
+      </div>
+
+      <a class="back-top" href="#inicio">Volver arriba ↑</a>
+    </div>
+  </footer>
+
+  <script>
+    (() => {
+      const root = document.documentElement;
+      const button = document.getElementById("theme-toggle");
+
+      function updateThemeButton() {
+        const dark = root.dataset.theme === "dark";
+        const label = dark
+          ? "Cambiar al tema claro"
+          : "Cambiar al tema oscuro";
+
+        button.setAttribute("aria-label", label);
+        button.setAttribute("title", label);
+      }
+
+      button.addEventListener("click", () => {
+        const next = root.dataset.theme === "dark" ? "light" : "dark";
+        root.dataset.theme = next;
+
+        try {
+          localStorage.setItem("temario-tema", next);
+        } catch (_) {}
+
+        updateThemeButton();
+      });
+
+      updateThemeButton();
+    })();
+  </script>
+  <script src="examen/banco.js"></script>
+  <script>
+    // Recuento tomado del banco de preguntas del simulacro (no escrito a mano).
+    (() => {
+      const el = document.getElementById('total-preguntas');
+      if (el && window.BANCO) {
+        el.textContent = window.BANCO.length + ' preguntas en el banco.';
+      }
+    })();
+  </script>
+</body>
+</html>
