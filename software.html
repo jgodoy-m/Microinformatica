@@ -326,6 +326,8 @@
     .temario li::before { content: counter(tema) "."; width: 12px; color: var(--accent); font-weight: 700; font-size: 14px; }
     .temario a { color: var(--text); text-decoration: none; }
     .temario a:hover { color: var(--accent); text-decoration: underline; }
+    .temario a.bloqueada { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); cursor: not-allowed; text-decoration: none; }
+    .temario .candado { width: 14px; height: 14px; }
 
     .recursos { margin: 0; padding: 0; list-style: none; }
     .recursos li { min-height: 31px; display: flex; align-items: center; }
@@ -541,7 +543,7 @@
           <h2 class="panel-titulo" id="temario-titulo"><svg class="i" viewBox="0 0 24 24"><path d="M2 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H2zM22 5h-7a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h8zM5 9h3M5 12h3M16 9h3M16 12h3"/></svg>Temario</h2>
           <ol class="temario">
             <li><a href="apuntes/ver-s15.html" data-sesion="s15">Diagnóstico de averías lógicas</a></li>
-            <li>Recuperación de datos</li>
+            <li><a href="apuntes/ver-s16.html" data-sesion="s16" data-desde="2026-10-16" class="bloqueada" aria-disabled="true" title="Disponible el 16 de octubre">Recuperación de datos <svg class="i candado" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></a></li>
             <li>Reparación del sistema operativo</li>
             <li>Antivirus y malware</li>
             <li>Casos prácticos</li>
@@ -607,7 +609,22 @@
         document.querySelector(".porcentaje").textContent = pct + "%";
       };
 
+      /* Apuntes que se desbloquean en una fecha (hora del navegador). */
+      document.querySelectorAll("[data-desde]").forEach((a) => {
+        const [y, m, d] = a.dataset.desde.split("-").map(Number);
+        if (new Date() >= new Date(y, m - 1, d)) {
+          a.classList.remove("bloqueada");
+          a.removeAttribute("aria-disabled");
+          a.removeAttribute("title");
+          a.querySelector(".candado")?.remove();
+        }
+      });
+      document.querySelectorAll("a.bloqueada").forEach((a) => a.addEventListener("click", (e) => {
+        if (a.classList.contains("bloqueada")) e.preventDefault();
+      }));
+
       document.querySelectorAll("[data-sesion]").forEach((a) => a.addEventListener("click", () => {
+        if (a.classList.contains("bloqueada")) return;
         if (!progreso.teoria.includes(a.dataset.sesion)) progreso.teoria.push(a.dataset.sesion);
         try { localStorage.setItem(CLAVE, JSON.stringify(progreso)); } catch (_) {}
       }));
