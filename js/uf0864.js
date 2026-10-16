@@ -21,7 +21,8 @@
       titulo: "Diagnóstico de averías lógicas",
       descripcion: "Cómo arranca un equipo, en qué fase se para y qué distingue una avería lógica de una física.",
       sesiones: [
-        { id: "s15", codigo: "S15", titulo: "El arranque del equipo", resumen: "Del botón al escritorio, BIOS, UEFI y Secure Boot, particiones y gestor de arranque, y averías de arranque.", url: "apuntes/ver-s15.html", pdf: "apuntes/s15-arranque.pdf", desde: "2026-10-16" }
+        { id: "s15", codigo: "S15", titulo: "El arranque del equipo", resumen: "Del botón al escritorio, BIOS, UEFI y Secure Boot, particiones y gestor de arranque, y averías de arranque.", url: "apuntes/ver-s15.html", pdf: "apuntes/s15-arranque.pdf", desde: "2026-10-16",
+          ejercicios: [{ titulo: "Ejercicio 2", url: "apuntes/ver-s15-ejercicio2.html", nombre: "Recorrido por el firmware de tu equipo" }] }
       ]
     },
     {
@@ -215,7 +216,8 @@
               '<span class="sesion-texto"><strong>' + esc(s.titulo) + "</strong><span>" + esc(s.resumen) + "</span></span>" +
               (abierta
                 ? '<span class="visto" data-visto="' + s.id + '" hidden>✓ Visto</span>' +
-                  '<a class="boton" href="' + s.url + '" data-sesion="' + s.id + '">Abrir apuntes ' + FLECHA + "</a>"
+                  '<span class="sesion-botones"><a class="boton" href="' + s.url + '" data-sesion="' + s.id + '">Abrir apuntes ' + FLECHA + "</a>" +
+                  (s.ejercicios || []).map((e) => '<a class="boton secundario" href="' + e.url + '" title="' + esc(e.nombre) + '">' + esc(e.titulo) + " " + FLECHA + "</a>").join("") + "</span>"
                 : '<span class="candado-texto">' + CANDADO + "Disponible el " + fechaLegible(s) + "</span>") +
               "</li>";
           }).join("") + "</ul>"

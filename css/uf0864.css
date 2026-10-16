@@ -339,6 +339,7 @@ html[data-theme="light"]:not([data-halloween="on"]) .bloque-arte { color: color-
 html[data-halloween="on"] .boton { box-shadow: 0 0 10px rgba(59, 168, 255, .2); }
 .boton svg { width: 14px; height: 14px; stroke-width: 2.4; }
 .boton:hover { background: var(--accent-soft); }
+.boton.secundario { border-color: var(--border); color: var(--text); }
 .boton.lleno { background: var(--accent); color: var(--accent-ink); }
 
 .bloque .pronto { display: none; margin: 10px 0 0; color: var(--muted); font-size: 12px; }
@@ -501,6 +502,8 @@ html[data-halloween="on"] .frase blockquote { position: absolute; width: 1px; he
 .sesion-texto { flex: 1; min-width: 0; }
 .sesion-texto strong { display: block; }
 .sesion-texto span { color: var(--muted); font-size: 13px; }
+.sesion-botones { display: flex; flex-direction: column; gap: 8px; flex: none; }
+.sesion-botones .boton { justify-content: space-between; }
 .sesion .visto { color: var(--ok); font-size: 13px; font-weight: 600; white-space: nowrap; }
 .sesion.bloqueada { opacity: .7; }
 .sesion .candado-texto { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; white-space: nowrap; }
@@ -549,5 +552,7 @@ html[data-halloween="on"] .frase blockquote { position: absolute; width: 1px; he
   .pie { height: auto; padding: 16px 16px 64px; flex-direction: column; align-items: flex-start; gap: 6px; }
   .pie-derecha { margin-right: 0; }
   .sesion { flex-wrap: wrap; }
+  .sesion-texto { flex-basis: calc(100% - 70px); }
+  .sesion-botones { flex-direction: row; flex-wrap: wrap; width: 100%; justify-content: flex-end; }
   .tema-detalle { padding: 20px 18px; }
 }
