@@ -505,6 +505,7 @@ html[data-halloween="on"] .frase blockquote { position: absolute; width: 1px; he
 .sesion.bloqueada { opacity: .7; }
 .sesion .candado-texto { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; white-space: nowrap; }
 .sesion .candado-texto svg { width: 16px; height: 16px; }
+.bloque-botones { display: flex; flex-wrap: wrap; gap: 8px; }
 .sin-sesiones { padding: 18px; border: 1px dashed var(--border); border-radius: 10px; color: var(--muted); font-size: 14px; }
 
 @media (max-width: 640px) {
