@@ -25,13 +25,19 @@
   const COSTE_PISTA = 5;
   const COSTE_PRIVACIDAD = 5;
 
+  /* Modo difícil: sin pistas, sin objetivos y sin consejos. Los errores dicen qué ha fallado, nunca qué escribir. */
+  const CLAVE_MODO = "rescate-modo";
+  let DIFICIL = false;
+  try { DIFICIL = localStorage.getItem(CLAVE_MODO) === "dificil"; } catch (e) { /* sin almacenamiento */ }
+  const guardarModo = () => { try { localStorage.setItem(CLAVE_MODO, DIFICIL ? "dificil" : "normal"); } catch (e) { /* sin almacenamiento */ } };
+
   /* ---------- Misiones ----------
      grupos: los archivos del cliente, agrupados por carpeta. peso: lo que le importan al cliente.
      estado: visible (se ve al montar), borrado (Papelera vaciada) o perdido (partición RAW).
      danados: archivos en sectores dañados. */
   const MISIONES = [
     {
-      id: "raw", sesion: "S16", desde: "2026-10-19", equipo: "PC-014",
+      id: "raw", sesion: "S16", desde: "2026-10-19", equipo: "PC-014", modo: "particion",
       titulo: "El disco que pide formato",
       resumen: "Un disco externo sale como RAW y Windows pide formatearlo.",
       orden: [
@@ -64,7 +70,7 @@
       solucion: "La partición se dañó con el apagón. Con el disco sano, TestDisk la recupera; después se copian los datos a otro disco y se verifican."
     },
     {
-      id: "falla", sesion: "S16", desde: "2026-10-19", equipo: "PC-016",
+      id: "falla", sesion: "S16", desde: "2026-10-19", equipo: "PC-016", modo: "clon",
       titulo: "El disco que falla",
       resumen: "Errores de lectura, 147 archivos afectados y la última copia es de hace 12 días.",
       orden: [
@@ -97,7 +103,7 @@
       solucion: "El S.M.A.R.T. avisaba de sectores pendientes. Se clona con ddrescue sin insistir en lo dañado, se reintenta después y se recupera desde la imagen a otro disco."
     },
     {
-      id: "borrado", sesion: "S21", desde: "2026-10-26", equipo: "PC-021",
+      id: "borrado", sesion: "S21", desde: "2026-10-26", equipo: "PC-021", modo: "sinEscribir",
       titulo: "Las fotos borradas",
       resumen: "El cliente vació la Papelera ayer. El disco funciona bien.",
       orden: [
@@ -127,16 +133,182 @@
         ["Para comprobar las fotos recuperadas, ¿qué haces?", ["Abro dos o tres para ver que están bien, sin repasar el álbum", "Las abro todas una a una para asegurarme", "Me guardo una copia por si el disco del taller falla"]]
       ],
       solucion: "Un borrado lógico en un disco sano: se recupera sin escribir en él (Recuva o PhotoRec) y se guarda en otro disco. Se comprueban unos pocos archivos, no todos."
+    },
+    {
+      id: "noarranca", sesion: "S15", desde: "2026-10-16", equipo: "PC-015", modo: "copiarAntes",
+      titulo: "El portátil que no arranca",
+      resumen: "Reparación automática en bucle. Hay que reinstalar Windows, pero antes, los datos.",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1015 · Equipo PC-015",
+        "Cliente: Andrés (autoriza el acceso a sus datos para recuperarlos).",
+        "Avería: el portátil muestra «Preparando reparación automática» en cada arranque y nunca llega al escritorio.",
+        "Se ha intentado reparar el arranque sin éxito: se va a reinstalar Windows en el mismo disco.",
+        "Antes de reinstalar hay que salvar sus documentos. No tiene ninguna copia.",
+        "Encargo: copiar sus datos al disco del taller (/mnt/taller) y dejar el disco listo para reinstalar."
+      ],
+      disco: { modelo: "Crucial MX500 500GB", tam: "465,8G", tipo: "SSD", salud: "bueno", smart: [0, 0, 0], fs: "ntfs", etiqueta: "Windows", copia: "nunca" },
+      grupos: [
+        { id: "docs", carpeta: "Users/Andres/Documentos", n: 512, peso: 4, estado: "visible", muestras: ["oposiciones/", "nominas_2026.pdf", "contrato_alquiler.pdf"] },
+        { id: "escritorio", carpeta: "Users/Andres/Escritorio", n: 38, peso: 2, estado: "visible", muestras: ["cv_actualizado.docx", "presupuesto_reforma.xlsx"] },
+        { id: "fotos", carpeta: "Users/Andres/Imagenes", n: 960, peso: 3, estado: "visible", muestras: ["2025_boda/", "movil_2026/"] },
+        { id: "sistema", carpeta: "Windows", n: 4100, peso: 0, estado: "visible", muestras: ["System32/", "explorer.exe"] }
+      ],
+      objetivos: { identificar: "Identificar los discos", salud: "Comprobar la salud del disco", proteger: "Montar el disco sin escribir en él", recuperar: "Copiar los datos al disco del taller", verificar: "Verificar la copia", informe: "Entregar el informe" },
+      pistas: {
+        identificar: "Empieza por saber qué discos hay: lsblk.",
+        salud: "Antes de nada, mira si el disco está sano: disk smart sdb.",
+        proteger: "Monta la partición en solo lectura: mount -r sdb1 /mnt/cliente.",
+        recuperar: "Los archivos se ven: cópialos con backup /mnt/cliente /mnt/taller/andres.",
+        verificar: "Comprueba la copia antes de reinstalar: verify /mnt/taller/andres.",
+        informe: "Con la copia verificada ya se podría formatear e instalar. Escribe informe."
+      },
+      preguntas: [
+        ["¿Por qué se copian los datos antes de reinstalar?", ["Porque reinstalar puede formatear la partición y borrar los documentos", "Porque Windows no se instala si el disco tiene archivos", "Porque así la instalación va más rápida"]],
+        ["¿Por qué en este caso no hizo falta clonar el disco?", ["El S.M.A.R.T. estaba bien: el fallo era del sistema, no del disco", "Porque los SSD no se pueden clonar", "Porque clonar borra el disco de origen"]]
+      ],
+      solucion: "Una avería lógica de arranque con el disco sano. Se monta en solo lectura, se copian los datos a otro disco, se verifica la copia y solo entonces se reinstala."
+    },
+    {
+      id: "bitlocker", sesion: "S15", desde: "2026-10-16", equipo: "PC-018", modo: "desbloquear",
+      titulo: "El SSD cifrado",
+      resumen: "La placa del portátil ha muerto y su SSD está cifrado con BitLocker.",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1018 · Equipo PC-018",
+        "Cliente: Nuria (autoriza el acceso a sus datos para recuperarlos).",
+        "Avería: la placa base del portátil no enciende. El SSD está bien y se ha conectado al equipo de rescate.",
+        "El portátil traía Windows 11 con el cifrado del dispositivo (BitLocker) activado.",
+        "La cliente ha impreso las claves de recuperación de su cuenta Microsoft: están en clave_recuperacion.txt.",
+        "Encargo: sacar sus documentos al disco del taller (/mnt/taller) para pasarlos a su portátil nuevo."
+      ],
+      disco: { modelo: "Samsung PM991 512GB NVMe", tam: "476,9G", tipo: "SSD", salud: "bueno", smart: [0, 0, 0], fs: "bitlocker", etiqueta: "OS", copia: "nunca",
+        claveId: "8F3A2C71", clave: "403953-118206-520751-296043-610984-037224-705342-148819" },
+      grupos: [
+        { id: "docs", carpeta: "Users/Nuria/Documentos", n: 780, peso: 4, estado: "visible", muestras: ["proyecto_fin_master.docx", "facturas/", "declaracion_2025.pdf"] },
+        { id: "fotos", carpeta: "Users/Nuria/Imagenes", n: 2140, peso: 3, estado: "visible", muestras: ["2026_erasmus/", "familia/"] },
+        { id: "sistema", carpeta: "Windows", n: 4100, peso: 0, estado: "visible", muestras: ["System32/"] }
+      ],
+      objetivos: { identificar: "Identificar los discos", salud: "Comprobar la salud del disco", proteger: "Desbloquear el volumen con la clave de la cliente", recuperar: "Copiar los datos al disco del taller", verificar: "Verificar la copia", informe: "Entregar el informe" },
+      pistas: {
+        identificar: "Empieza por saber qué discos hay: lsblk.",
+        salud: "Mira si el SSD está sano: disk smart sdb.",
+        proteger: "Mira el identificador de la clave con bitlocker status sdb1 y busca la clave que coincide en clave_recuperacion.txt. Luego: bitlocker unlock sdb1 --clave <clave>.",
+        recuperar: "Con el volumen desbloqueado, monta en solo lectura (mount -r sdb1 /mnt/cliente) y copia con backup /mnt/cliente /mnt/taller/nuria.",
+        verificar: "Comprueba la copia: verify /mnt/taller/nuria.",
+        informe: "Cuando lo tengas todo, escribe informe."
+      },
+      preguntas: [
+        ["¿Por qué no se podía montar el SSD?", ["Estaba cifrado con BitLocker y hacía falta la clave de recuperación", "Tenía el sistema de archivos dañado (RAW)", "El SSD estaba averiado"]],
+        ["¿De dónde sale la clave de recuperación de BitLocker?", ["De la cuenta Microsoft de la cliente o de la copia que guardó", "Del firmware del equipo de rescate", "Se puede saltar con TestDisk"]]
+      ],
+      solucion: "El volumen estaba cifrado con BitLocker. Con el identificador de la clave se elige la clave de recuperación correcta de la cuenta Microsoft, se desbloquea, se monta en solo lectura y se copian los datos."
+    },
+    {
+      id: "particion", sesion: "S16", desde: "2026-10-19", equipo: "PC-017", modo: "particion",
+      titulo: "La partición borrada",
+      resumen: "El disco de datos sale como espacio no asignado. El S.M.A.R.T. está bien.",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1017 · Equipo PC-017",
+        "Cliente: Javier (autoriza el acceso a sus datos para recuperarlos).",
+        "Avería: su sobrino quiso hacer sitio para otro sistema con Administración de discos y eliminó un volumen.",
+        "Desde entonces el disco de datos aparece como espacio no asignado, sin letra. No ha creado nada encima.",
+        "Ahí están la contabilidad de su negocio y los vídeos de sus hijos. No hay copia.",
+        "Encargo: recuperar los datos y dejarlos en el disco del taller (/mnt/taller)."
+      ],
+      disco: { modelo: "Seagate BarraCuda 2TB", tam: "1,8T", tipo: "HDD", salud: "bueno", smart: [0, 0, 0], fs: "ninguna", etiqueta: "DATOS", copia: "nunca" },
+      grupos: [
+        { id: "conta", carpeta: "Contabilidad", n: 1240, peso: 4, estado: "perdido", muestras: ["facturas_2026.xlsx", "modelo_303/", "clientes.accdb"] },
+        { id: "videos", carpeta: "Videos", n: 310, peso: 3, estado: "perdido", muestras: ["festival_cole.mp4", "primeros_pasos.mp4"] },
+        { id: "musica", carpeta: "Musica", n: 4200, peso: 1, estado: "perdido", muestras: ["discografia/"] }
+      ],
+      objetivos: { identificar: "Identificar los discos", salud: "Comprobar la salud del disco", proteger: "Recuperar la partición sin crear otra", recuperar: "Copiar los datos al disco del taller", verificar: "Verificar lo recuperado", informe: "Entregar el informe" },
+      pistas: {
+        identificar: "Empieza por saber qué discos hay: lsblk. Fíjate en que sdb no tiene particiones.",
+        salud: "Antes de tocar nada, mira si el disco está sano: disk smart sdb.",
+        proteger: "Disco sano y partición eliminada: testdisk sdb, búsqueda rápida y comprueba los archivos con P.",
+        recuperar: "Copia los archivos desde TestDisk (C), o escribe la tabla, monta en solo lectura y usa backup /mnt/cliente /mnt/taller/javier.",
+        verificar: "Comprueba lo recuperado: verify /mnt/taller/javier.",
+        informe: "Cuando lo tengas todo, escribe informe."
+      },
+      preguntas: [
+        ["¿Qué le había pasado al disco?", ["Se eliminó la partición, pero los datos siguen ahí", "El disco tiene sectores dañados", "Los archivos se borraron uno a uno"]],
+        ["¿Por qué se puede usar TestDisk en este disco?", ["Porque el S.M.A.R.T. está bien: el disco está sano", "Porque TestDisk repara los sectores dañados", "Porque es la forma de formatear el disco"]]
+      ],
+      solucion: "Eliminar un volumen solo borra su entrada de la tabla de particiones. Con el disco sano, TestDisk encuentra la partición, se comprueban sus archivos y se copian a otro disco."
+    },
+    {
+      id: "tarjeta", sesion: "S21", desde: "2026-10-26", equipo: "PC-022", modo: "sinEscribir",
+      titulo: "La tarjeta de la cámara",
+      resumen: "El móvil «formateó» sin querer la tarjeta SD con las fotos de la boda.",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1022 · Equipo PC-022",
+        "Cliente: Irene, fotógrafa (autoriza el acceso a sus datos para recuperarlos).",
+        "Avería: metió la tarjeta SD de su cámara en el móvil, el móvil dijo que estaba dañada y ella pulsó «Formatear».",
+        "La tarjeta funciona y ahora sale vacía. No ha hecho fotos nuevas con ella.",
+        "Ahí estaban las fotos (RAW y JPG) de una boda que tiene que entregar esta semana.",
+        "Encargo: recuperar las fotos y dejarlas en el disco del taller (/mnt/taller)."
+      ],
+      disco: { modelo: "SanDisk Extreme SD 64GB", tam: "59,5G", tipo: "SD", salud: "bueno", smart: null, fs: "exfat", etiqueta: "Untitled", copia: "nunca", formateado: true },
+      grupos: [
+        { id: "raw", carpeta: "DCIM/100CANON (RAW)", n: 1180, peso: 4, estado: "borrado", muestras: ["IMG_4410.CR3", "IMG_4411.CR3"] },
+        { id: "jpg", carpeta: "DCIM/100CANON (JPG)", n: 1180, peso: 3, estado: "borrado", muestras: ["IMG_4410.JPG", "IMG_4411.JPG"] },
+        { id: "video", carpeta: "DCIM/100CANON (vídeo)", n: 14, peso: 1, estado: "borrado", muestras: ["MVI_4502.MP4"] }
+      ],
+      objetivos: { identificar: "Identificar los discos", salud: "Comprobar que la tarjeta se lee bien", proteger: "No escribir en la tarjeta", recuperar: "Recuperar las fotos a otro disco", verificar: "Verificar lo recuperado", informe: "Entregar el informe" },
+      pistas: {
+        identificar: "Empieza por saber qué discos hay: lsblk.",
+        salud: "Comprueba la tarjeta: disk status sdb.",
+        proteger: "El formato rápido deja un índice vacío, pero las fotos siguen ahí hasta que algo escriba encima. Si montas, en solo lectura.",
+        recuperar: "Sin índice, toca buscar por contenido (PhotoRec): recover sdb1 --destino /mnt/taller/irene --firmas",
+        verificar: "Comprueba lo recuperado: verify /mnt/taller/irene.",
+        informe: "Cuando lo tengas todo, escribe informe."
+      },
+      preguntas: [
+        ["¿Por qué hubo que buscar las fotos por su contenido (--firmas)?", ["El formato rápido dejó un índice nuevo y vacío: ya no había nombres que leer", "Porque las tarjetas SD no tienen sistema de archivos", "Porque así se recuperan con sus nombres originales"]],
+        ["Una tarjeta SD es memoria flash, como un SSD. ¿Por qué se pudo recuperar?", ["Normalmente las tarjetas SD no reciben TRIM: lo borrado sigue ahí hasta que se escribe encima", "Porque las tarjetas SD guardan una copia oculta de todo", "Porque el móvil no llegó a formatearla"]]
+      ],
+      solucion: "Un formato rápido es un borrado lógico. Sin escribir en la tarjeta, PhotoRec (--firmas) encuentra las fotos por su contenido y se guardan en otro disco, sin sus nombres originales."
+    },
+    {
+      id: "clac", sesion: "S21", desde: "2026-10-26", equipo: "PC-023", modo: "derivar", fisico: true,
+      titulo: "El disco que hace clac",
+      resumen: "Un disco externo se cayó de la mesa encendido. Ahora hace «clac, clac».",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1023 · Equipo PC-023",
+        "Cliente: Rosa (autoriza el acceso a sus datos para recuperarlos).",
+        "Avería: su disco externo se cayó de la mesa mientras estaba encendido.",
+        "Desde entonces, al conectarlo hace «clac, clac» cada pocos segundos y Windows no abre la unidad.",
+        "Tiene ahí quince años de fotos de la familia y la documentación de la herencia de su padre.",
+        "Encargo: salvar sus datos (destino: disco del taller, /mnt/taller)."
+      ],
+      disco: { modelo: "Toshiba Canvio 2TB", tam: "1,8T", tipo: "HDD", salud: "malo", smart: null, fs: "ntfs", etiqueta: "ROSA", copia: "nunca" },
+      grupos: [
+        { id: "fotos", carpeta: "Fotos", n: 9600, peso: 4, estado: "visible", muestras: ["2011_comunion/", "2019_navidad/"] },
+        { id: "herencia", carpeta: "Herencia", n: 64, peso: 3, estado: "visible", muestras: ["escrituras.pdf", "testamento.pdf"] }
+      ],
+      objetivosOrden: ["identificar", "salud", "derivar", "informe"],
+      objetivos: { identificar: "Identificar los discos", salud: "Diagnosticar el tipo de fallo", derivar: "Decidir qué hacer con el disco", informe: "Entregar el informe" },
+      pistas: {
+        identificar: "Empieza por saber qué discos hay: lsblk.",
+        salud: "Mira qué dice el sistema del disco sin leerlo a fondo: disk status sdb y cat /var/log/kern.log.",
+        derivar: "Clics al conectarlo = cabezales dañados. No se intenta leer: derivar sdb.",
+        informe: "Escribe informe."
+      },
+      preguntas: [
+        ["¿Por qué no se intenta recuperar en el taller?", ["Los clics son de un fallo físico: cada encendido puede rayar los platos", "Porque ddrescue no funciona con discos externos", "Porque el disco es demasiado grande"]],
+        ["¿Qué le dices a la cliente?", ["Que va a un laboratorio con sala limpia y que no lo vuelva a encender", "Que lo meta en el congelador y lo pruebe otra vez", "Que lo formatee para que deje de hacer ruido"]]
+      ],
+      solucion: "Clics después de un golpe son un fallo físico (cabezales). El técnico no lo vuelve a encender: lo apaga, lo etiqueta y lo deriva a un laboratorio profesional."
     }
   ];
 
   const OBJETIVOS = ["identificar", "salud", "proteger", "recuperar", "verificar", "informe"];
+  const objetivosDe = (m) => m.objetivosOrden || OBJETIVOS;
 
   /* ---------- Estado de la partida ---------- */
   let M = null, E = null, t = null;
 
   const nuevoEstado = (m) => ({
-    disco: Object.assign({ desgaste: 0, montado: null, formateado: false, tablaEscrita: false }, m.disco),
+    disco: Object.assign({ desgaste: 0, montado: null, formateado: false, tablaEscrita: false }, m.disco, { smart: m.disco.smart && m.disco.smart.slice() }),
     grupos: m.grupos.map((g) => Object.assign({ danados: 0, sobrescritos: 0 }, g, { muestras: g.muestras.slice() })),
     imagen: null,
     recuperados: {},
@@ -147,6 +319,11 @@
     privacidad: 0,
     accionAntes: { identificar: null, salud: null },
     escribioCliente: false,
+    formateoAlumno: false,
+    formateoTrasCopia: false,
+    derivado: false,
+    golpes: 0,
+    clavesMal: 0,
     lecturasOriginal: 0,
     respuestas: [],
     terminado: false
@@ -155,6 +332,14 @@
   const objetivosRecuperar = () => E.grupos.filter((g) => g.peso > 0);
   const totalDanados = () => E.grupos.reduce((s, g) => s + g.danados, 0);
   const falla = () => E.disco.salud === "precaucion";
+  const fisico = () => !!M.fisico;
+  /* Consejo para el alumno: en modo difícil no se muestra. */
+  const consejo = (texto, clase) => { if (!DIFICIL) t.escribir(texto, clase || "t-suave"); };
+  /* Error con una parte que explica qué hacer: en modo difícil solo queda el error. */
+  const fallo = (texto, ayuda, clase) => t.escribir(texto + (ayuda && !DIFICIL ? " " + ayuda : ""), clase || "t-error");
+  const sinVolumen = (fs) => fs === "raw" || fs === "ninguna";
+  const montable = (fs) => fs === "ntfs" || fs === "exfat";
+  const fsNombre = (fs) => ({ ntfs: "NTFS", exfat: "exFAT", raw: "RAW", ninguna: "sin partición", bitlocker: "BitLocker" })[fs] || fs;
 
   const riesgo = (clave, puntos, texto) => {
     if (E.riesgos.some((r) => r.clave === clave)) return;
@@ -231,7 +416,7 @@
   const carpetaCliente = () => {
     const hijos = {};
     const m = E.disco.montado;
-    if (!m || E.disco.fs !== "ntfs") return {};
+    if (!m || !montable(E.disco.fs)) return {};
     E.grupos.filter((g) => g.estado === "visible").forEach((g) => {
       const partes = g.carpeta.split("/");
       let nodo = hijos;
@@ -249,7 +434,7 @@
         nodo = nodo[p].hijos;
       });
     });
-    hijos["$Recycle.Bin"] = dir({});
+    if (E.disco.fs === "ntfs") hijos["$Recycle.Bin"] = dir({});
     return hijos;
   };
 
@@ -290,6 +475,16 @@
       if (E.lecturasOriginal) l.push(["[  " + (300 + E.lecturasOriginal * 41) + ".117] blk_update_request: I/O error, dev sdb (" + fmt(E.disco.desgaste * 37) + " errores más)", "t-error"]);
     }
     if (E.disco.fs === "raw") l.push(["[    4.010] ntfs3: sdb1: el sector de arranque del volumen no es válido", "t-aviso"]);
+    if (E.disco.fs === "ninguna") l.push(["[    3.960]  sdb: (la tabla de particiones no tiene ninguna entrada)", "t-aviso"]);
+    if (E.disco.fs === "bitlocker") l.push(["[    4.022] sdb1: firma -FVE-FS- (volumen cifrado con BitLocker)", "t-aviso"]);
+    if (fisico()) {
+      l[1] = "[    3.871] sd 1:0:0:0: [sdb] " + E.disco.tam + " · " + E.disco.modelo + " (tardó 28 s en responder)";
+      l.push(["[   31.402] ata2: hard resetting link", "t-error"]);
+      l.push(["[   38.117] ata2.00: qc timeout (cmd 0x25)", "t-error"]);
+      l.push(["[   38.118] sd 1:0:0:0: [sdb] READ CAPACITY failed", "t-error"]);
+      l.push(["[   45.930] usb 2-1: USB disconnect · usb 2-1: new high-speed USB device (se reconecta)", "t-error"]);
+      if (E.golpes) l.push(["[  " + (200 + E.golpes * 57) + ".004] blk_update_request: I/O error, dev sdb (" + fmt(E.golpes * 412) + " errores más)", "t-error"]);
+    }
     return l;
   };
 
@@ -297,13 +492,32 @@
     t.raiz = dir({
       home: dir({ rescue: dir({ "orden_trabajo.txt": archivo(() => M.orden), "LEEME.txt": archivo(() => [
         "Equipo de rescate con SystemRescue (Linux en vivo). Terminal simulada: nada de esto se ejecuta en tu ordenador.",
-        "Discos: lsblk o disk list. Salud: disk smart <disco>. Ayuda: help <comando>.",
-        "Recuerda: lo recuperado siempre a otro disco. Si el disco falla, primero se clona."
-      ]) }) }),
+        ...(DIFICIL ? ["Ayuda: help <comando>."] : ["Discos: lsblk o disk list. Salud: disk smart <disco>. Ayuda: help <comando>.",
+        "Recuerda: lo recuperado siempre a otro disco. Si el disco falla, primero se clona."])
+      ]), ...(M.disco.clave ? { "clave_recuperacion.txt": archivo(() => [
+        "Claves de recuperación de BitLocker · Cuenta Microsoft de la cliente (impreso por ella)",
+        "",
+        "Dispositivo: NURIA-PORTATIL (portátil viejo)",
+        "  Id. de clave: 8F3A2C71",
+        "  Clave: " + M.disco.clave,
+        "",
+        "Dispositivo: NURIA-TABLET",
+        "  Id. de clave: 2D9B6E04",
+        "  Clave: 158312-660231-047795-392876-201410-583097-614185-270006",
+        "",
+        "Dispositivo: NURIA-PORTATIL (unidad USB «Trabajo»)",
+        "  Id. de clave: 8F3A9D15",
+        "  Clave: 712085-300421-659813-024497-118250-466378-090244-537711"
+      ]) } : {}) }) }),
       var: dir({ log: dir({ "kern.log": archivo(kernLog) }) }),
-      dev: dir({ sda: archivo(["(dispositivo de bloques)"]), sdb: archivo(["(dispositivo de bloques)"]), sdb1: archivo(["(dispositivo de bloques)"]), sdc: archivo(["(dispositivo de bloques)"]), sdc1: archivo(["(dispositivo de bloques)"]) }),
+      dev: dir(() => {
+        const b = () => archivo(["(dispositivo de bloques)"]);
+        const h = { sda: b(), sda1: b(), sdb: b(), sdb1: b(), sdc: b(), sdc1: b() };
+        if (E.disco.fs === "ninguna") delete h.sdb1;
+        return h;
+      }),
       mnt: dir({
-        cliente: Object.assign(dir(carpetaCliente), { nota: () => (E.disco.montado ? "" : "(no hay nada montado aquí: usa mount -r sdb1 /mnt/cliente)") }),
+        cliente: Object.assign(dir(carpetaCliente), { nota: () => (E.disco.montado ? "" : DIFICIL ? "(no hay nada montado aquí)" : "(no hay nada montado aquí: usa mount -r sdb1 /mnt/cliente)") }),
         taller: Object.assign(dir(carpetaTaller), { nota: "" })
       })
     });
@@ -316,7 +530,7 @@
     if (!n.cliente) return true;
     E.privacidad++;
     t.escribir("(" + n.nombreArchivo + " es un archivo personal del cliente, no un texto del sistema.)", "t-aviso");
-    t.escribir("Para comprobar que lo recuperado está bien no hace falta abrirlo: usa verify <carpeta>. Los datos del cliente se tocan, pero no se miran.", "t-suave");
+    consejo("Para comprobar que lo recuperado está bien no hace falta abrirlo: usa verify <carpeta>. Los datos del cliente se tocan, pero no se miran.");
     return false;
   };
 
@@ -326,9 +540,10 @@
       grupos: [
         ["Investigar", ["lsblk", "disk", "ls", "cd", "cat", "scan"]],
         ["Rescatar", ["mount", "umount", "clone", "ddrescue", "recover", "backup", "testdisk"]],
-        ["Reparar (¡cuidado!)", ["chkdsk", "format"]],
+        ["Reparar (¡cuidado!)", ["chkdsk", "format", "bitlocker"]],
+        ["Derivar", ["derivar"]],
         ["Terminar", ["verify", "informe"]],
-        ["Ayuda", ["help", "pista", "clear", "history", "pwd"]]
+        ["Ayuda", DIFICIL ? ["help", "clear", "history", "pwd"] : ["help", "pista", "clear", "history", "pwd"]]
       ],
       alLeer
     });
@@ -340,16 +555,19 @@
       ejecutar() {
         hecho("identificar");
         const d = DISCOS();
-        t.tabla([
+        const fs = E.disco.fs;
+        const filas = [
           ["NOMBRE", "TAMAÑO", "TIPO", "MODELO", "MONTADO EN"],
           ["sda", d.sda.tam, "disco", d.sda.modelo, ""],
           ["└─sda1", d.sda.tam, "part", "", "/ (sistema en vivo)"],
-          ["sdb", d.sdb.tam, "disco", d.sdb.modelo, ""],
-          ["└─sdb1", d.sdb.tam, "part", E.disco.fs === "raw" ? "(RAW)" : "NTFS " + E.disco.etiqueta, E.disco.montado ? E.disco.montado.dir + (E.disco.montado.ro ? " (solo lectura)" : "") : ""],
-          ["sdc", d.sdc.tam, "disco", d.sdc.modelo, ""],
-          ["└─sdc1", d.sdc.tam, "part", "ext4 TALLER", "/mnt/taller"]
-        ]);
-        t.escribir("sdb es el disco del cliente; sdc, el disco del taller donde se guarda lo recuperado.", "t-suave");
+          ["sdb", d.sdb.tam, "disco", d.sdb.modelo + (E.disco.tipo === "SD" ? " (lector de tarjetas)" : ""), ""]
+        ];
+        if (fs !== "ninguna") filas.push(["└─sdb1", d.sdb.tam, "part", fs === "raw" ? "(RAW)" : fs === "bitlocker" ? "BitLocker (bloqueado)" : fsNombre(fs) + " " + E.disco.etiqueta, E.disco.montado ? E.disco.montado.dir + (E.disco.montado.ro ? " (solo lectura)" : "") : ""]);
+        filas.push(["sdc", d.sdc.tam, "disco", d.sdc.modelo, ""], ["└─sdc1", d.sdc.tam, "part", "ext4 TALLER", "/mnt/taller"]);
+        t.tabla(filas);
+        if (fs === "ninguna") t.escribir("sdb no tiene particiones: todo el disco es espacio no asignado.", "t-aviso");
+        if (fisico()) t.escribir("sdb ha tardado 28 segundos en aparecer.", "t-aviso");
+        consejo("sdb es el disco del cliente; sdc, el disco del taller donde se guarda lo recuperado.");
       }
     });
 
@@ -363,7 +581,7 @@
         if (sub === "list") return t.ejecutarInterno("lsblk");
         if (sub !== "status" && sub !== "smart") return t.usoIncorrecto("disk", sub ? "No conozco la opción «" + args[0] + "»." : "Falta qué quieres consultar.");
         const r = resolverDisco(args[1] || "sdb");
-        if (!r) return t.escribir("disk: no encuentro el disco «" + args[1] + "». Mira los nombres con lsblk.", "t-error");
+        if (!r) return fallo("disk: no encuentro el disco «" + args[1] + "».", "Mira los nombres con lsblk.");
         if (r.disco !== "sdb") {
           const d = DISCOS()[r.disco];
           t.lineas(["Disco: " + d.modelo + " (" + d.tam + ")", "Función: " + d.rol, "Estado S.M.A.R.T.: Bueno"]);
@@ -372,13 +590,27 @@
         hecho("salud");
         const s = E.disco.smart;
         const estado = falla() ? "Precaución" : "Bueno";
+        const fs = E.disco.fs;
+        const volumen = () => fs === "raw" ? "RAW (sistema de archivos no reconocido)" : fs === "ninguna" ? "no hay ninguna partición (espacio no asignado)" : fs === "bitlocker" ? "cifrado con BitLocker (bloqueado)" : fsNombre(fs) + " «" + E.disco.etiqueta + "»" + (E.disco.formateado ? " (vacío)" : "");
+        if (fisico()) {
+          t.escribir("Disco: " + E.disco.modelo + " (" + E.disco.tam + ", " + E.disco.tipo + ")");
+          t.escribir("Estado: el disco tarda en responder, se desconecta y vuelve a conectarse solo.", "t-error");
+          if (sub === "smart") t.escribir("No se puede leer el S.M.A.R.T.: el disco no contesta a tiempo (reinicios del enlace).", "t-error");
+          t.escribir("Última copia de seguridad: " + E.disco.copia);
+          return;
+        }
         if (sub === "status") {
           t.escribir("Disco: " + E.disco.modelo + " (" + E.disco.tam + ", " + E.disco.tipo + ")");
           t.escribir("Estado: " + (falla() ? "errores de lectura detectados" : "sin errores") , falla() ? "t-error" : "t-ok");
-          t.escribir("Volumen sdb1: " + (E.disco.fs === "raw" ? "RAW (sistema de archivos no reconocido)" : "NTFS «" + E.disco.etiqueta + "»"), E.disco.fs === "raw" ? "t-aviso" : "");
+          t.escribir((fs === "ninguna" ? "Particiones: " : "Volumen sdb1: ") + volumen(), sinVolumen(fs) || fs === "bitlocker" || E.disco.formateado ? "t-aviso" : "");
           if (falla()) t.escribir("Archivos afectados: " + fmt(totalDanados()), "t-aviso");
           t.escribir("Última copia de seguridad: " + E.disco.copia);
-          t.escribir("S.M.A.R.T.: " + estado + ". Detalles con disk smart sdb.", "t-suave");
+          if (s) t.escribir("S.M.A.R.T.: " + estado + "." + (DIFICIL ? "" : " Detalles con disk smart sdb."), "t-suave");
+          return;
+        }
+        if (!s) {
+          t.escribir("Este dispositivo no informa de S.M.A.R.T. (las tarjetas SD no lo tienen).", "t-aviso");
+          t.escribir("Lectura de prueba de la tarjeta: sin errores.", "t-ok");
           return;
         }
         t.tabla([
@@ -389,8 +621,8 @@
           ["09", "Horas encendido", falla() ? "31.904" : "6.120"]
         ]);
         t.escribir("Estado de salud: " + estado, falla() ? "t-error" : "t-ok");
-        if (falla()) t.escribir("Hay sectores que no se leen. Cada lectura intensa puede empeorarlo: primero se salvan los datos (S16, S21).", "t-aviso");
-        else t.escribir("El disco está sano: el problema, si lo hay, es lógico.", "t-suave");
+        if (falla()) consejo("Hay sectores que no se leen. Cada lectura intensa puede empeorarlo: primero se salvan los datos (S16, S21).", "t-aviso");
+        else consejo("El disco está sano: el problema, si lo hay, es lógico.");
       }
     });
 
@@ -402,13 +634,13 @@
       async ejecutar(args) {
         const r = resolverDisco(args[0]);
         if (!r) return t.usoIncorrecto("scan", args[0] ? "No encuentro el disco «" + args[0] + "»." : "Falta el disco que quieres examinar.");
-        if (r.disco !== "sdb") return t.escribir("scan: " + r.disco + " no es el disco del cliente. No hace falta examinarlo.", "t-suave");
+        if (r.disco !== "sdb") return t.escribir("scan: " + r.disco + " no es el disco del cliente.", "t-suave");
         accion();
         await t.progreso("Leyendo sectores de sdb", 1800);
         if (falla()) {
           estresar(3, "el examen de superficie");
           riesgo("scan", 6, "Examinaste la superficie de un disco con sectores pendientes: se dañaron más archivos.");
-          t.escribir("Resultado: " + fmt(E.disco.smart[1]) + " sectores sin leer. No hagas más lecturas completas de este disco.", "t-error");
+          fallo("Resultado: " + fmt(E.disco.smart[1]) + " sectores sin leer.", "No hagas más lecturas completas de este disco.");
         } else t.escribir("Resultado: 0 sectores dañados. La superficie está bien.", "t-ok");
       }
     });
@@ -423,14 +655,16 @@
         const ro = o.marcas.has("r") || o.marcas.has("solo-lectura");
         const r = resolverDisco(o.pos[0]);
         if (!r || !o.pos[1]) return t.usoIncorrecto("mount", "Falta la partición o la carpeta.");
-        if (r.disco !== "sdb" || !r.part) return t.escribir("mount: monta la partición del cliente, sdb1 (no el disco entero ni otro disco).", "t-error");
-        if (t.ruta(o.pos[1]) !== "/mnt/cliente") return t.escribir("mount: usa la carpeta /mnt/cliente para el disco del cliente.", "t-aviso");
+        if (r.disco !== "sdb" || !r.part) return fallo("mount: " + o.pos[0] + ": no es una partición que se pueda montar aquí.", "Monta la partición del cliente, sdb1.");
+        if (t.ruta(o.pos[1]) !== "/mnt/cliente") return fallo("mount: " + o.pos[1] + ": no es un punto de montaje disponible.", "Usa la carpeta /mnt/cliente para el disco del cliente.", "t-aviso");
         if (E.disco.fs === "raw") return t.escribir("mount: sdb1: tipo de sistema de archivos desconocido (RAW). No se puede montar.", "t-error");
+        if (E.disco.fs === "bitlocker") return fallo("mount: sdb1: tipo de sistema de archivos desconocido (firma -FVE-FS-).", "Es un volumen cifrado con BitLocker: hay que desbloquearlo antes (help bitlocker).");
         if (E.disco.montado) return t.escribir("mount: sdb1 ya está montada en /mnt/cliente.", "t-aviso");
         E.disco.montado = { dir: "/mnt/cliente", ro };
         if (ro) {
           hecho("soloLectura");
-          t.escribir("sdb1 montada en /mnt/cliente en solo lectura. Usa ls /mnt/cliente.", "t-ok");
+          t.escribir("sdb1 montada en /mnt/cliente en solo lectura." + (DIFICIL ? "" : " Usa ls /mnt/cliente."), "t-ok");
+          if (M.modo === "copiarAntes" && !E.escribioCliente) hecho("proteger");
         } else {
           accion();
           t.escribir("sdb1 montada en /mnt/cliente en lectura y escritura.");
@@ -440,6 +674,9 @@
           } else if (falla()) {
             estresar(1, "el montaje");
             riesgo("montarRW", 3, "Montaste un disco que falla en lectura y escritura en vez de clonarlo.");
+          } else if (!E.hechos.has("recuperar")) {
+            E.escribioCliente = true;
+            riesgo("montarRW", 2, "Montaste el disco del cliente en lectura y escritura antes de copiar sus datos: no hacía falta arriesgarse.");
           }
         }
       }
@@ -457,19 +694,19 @@
     /* ddrescue: copia sector a sector sin insistir en lo dañado. clone es la versión sencilla. */
     const clonar = async (origen, destino, mapa, insistir, reintentos) => {
       const r = resolverDisco(origen);
-      if (!r) return t.escribir("No encuentro el disco de origen «" + (origen || "") + "». Mira los nombres con lsblk.", "t-error");
-      if (r.disco !== "sdb") return t.escribir("El origen debe ser el disco del cliente (sdb).", "t-error");
-      if (!destino) return t.escribir("Falta el destino: un archivo de imagen en el disco del taller, por ejemplo /mnt/taller/cliente.img.", "t-aviso");
+      if (!r) return fallo("No encuentro el disco de origen «" + (origen || "") + "».", "Mira los nombres con lsblk.");
+      if (r.disco !== "sdb") return fallo("Ese origen no es el disco que hay que rescatar.", "El origen debe ser el disco del cliente (sdb).");
+      if (!destino) return fallo("Falta el destino.", "Un archivo de imagen en el disco del taller, por ejemplo /mnt/taller/cliente.img.", "t-aviso");
       const rd = resolverDisco(destino);
-      if (rd) return t.escribir(rd.disco === "sdb" ? "Origen y destino son el mismo disco: eso destruiría los datos. ddrescue se niega." : "Copiar sobre el disco entero " + rd.disco + " borraría todo lo que tiene. Usa un archivo de imagen: /mnt/taller/cliente.img", "t-error");
+      if (rd) return rd.disco === "sdb" ? t.escribir("Origen y destino son el mismo disco: eso destruiría los datos. ddrescue se niega.", "t-error") : fallo("Copiar sobre el disco entero " + rd.disco + " borraría todo lo que tiene.", "Usa un archivo de imagen: /mnt/taller/cliente.img");
       const dd = discoDeRuta(destino);
       if (dd === "sdb") return t.escribir("El destino está en el disco del cliente: nunca se guarda nada ahí.", "t-error");
-      if (dd === "sda") return t.escribir("Ahí está el sistema en vivo (14,9 GB y en memoria): no cabe una imagen de " + E.disco.tam + ". Usa /mnt/taller.", "t-error");
-      if (E.disco.fs === "raw" && !falla()) t.escribir("(Clonar un disco sano no es necesario, pero tampoco hace daño.)", "t-suave");
+      if (dd === "sda") return fallo("Ahí está el sistema en vivo (14,9 GB y en memoria): no cabe una imagen de " + E.disco.tam + ".", "Usa /mnt/taller.");
+      if (!falla()) consejo("(Clonar un disco sano no es necesario, pero tampoco hace daño.)");
       accion();
       const ruta = t.ruta(destino);
       if (E.imagen && E.imagen.ruta === ruta) {
-        if (!E.imagen.mapa || !mapa) t.escribir("Sin archivo de mapa, ddrescue no sabe qué copió antes y empieza de cero.", "t-aviso");
+        if (!E.imagen.mapa || !mapa) consejo("Sin archivo de mapa, ddrescue no sabe qué copió antes y empieza de cero.", "t-aviso");
         await t.progreso("Reintentando sectores dañados (" + (reintentos || 1) + " intentos)", 1800);
         if (falla()) {
           const antes = E.imagen.sinLeer;
@@ -497,7 +734,7 @@
       hecho("proteger_clon");
       if (falla()) {
         t.escribir("Imagen creada: " + ruta + ". Se copió todo lo legible; quedan " + fmt(E.imagen.sinLeer) + " archivos en zonas sin leer.", "t-ok");
-        t.escribir(E.imagen.mapa ? "Puedes reintentar lo que falta repitiendo con -r3 y el mismo mapa." : "Sin archivo de mapa no podrás reintentar solo lo que falta.", "t-suave");
+        consejo(E.imagen.mapa ? "Puedes reintentar lo que falta repitiendo con -r3 y el mismo mapa." : "Sin archivo de mapa no podrás reintentar solo lo que falta.");
       } else t.escribir("Imagen creada: " + ruta + ". El disco no tenía errores.", "t-ok");
     };
 
@@ -535,12 +772,12 @@
       return null;
     };
     const destinoValido = (txt) => {
-      if (!txt) { t.escribir("Falta el destino: --destino <carpeta>, en el disco del taller (/mnt/taller/...).", "t-aviso"); return null; }
-      if (resolverDisco(txt)) { t.escribir("El destino es una carpeta, no un disco. Por ejemplo: --destino /mnt/taller/rescate", "t-aviso"); return null; }
+      if (!txt) { fallo("Falta el destino.", "--destino <carpeta>, en el disco del taller (/mnt/taller/...).", "t-aviso"); return null; }
+      if (resolverDisco(txt)) { fallo("El destino tiene que ser una carpeta, no un disco.", "Por ejemplo: --destino /mnt/taller/rescate", "t-aviso"); return null; }
       const d = discoDeRuta(txt);
-      if (d === "sda") { t.escribir(t.ruta(txt) + " está en el sistema en vivo, que se borra al apagar. Guarda en /mnt/taller.", "t-error"); return null; }
+      if (d === "sda") { fallo(t.ruta(txt) + " está en el sistema en vivo, que se borra al apagar.", "Guarda en /mnt/taller.", "t-error"); return null; }
       const ruta = t.ruta(txt);
-      if (d === "sdc" && ruta === "/mnt/taller") { t.escribir("Usa una carpeta para este cliente dentro del disco del taller, por ejemplo /mnt/taller/rescate.", "t-aviso"); return null; }
+      if (d === "sdc" && ruta === "/mnt/taller") { fallo("No se guarda suelto en la raíz del disco del taller.", "Usa una carpeta para este cliente, por ejemplo /mnt/taller/rescate.", "t-aviso"); return null; }
       return { ruta, disco: d };
     };
 
@@ -564,17 +801,23 @@
       async ejecutar(args) {
         const o = opciones(args, ["destino"]);
         const origen = origenDe(o.pos[0]);
-        if (!origen) return t.usoIncorrecto("recover", o.pos[0] ? "«" + o.pos[0] + "» no es un origen válido: usa sdb1 o la imagen clonada." : "Falta el origen.");
+        if (!origen) return DIFICIL && o.pos[0] ? t.escribir("recover: «" + o.pos[0] + "» no es un origen válido.", "t-error") : t.usoIncorrecto("recover", o.pos[0] ? "«" + o.pos[0] + "» no es un origen válido: usa sdb1 o la imagen clonada." : "Falta el origen.");
         const destino = destinoValido(o.valores.destino || o.pos[1]);
         if (!destino) return;
         const firmas = o.marcas.has("firmas");
         accion();
         const fs = origen.tipo === "imagen" ? E.imagen.estado.fs : E.disco.fs;
         const formateado = origen.tipo === "imagen" ? E.imagen.estado.formateado : E.disco.formateado;
-        if (fs === "raw" && !firmas) {
+        if (fs === "bitlocker") {
+          await t.progreso(firmas ? "Buscando archivos por su firma" : "Leyendo el índice del volumen", 1200);
+          t.escribir("Solo aparecen datos sin estructura: el volumen está cifrado. No se ha recuperado nada.", "t-aviso");
+          consejo("Un volumen BitLocker hay que desbloquearlo antes con su clave de recuperación.");
+          return;
+        }
+        if (sinVolumen(fs) && !firmas) {
           await t.progreso("Leyendo el índice del volumen", 900);
-          t.escribir("No hay un sistema de archivos que leer (volumen RAW): no se encuentran nombres.", "t-aviso");
-          t.escribir("Opciones: recuperar la partición con testdisk, o buscar por contenido con --firmas (sin nombres).", "t-suave");
+          t.escribir(fs === "raw" ? "No hay un sistema de archivos que leer (volumen RAW): no se encuentran nombres." : "No hay ninguna partición que leer: no se encuentran nombres.", "t-aviso");
+          consejo("Opciones: recuperar la partición con testdisk, o buscar por contenido con --firmas (sin nombres).");
           return;
         }
         if (destino.disco === "sdb") {
@@ -596,19 +839,19 @@
           if (lista) { const ig = lista.find((x) => x.id === g.id); ok = ig.ok; parcial = ig.parcial; }
           else { ok = g.n - g.danados - g.sobrescritos; parcial = falla() ? g.danados : 0; }
           if (formateado && !firmas) { ok = 0; parcial = 0; }
-          if (formateado && firmas) { ok = Math.round(ok * 0.88); }
+          if (formateado && firmas && E.formateoAlumno) { ok = Math.round(ok * 0.88); }
           if (!ok && !parcial) return;
           if (g.peso === 0 && g.estado === "visible" && !firmas) return;
           guardar(destino.ruta, g, ok, parcial, !firmas);
           total += ok; totalParcial += parcial;
         });
         if (destino.disco === "sdb") t.escribir("Cada archivo recuperado se escribió en el disco del cliente, encima de otros que aún no se habían recuperado.", "t-error");
-        if (formateado && !firmas) return t.escribir("El formato creó un índice nuevo y vacío: sin --firmas no aparece nada.", "t-aviso");
+        if (formateado && !firmas) return fallo("No aparece ningún archivo: el índice del volumen está vacío.", "El formato creó un índice nuevo: sin --firmas no aparece nada.", "t-aviso");
         t.escribir("Recuperados " + fmt(total) + " archivos" + (totalParcial ? " y " + fmt(totalParcial) + " incompletos (estaban en sectores dañados)" : "") + " en " + destino.ruta + ".", total ? "t-ok" : "t-aviso");
-        if (firmas) t.escribir("Con --firmas salen sin nombre ni carpeta (f0001234.jpg…): al cliente le costará ordenarlos.", "t-suave");
-        if (destino.disco === "sdc") hecho("recuperar");
-        if (M.id === "borrado" && !E.escribioCliente) hecho("proteger");
-        t.escribir("Siguiente paso: comprueba lo recuperado con verify " + destino.ruta, "t-suave");
+        if (firmas) t.escribir("Con --firmas salen sin nombre ni carpeta (f0001234.jpg…)" + (M.disco.formateado ? "." : ": al cliente le costará ordenarlos."), "t-suave");
+        if (destino.disco === "sdc" && total) hecho("recuperar");
+        if (M.modo === "sinEscribir" && !E.escribioCliente && total) hecho("proteger");
+        consejo("Siguiente paso: comprueba lo recuperado con verify " + destino.ruta);
       }
     });
 
@@ -621,9 +864,9 @@
         const o = opciones(args);
         if (o.pos.length < 2) return t.usoIncorrecto("backup", "Faltan el origen y el destino.");
         const origen = origenDe(o.pos[0]);
-        if (!origen) return t.escribir("backup: el origen debe ser la carpeta montada /mnt/cliente.", "t-error");
-        if (origen.tipo === "imagen") return t.escribir("backup copia carpetas. Para sacar archivos de una imagen usa recover.", "t-aviso");
-        if (origen.tipo === "disco" || !E.disco.montado) return t.escribir("backup: monta antes la partición (mount -r sdb1 /mnt/cliente) y copia desde /mnt/cliente.", "t-aviso");
+        if (!origen) return fallo("backup: " + o.pos[0] + ": no es un origen válido.", "El origen debe ser la carpeta montada /mnt/cliente.");
+        if (origen.tipo === "imagen") return fallo("backup: " + o.pos[0] + " es una imagen, no una carpeta.", "Para sacar archivos de una imagen usa recover.", "t-aviso");
+        if (origen.tipo === "disco" || !E.disco.montado) return fallo("backup: no hay archivos que copiar en ese origen.", "Monta antes la partición (mount -r sdb1 /mnt/cliente) y copia desde /mnt/cliente.", "t-aviso");
         const destino = destinoValido(o.pos[1]);
         if (!destino) return;
         if (destino.disco === "sdb") return t.escribir("backup: el destino está en el mismo disco. Una copia en el mismo disco no protege nada.", "t-error");
@@ -641,7 +884,7 @@
         });
         t.escribir("Copiados " + fmt(total) + " archivos a " + destino.ruta + "." + (fallidos ? " " + fmt(fallidos) + " no se pudieron leer." : ""), total ? "t-ok" : "t-aviso");
         if (total) hecho("recuperar");
-        t.escribir("Siguiente paso: comprueba la copia con verify " + destino.ruta, "t-suave");
+        consejo("Siguiente paso: comprueba la copia con verify " + destino.ruta);
       }
     });
 
@@ -659,7 +902,7 @@
           accion();
           estresar(2, "el análisis de TestDisk");
           riesgo("testdiskFalla", 5, "Usaste TestDisk sobre un disco que falla: primero se clona.");
-          t.escribir("Errores de lectura durante el análisis. Con un disco que falla, TestDisk debe trabajar sobre una imagen.", "t-error");
+          fallo("Errores de lectura durante el análisis.", "Con un disco que falla, TestDisk debe trabajar sobre una imagen.");
           return;
         }
         let vistos = false;
@@ -668,17 +911,18 @@
           if (i === -1 || i === 3) { t.escribir("Saliendo de TestDisk.", "t-suave"); return; }
           if (i === 0) {
             if (E.disco.fs === "raw") t.escribir("Partición 1: NTFS · " + E.disco.tam + " · sector de arranque dañado (el sistema la ve como RAW).", "t-aviso");
-            else if (E.disco.formateado) t.escribir("Partición 1: NTFS · " + E.disco.tam + " · «Nuevo vol» (vacía, recién formateada).", "t-aviso");
-            else { t.escribir("Partición 1: NTFS · " + E.disco.tam + " · «" + E.disco.etiqueta + "» · correcta.", "t-ok"); t.escribir("La tabla está bien: tu problema no está en la partición.", "t-suave"); }
+            else if (E.disco.fs === "ninguna") t.escribir("La tabla de particiones está vacía: no hay ninguna partición. Todo el disco es espacio no asignado.", "t-aviso");
+            else if (E.disco.formateado) t.escribir("Partición 1: " + fsNombre(E.disco.fs) + " · " + E.disco.tam + " · «" + E.disco.etiqueta + "» (vacía, recién formateada).", "t-aviso");
+            else { t.escribir("Partición 1: " + fsNombre(E.disco.fs) + " · " + E.disco.tam + " · «" + E.disco.etiqueta + "» · correcta.", "t-ok"); consejo("La tabla está bien: tu problema no está en la partición."); }
             continue;
           }
           await t.progreso(i === 1 ? "Buscando particiones" : "Buscando sector a sector", i === 1 ? 1200 : 2400);
           if (E.disco.formateado) {
             t.escribir("Solo aparece la partición nueva y vacía. La anterior ya no se encuentra: el formato la sustituyó.", "t-error");
-            t.escribir("Queda buscar los archivos por su contenido: recover sdb1 --destino /mnt/taller/... --firmas", "t-suave");
+            consejo("Queda buscar los archivos por su contenido: recover sdb1 --destino /mnt/taller/... --firmas");
             continue;
           }
-          if (E.disco.fs !== "raw") { t.escribir("Encontrada: NTFS «" + E.disco.etiqueta + "», la misma que ya está en la tabla. No hay nada que reparar.", "t-suave"); continue; }
+          if (!sinVolumen(E.disco.fs)) { t.escribir("Encontrada: " + fsNombre(E.disco.fs) + " «" + E.disco.etiqueta + "», la misma que ya está en la tabla. No hay nada que reparar.", "t-suave"); continue; }
           t.escribir("Encontrada: P NTFS · " + E.disco.tam + " · «" + E.disco.etiqueta + "»", "t-ok");
           for (;;) {
             const j = await t.elegir("Partición encontrada. ¿Qué haces?", ["Ver sus archivos (P)", "Copiar los archivos a otro disco (C)", "Escribir la tabla y reparar el volumen (Write)", "Volver"]);
@@ -686,7 +930,7 @@
             if (j === 0) {
               vistos = true;
               E.grupos.forEach((g) => t.escribir([["  " + g.carpeta.padEnd(12), "t-dir"], [fmt(g.n) + " archivos · " + g.muestras.join(", "), "t-suave"]]));
-              t.escribir("Son las carpetas del cliente: es la partición buena.", "t-ok");
+              consejo("Son las carpetas del cliente: es la partición buena.", "t-ok");
             } else if (j === 1) {
               const d = destinoValido((await t.preguntar("Carpeta de destino (en /mnt/taller):")).trim());
               if (!d) continue;
@@ -708,7 +952,7 @@
               E.grupos.forEach((g) => { g.estado = "visible"; });
               hecho("proteger");
               t.escribir("Tabla escrita. sdb1 vuelve a ser NTFS «" + E.disco.etiqueta + "» con todos sus archivos.", "t-ok");
-              t.escribir("Ahora monta en solo lectura y copia los datos a otro disco.", "t-suave");
+              consejo("Ahora monta en solo lectura y copia los datos a otro disco.");
               return;
             }
           }
@@ -727,6 +971,7 @@
         if (!r) return t.usoIncorrecto("chkdsk", "Falta la partición.");
         if (r.disco !== "sdb") return t.escribir("chkdsk: " + r.disco + " no es el disco del cliente.", "t-aviso");
         if (E.disco.fs === "raw") return t.escribir("CHKDSK no está disponible para unidades RAW.", "t-error");
+        if (E.disco.fs === "bitlocker") return t.escribir("CHKDSK no puede abrir el volumen: está cifrado y bloqueado.", "t-error");
         const f = o.marcas.has("/f"), rr = o.marcas.has("/r");
         accion();
         await t.progreso("Comprobando sdb1" + (rr ? " y su superficie" : ""), rr ? 2400 : 1200);
@@ -742,8 +987,13 @@
             escribirEnCliente(0.1, "CHKDSK escribió sus correcciones");
             riesgo("chkdskEscribe", 6, "CHKDSK /f escribió en el disco con archivos borrados sin recuperar.");
           }
-          t.escribir("CHKDSK ha terminado. Esto repara el sistema de archivos, pero no recupera nada.", "t-suave");
-        } else t.escribir(falla() ? "Se encontraron errores de lectura. No repares ahora: primero los datos." : "No se encontraron problemas en el sistema de archivos.", falla() ? "t-aviso" : "t-ok");
+          if (M.modo === "copiarAntes" && !E.hechos.has("recuperar")) {
+            E.escribioCliente = true;
+            riesgo("chkdskAntes", 3, "Reparaste con CHKDSK el disco antes de copiar sus datos: una reparación puede mover o quitar archivos.");
+          }
+          t.escribir("CHKDSK ha terminado." + (DIFICIL ? "" : " Esto repara el sistema de archivos, pero no recupera nada."), "t-suave");
+        } else if (falla()) fallo("Se encontraron errores de lectura.", "No repares ahora: primero los datos.", "t-aviso");
+        else t.escribir("No se encontraron problemas en el sistema de archivos.", "t-ok");
       }
     });
 
@@ -763,12 +1013,24 @@
         accion();
         await t.progreso("Formateando sdb1 (rápido)", 1000);
         if (falla()) estresar(1);
+        E.formateoTrasCopia = M.modo === "copiarAntes" && E.hechos.has("recuperar") && E.hechos.has("verificar");
+        if (E.formateoTrasCopia) {
+          E.disco.montado = null;
+          if (t.cwd.startsWith("/mnt/cliente")) t.cwd = "/mnt";
+          E.disco.fs = "ntfs"; E.disco.formateado = true; E.disco.etiqueta = "Nuevo vol";
+          t.escribir("sdb1 formateada y lista para instalar Windows. Los datos del cliente ya estaban copiados y verificados.", "t-ok");
+          return;
+        }
         riesgo("formatear", 15, "Formateaste el disco del cliente antes de recuperar sus datos.");
-        E.disco.fs = "ntfs";
+        E.formateoAlumno = true;
+        E.disco.montado = null;
+        if (t.cwd.startsWith("/mnt/cliente")) t.cwd = "/mnt";
+        E.disco.fs = E.disco.fs === "exfat" ? "exfat" : "ntfs";
         E.disco.formateado = true;
         E.disco.etiqueta = "Nuevo vol";
         E.grupos.forEach((g) => { if (g.estado === "visible" || g.estado === "perdido") g.estado = "borrado"; g.sobrescritos += Math.round((g.n - g.danados - g.sobrescritos) * 0.05); });
-        t.escribir("sdb1 formateada. Ahora parece vacía. Solo quedaría buscar por contenido (--firmas), sin nombres.", "t-aviso");
+        t.escribir("sdb1 formateada. Ahora parece vacía.", "t-aviso");
+        consejo("Solo quedaría buscar por contenido (--firmas), sin nombres.");
       }
     });
 
@@ -781,7 +1043,7 @@
         if (!args[0]) return t.usoIncorrecto("verify", "Falta la carpeta que quieres comprobar.");
         const ruta = t.ruta(args[0]);
         const lista = E.recuperados[ruta];
-        if (!lista) return t.escribir("verify: en " + ruta + " no hay nada recuperado. Mira dónde lo guardaste con ls /mnt/taller.", "t-error");
+        if (!lista) return fallo("verify: en " + ruta + " no hay nada recuperado.", "Mira dónde lo guardaste con ls /mnt/taller.");
         await t.progreso("Comprobando archivos", 1200);
         let ok = 0, mal = 0;
         lista.forEach((r) => {
@@ -799,8 +1061,10 @@
       resumen: "Da una pista sobre el siguiente paso (resta " + COSTE_PISTA + " puntos).",
       uso: "pista",
       alias: ["hint"],
+      oculto: DIFICIL,
       ejecutar() {
-        const siguiente = OBJETIVOS.find((k) => !objetivoHecho(k));
+        if (DIFICIL) return t.escribir("Modo difícil: no hay pistas.", "t-aviso");
+        const siguiente = objetivosDe(M).find((k) => !objetivoHecho(k));
         if (!siguiente) return t.escribir("No te hace falta: ya está todo. Escribe informe.", "t-suave");
         E.pistas++;
         t.escribir("Pista (−" + COSTE_PISTA + "): " + M.pistas[siguiente], "t-pista");
@@ -812,7 +1076,7 @@
       uso: "informe",
       alias: ["report"],
       async ejecutar() {
-        if (!E.hechos.has("recuperar")) {
+        if (!E.hechos.has("recuperar") && !E.derivado) {
           const s = (await t.preguntar("Aún no has recuperado nada en el disco del taller. ¿Entregar igualmente? (s/n)")).trim().toLowerCase();
           if (s !== "s" && s !== "si" && s !== "sí") return t.escribir("Sigue con la misión.", "t-suave");
         }
@@ -826,12 +1090,97 @@
             if (i === -1) t.escribir("Para entregar el informe hay que responder.", "t-aviso");
           }
           E.respuestas.push(orden[i].ok);
-          t.escribir(orden[i].ok ? "Correcto." : "No es eso.", orden[i].ok ? "t-ok" : "t-error");
+          if (DIFICIL) t.escribir("Respuesta anotada.", "t-suave");
+          else t.escribir(orden[i].ok ? "Correcto." : "No es eso.", orden[i].ok ? "t-ok" : "t-error");
         }
         hecho("informe");
         E.terminado = true;
         terminar();
       }
+    });
+
+    t.registrar("bitlocker", {
+      resumen: "Consulta o desbloquea un volumen cifrado con BitLocker.",
+      uso: "bitlocker status <partición> | bitlocker unlock <partición> --clave <clave de recuperación>",
+      detalle: ["status: dice si el volumen está cifrado y el identificador (Id.) de la clave que lo abre.", "unlock: lo desbloquea con la clave de recuperación de 48 cifras. Sin ella, los datos son ilegibles."],
+      ejemplos: ["bitlocker status sdb1", "bitlocker unlock sdb1 --clave 111111-222222-333333-444444-555555-666666-777777-888888"],
+      ejecutar(args) {
+        const o = opciones(args, ["clave"]);
+        const sub = (o.pos[0] || "").toLowerCase();
+        if (sub !== "status" && sub !== "unlock") return t.usoIncorrecto("bitlocker", sub ? "No conozco la opción «" + o.pos[0] + "»." : "Falta qué quieres hacer.");
+        const r = resolverDisco(o.pos[1]);
+        if (!r) return t.usoIncorrecto("bitlocker", "Falta la partición.");
+        if (r.disco !== "sdb" || !r.part) return t.escribir("bitlocker: " + o.pos[1] + ": no es un volumen BitLocker.", "t-error");
+        const cifrado = !!M.disco.clave;
+        if (sub === "status") {
+          if (!cifrado) return t.escribir("sdb1: el volumen no está cifrado con BitLocker.");
+          t.lineas(["Volumen: /dev/sdb1 (" + E.disco.tam + ")", "Cifrado: BitLocker, XTS-AES 128", "Estado: " + (E.disco.fs === "bitlocker" ? "bloqueado" : "desbloqueado"), "Protector de clave: contraseña numérica (clave de recuperación)", "Id. de clave: " + M.disco.claveId]);
+          return;
+        }
+        if (!cifrado) return t.escribir("bitlocker: sdb1 no está cifrado: no hay nada que desbloquear.", "t-aviso");
+        if (E.disco.fs !== "bitlocker") return t.escribir("bitlocker: sdb1 ya está desbloqueado.", "t-suave");
+        const clave = (o.valores.clave || o.pos[2] || "").replace(/\s/g, "");
+        if (!clave) return t.usoIncorrecto("bitlocker", "Falta la clave de recuperación.");
+        if (clave !== M.disco.clave) {
+          E.clavesMal++;
+          return fallo("Clave incorrecta. El volumen sigue bloqueado.", E.clavesMal > 1 ? "Comprueba que la clave es la del identificador que da bitlocker status." : "");
+        }
+        accion();
+        E.disco.fs = "ntfs";
+        hecho("proteger");
+        t.escribir("Volumen desbloqueado: sdb1 es NTFS «" + E.disco.etiqueta + "».", "t-ok");
+        consejo("Ahora ya se puede montar en solo lectura y copiar los datos.");
+      }
+    });
+
+    t.registrar("derivar", {
+      resumen: "Apaga el disco y lo prepara para un laboratorio de recuperación.",
+      uso: "derivar <disco>",
+      detalle: ["Para un fallo físico (clics, chirridos, golpes, no gira): el técnico no lo vuelve a encender.", "El laboratorio cobra y tarda: no se manda un disco que se puede recuperar en el taller."],
+      ejemplos: ["derivar sdb"],
+      async ejecutar(args) {
+        const r = resolverDisco(args[0]);
+        if (!r) return t.usoIncorrecto("derivar", args[0] ? "No encuentro el disco «" + args[0] + "»." : "Falta el disco.");
+        if (r.disco !== "sdb") return t.escribir("derivar: " + r.disco + " no es el disco del cliente.", "t-error");
+        if (E.derivado) return t.escribir("El disco ya está etiquetado para el laboratorio.", "t-suave");
+        const s = (await t.preguntar("El disco se apaga y no se vuelve a tocar en el taller. ¿Confirmas? (s/n)")).trim().toLowerCase();
+        if (s !== "s" && s !== "si" && s !== "sí") return t.escribir("No se ha hecho nada.", "t-suave");
+        accion();
+        E.derivado = true;
+        E.disco.montado = null;
+        if (t.cwd.startsWith("/mnt/cliente")) t.cwd = "/home/rescue";
+        hecho("derivar");
+        t.escribir("Disco apagado, desconectado y etiquetado: «" + M.equipo + " · NO ENCENDER · laboratorio de recuperación».", "t-ok");
+        if (!fisico()) riesgo("derivarSinMotivo", 10, "Mandaste al laboratorio un disco que se podía recuperar en el taller: coste y espera innecesarios para el cliente.");
+        consejo("Escribe informe para terminar.");
+      }
+    });
+
+    /* Comandos que leen o escriben el disco del cliente. */
+    const TOCAN = ["scan", "mount", "clone", "ddrescue", "recover", "backup", "testdisk", "chkdsk", "format", "bitlocker"];
+    const tocaCliente = (args) => args.some((a) => { const r = resolverDisco(a); return (r && r.disco === "sdb") || (a.startsWith("/") || a.startsWith(".")) && t.ruta(a).startsWith("/mnt/cliente"); });
+    /* Un disco con fallo físico empeora con cada intento de leerlo. */
+    const golpe = async () => {
+      accion();
+      E.golpes++;
+      await t.progreso("Accediendo a sdb", 1600);
+      E.grupos.forEach((g) => { g.danados += Math.round((g.n - g.danados) * 0.22); });
+      t.escribir("clac… clac… clac…", "t-error");
+      t.escribir("sdb: error de E/S. El disco no responde, se desconecta y vuelve a conectarse.", "t-error");
+      riesgo("insistir", 12, "Intentaste leer un disco que hacía clics: cada intento raya más los platos.");
+      if (E.golpes > 1) riesgo("insistir2", 8, "Insististe varias veces con un disco con fallo físico.");
+      consejo("Un disco que hace clics no se lee en el taller.", "t-aviso");
+    };
+    TOCAN.forEach((n) => {
+      const c = t.comandos[n];
+      const original = c.ejecutar;
+      c.ejecutar = (args, linea) => {
+        const quiere = args.some((a) => /^-(h|-ayuda|-help)$/.test(a)) ? false : tocaCliente(args);
+        if (quiere && E.derivado) return t.escribir("El disco ya está apagado y etiquetado para el laboratorio.", "t-aviso");
+        if (quiere && fisico()) return golpe();
+        if (E.disco.fs === "ninguna" && args.some((a) => /^(\/dev\/)?sdb1$/i.test(a))) return fallo(n + ": /dev/sdb1: no existe ese dispositivo.", "Mira qué hay en sdb con lsblk.");
+        return original(args, linea);
+      };
     });
 
     t.ejecutarInterno = (linea) => t.comandos[linea].ejecutar([]);
@@ -840,13 +1189,21 @@
   /* ---------- Objetivos, panel y puntuación ---------- */
   const objetivoHecho = (k) => {
     if (k === "proteger") {
-      if (M.id === "falla") return E.hechos.has("proteger_clon");
+      if (M.modo === "clon") return E.hechos.has("proteger_clon");
       return E.hechos.has("proteger");
     }
     return E.hechos.has(k);
   };
 
+  /* Fallo físico: lo que cuenta es cuánto llega intacto al laboratorio. */
+  const intactos = () => {
+    let suma = 0, max = 0;
+    objetivosRecuperar().forEach((g) => { max += g.peso; suma += g.peso * (g.n - g.danados) / g.n; });
+    return max ? suma / max : 0;
+  };
+
   const datosRescatados = () => {
+    if (M.modo === "derivar") return E.derivado ? intactos() : 0;
     /* Para cada grupo, lo mejor recuperado en el disco del taller. */
     let suma = 0, max = 0, verificado = true;
     objetivosRecuperar().forEach((g) => {
@@ -856,7 +1213,8 @@
         if (discoDeRuta(ruta) !== "sdc") return;
         const r = lista.find((x) => x.grupo === g.id);
         if (!r) return;
-        const f = (r.ok / g.n) * (r.nombres ? 1 : 0.6) * (r.verificado ? 1 : 0.85);
+        /* Sin nombres vale menos, salvo cuando ya no había nombres que salvar (tarjeta formateada). */
+        const f = (r.ok / g.n) * (r.nombres || M.disco.formateado ? 1 : 0.6) * (r.verificado ? 1 : 0.85);
         mejor = Math.max(mejor, f);
       });
       suma += g.peso * mejor;
@@ -874,15 +1232,28 @@
     return s + mejor;
   }, 0);
 
+  /* El tercer punto del método depende del tipo de caso. */
+  const METODO_CLAVE = {
+    clon: ["Clonaste el disco antes de leerlo a fondo", () => E.hechos.has("clonoAntes")],
+    particion: ["Recuperaste la partición sin formatear", () => E.hechos.has("proteger") && !E.disco.formateado],
+    sinEscribir: ["No escribiste en el disco del cliente", () => !E.escribioCliente && E.hechos.has("recuperar")],
+    copiarAntes: ["Copiaste y verificaste los datos antes de tocar el disco", () => E.hechos.has("recuperar") && !E.escribioCliente && (!E.disco.formateado || E.formateoTrasCopia)],
+    desbloquear: ["Desbloqueaste el volumen con la clave de la cliente", () => E.hechos.has("proteger") && !E.disco.formateado]
+  };
+
   const evaluar = () => {
     const datos = Math.round(datosRescatados() * 40);
-    const metodo = [
+    const antes = [
       ["Identificaste los discos antes de actuar", E.accionAntes.identificar !== false && E.hechos.has("identificar")],
-      ["Comprobaste la salud del disco antes de actuar", E.accionAntes.salud !== false && E.hechos.has("salud")],
-      [M.id === "falla" ? "Clonaste el disco antes de leerlo a fondo" : M.id === "raw" ? "Recuperaste la partición sin formatear" : "No escribiste en el disco del cliente",
-        M.id === "falla" ? E.hechos.has("clonoAntes") : M.id === "raw" ? E.hechos.has("proteger") && !E.disco.formateado : !E.escribioCliente],
-      ["Verificaste lo recuperado", E.hechos.has("verificar")]
+      ["Comprobaste el estado del disco antes de actuar", E.accionAntes.salud !== false && E.hechos.has("salud")]
     ];
+    const metodo = M.modo === "derivar" ? antes.concat([
+      ["No insististe con un disco que hacía clics", E.golpes === 0],
+      ["Lo derivaste a un laboratorio", E.derivado]
+    ]) : antes.concat([
+      [METODO_CLAVE[M.modo][0], METODO_CLAVE[M.modo][1]()],
+      ["Verificaste lo recuperado", E.hechos.has("verificar")]
+    ]);
     const ptsMetodo = Math.round(metodo.filter((m) => m[1]).length * 7.5);
     const ptsRiesgo = Math.max(0, 20 - E.riesgos.reduce((s, r) => s + r.puntos, 0));
     const ptsInforme = E.respuestas.filter(Boolean).length * 5;
@@ -892,22 +1263,26 @@
   };
 
   const pintarPanel = () => {
+    if (!app.querySelector("[data-estado]")) return;
     const ul = app.querySelector("[data-objetivos]");
-    if (!ul) return;
-    ul.innerHTML = OBJETIVOS.map((k) => '<li class="' + (objetivoHecho(k) ? "hecho" : "") + '"><span aria-hidden="true">' + (objetivoHecho(k) ? "✓" : "") + "</span>" + esc(M.objetivos[k]) + (objetivoHecho(k) ? '<span class="rt-oculto"> (hecho)</span>' : "") + "</li>").join("");
+    if (ul) ul.innerHTML = objetivosDe(M).map((k) => '<li class="' + (objetivoHecho(k) ? "hecho" : "") + '"><span aria-hidden="true">' + (objetivoHecho(k) ? "✓" : "") + "</span>" + esc(M.objetivos[k]) + (objetivoHecho(k) ? '<span class="rt-oculto"> (hecho)</span>' : "") + "</li>").join("");
     const danados = totalDanados();
     const total = objetivosRecuperar().reduce((s, g) => s + g.n, 0);
-    const rescatados = archivosRescatados();
-    app.querySelector("[data-estado]").innerHTML =
-      "<div><span>Salud</span><b class=\"" + (falla() ? "mal" : "bien") + "\">" + (falla() ? "Precaución" : "Bueno") + "</b></div>" +
-      "<div><span>Volumen</span><b class=\"" + (E.disco.fs === "raw" || E.disco.formateado ? "mal" : "") + "\">" + (E.disco.fs === "raw" ? "RAW" : E.disco.formateado ? "Formateado" : "NTFS") + "</b></div>" +
-      (falla() ? "<div><span>Archivos ilegibles</span><b class=\"mal\">" + fmt(danados) + "</b></div>" : "") +
-      "<div><span>Rescatados</span><b>" + fmt(rescatados) + " / " + fmt(total) + "</b></div>";
+    const derivar = M.modo === "derivar";
+    const rescatados = derivar ? (E.derivado ? objetivosRecuperar().reduce((s, g) => s + g.n - g.danados, 0) : 0) : archivosRescatados();
+    const fs = E.disco.fs;
+    const salud = fisico() ? ["Sin respuesta", "mal"] : falla() ? ["Precaución", "mal"] : E.disco.smart ? ["Bueno", "bien"] : ["Sin S.M.A.R.T.", ""];
+    app.querySelector("[data-estado]").innerHTML = (DIFICIL ? "" :
+      "<div><span>Salud</span><b class=\"" + salud[1] + "\">" + salud[0] + "</b></div>" +
+      "<div><span>Volumen</span><b class=\"" + (sinVolumen(fs) || fs === "bitlocker" || E.disco.formateado ? "mal" : "") + "\">" + (fisico() ? "Sin leer" : fs === "bitlocker" ? "Cifrado" : sinVolumen(fs) ? fsNombre(fs).replace(/^s/, "S") : E.disco.formateado ? "Formateado" : fsNombre(fs)) + "</b></div>") +
+      (falla() && !DIFICIL ? "<div><span>Archivos ilegibles</span><b class=\"mal\">" + fmt(danados) + "</b></div>" : "") +
+      "<div><span>" + (derivar ? "En el laboratorio" : "Rescatados") + "</span><b>" + fmt(rescatados) + " / " + fmt(total) + "</b></div>";
     const pct = total ? Math.round(rescatados / total * 100) : 0;
     app.querySelector("[data-barra]").style.width = pct + "%";
     app.querySelector("[data-barra]").parentElement.setAttribute("aria-valuenow", pct);
-    const riesgoActivo = !E.hechos.has("verificar") && (falla() ? !E.imagen : true);
     const r = app.querySelector("[data-riesgo]");
+    if (DIFICIL) { r.textContent = "Modo difícil"; r.className = "rt-riesgo alto"; return; }
+    const riesgoActivo = derivar ? !E.derivado : !E.hechos.has("verificar") && (falla() ? !E.imagen : true);
     r.textContent = E.riesgos.length ? "Riesgos asumidos: " + E.riesgos.length : riesgoActivo ? "Riesgo activo" : "Datos a salvo";
     r.className = "rt-riesgo " + (E.riesgos.length ? "alto" : riesgoActivo ? "activo" : "ok");
   };
@@ -928,16 +1303,25 @@
       "<p>Te sientas ante la terminal de recuperación del taller. Tienes que averiguar qué le pasa al disco del cliente y salvar sus datos sin empeorarlo. Leer a lo bruto un disco que falla, o escribir en el disco equivocado, destruye archivos para siempre.</p>" +
       '<div class="rt-terminal-demo" aria-hidden="true"><span>rescue@pc-016:~$</span> help<br><em>Comandos disponibles: lsblk, disk, scan, recover, backup…</em><br><span>rescue@pc-016:~$</span> disk status sdb<br><em>Estado: errores de lectura detectados</em></div>' +
       '<p class="rt-aviso-sim">Es una terminal simulada: no ejecuta nada en tu ordenador ni puede ver tus archivos.</p>' +
+      '<div class="rt-modo" role="radiogroup" aria-label="Modo de juego">' +
+      '<button type="button" role="radio" data-modo="normal" aria-checked="' + !DIFICIL + '"><b>Normal</b><span>Con objetivos, consejos y pistas</span></button>' +
+      '<button type="button" role="radio" data-modo="dificil" aria-checked="' + DIFICIL + '"><b>Difícil</b><span>Sin pistas: si te equivocas, no te dice qué escribir</span></button>' +
+      "</div>" +
       '<h2 class="rt-h2">Elige una misión</h2>' +
-      '<div class="rt-misiones">' + MISIONES.map((m, i) => {
+      '<div class="rt-misiones">' + MISIONES.map((m, i) => [m, i]).sort((a, b) => a[0].desde.localeCompare(b[0].desde) || a[1] - b[1]).map(([m, i]) => {
         const ok = abierta(m);
         return '<button type="button" class="rt-mision" data-mision="' + i + '"' + (ok ? "" : " disabled") + ">" +
           ICONO_DISCO + "<span><small>" + esc(m.sesion) + " · Equipo " + esc(m.equipo) + "</small><b>" + esc(m.titulo) + "</b><em>" + esc(m.resumen) + "</em>" +
           (ok ? "" : '<i class="rt-candado">Se abre el ' + fecha(m) + "</i>") + "</span></button>";
       }).join("") + "</div>" +
       (PREVIA ? '<p class="rt-nota">Vista del profesor: todas las misiones están abiertas.</p>' : "") +
-      '<p class="rt-nota">Puntuación sobre 100: datos rescatados (40), método (30), riesgos evitados (20) e informe (10). Cada pista resta ' + COSTE_PISTA + ".</p>" +
+      '<p class="rt-nota">Puntuación sobre 100: datos rescatados (40), método (30), riesgos evitados (20) e informe (10). Cada pista resta ' + COSTE_PISTA + ". En modo difícil no hay pistas ni objetivos, y el informe no te dice si aciertas hasta el final.</p>" +
       "</section>";
+    app.querySelectorAll("[data-modo]").forEach((b) => b.addEventListener("click", () => {
+      DIFICIL = b.dataset.modo === "dificil";
+      guardarModo();
+      app.querySelectorAll("[data-modo]").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+    }));
     app.querySelectorAll("[data-mision]").forEach((b) => b.addEventListener("click", () => empezar(MISIONES[Number(b.dataset.mision)])));
     const primero = app.querySelector("[data-mision]:not([disabled])");
     (primero || app.querySelector(".rt-cerrar")).focus({ preventScroll: true });
@@ -949,7 +1333,7 @@
     app.innerHTML =
       '<section class="rt-panel rt-juego">' +
       '<header class="rt-barra">' +
-      '<div class="rt-titulo">' + ICONO_ESCUDO + "<div><h1>Operación: rescatar los archivos</h1><p>Terminal de recuperación · Equipo " + esc(m.equipo) + " · " + esc(m.titulo) + "</p></div></div>" +
+      '<div class="rt-titulo">' + ICONO_ESCUDO + "<div><h1>Operación: rescatar los archivos</h1><p>Terminal de recuperación · Equipo " + esc(m.equipo) + " · " + esc(m.titulo) + (DIFICIL ? " · Modo difícil" : "") + "</p></div></div>" +
       '<span class="rt-riesgo activo" data-riesgo role="status">Riesgo activo</span>' +
       '<a class="rt-cerrar rt-cerrar-barra" href="rescate.html' + (PREVIA ? "?profe" : "") + '" aria-label="Salir de la misión">' + ICONO_CERRAR + "</a>" +
       "</header>" +
@@ -959,12 +1343,13 @@
       '<div class="rt-salida" data-salida role="log" aria-live="polite" aria-label="Salida de la terminal"></div>' +
       '<form class="rt-entrada" data-formulario autocomplete="off"><label class="t-prompt" for="rt-comando"></label>' +
       '<input id="rt-comando" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" aria-label="Escribe un comando"></form>' +
-      '<div class="rt-teclas"><button type="button" data-tecla="tab">Tab</button><button type="button" data-tecla="arriba" aria-label="Comando anterior">↑</button><button type="button" data-tecla="help">help</button><button type="button" data-tecla="pista">pista</button></div>' +
+      '<div class="rt-teclas"><button type="button" data-tecla="tab">Tab</button><button type="button" data-tecla="arriba" aria-label="Comando anterior">↑</button><button type="button" data-tecla="help">help</button>' + (DIFICIL ? "" : '<button type="button" data-tecla="pista">pista</button>') + "</div>" +
       "</div>" +
       '<aside class="rt-lateral">' +
       '<section class="rt-caja"><h2>Orden de trabajo</h2><p>' + m.orden.slice(2, 5).map(esc).join("<br>") + '</p><p class="rt-nota">Léela entera con <code>cat orden_trabajo.txt</code>.</p></section>' +
-      '<section class="rt-caja"><h2>Objetivos</h2><ul class="rt-objetivos" data-objetivos></ul></section>' +
-      '<section class="rt-caja"><h2>Estado del disco</h2><div class="rt-estado" data-estado></div><div class="rt-progreso" role="progressbar" aria-label="Archivos rescatados" aria-valuemin="0" aria-valuemax="100"><span data-barra></span></div></section>' +
+      (DIFICIL ? '<section class="rt-caja"><h2>Modo difícil</h2><p class="rt-nota">Sin objetivos ni pistas. Investiga y decide tú: los errores dicen qué ha fallado, pero no qué tienes que escribir.</p></section>'
+        : '<section class="rt-caja"><h2>Objetivos</h2><ul class="rt-objetivos" data-objetivos></ul></section>') +
+      '<section class="rt-caja"><h2>' + (DIFICIL ? "Progreso" : "Estado del disco") + '</h2><div class="rt-estado" data-estado></div><div class="rt-progreso" role="progressbar" aria-label="Archivos rescatados" aria-valuemin="0" aria-valuemax="100"><span data-barra></span></div></section>' +
       "</aside></div></section>";
 
     t = Terminal.crear({
@@ -972,7 +1357,8 @@
       entrada: app.querySelector("#rt-comando"),
       formulario: app.querySelector("[data-formulario]"),
       prompt: (cwd) => "rescue@" + m.equipo.toLowerCase() + ":" + (cwd === "/home/rescue" ? "~" : cwd.replace(/^\/home\/rescue/, "~")) + "$",
-      completarExtra: (cmd) => (["disk"].includes(cmd) ? ["list", "status", "smart", "sdb"] : ["sdb", "sdb1"]),
+      sinAyudas: DIFICIL,
+      completarExtra: (cmd) => (cmd === "disk" ? ["list", "status", "smart", "sdb"] : cmd === "bitlocker" ? ["status", "unlock", "sdb1"] : ["sdb", "sdb1"]),
       despues: () => { if (!E.terminado) pintarPanel(); }
     });
     montarFS();
@@ -980,6 +1366,7 @@
     t.cwd = "/home/rescue";
     t.escribir("SystemRescue (simulado) · Terminal de recuperación del taller", "t-titulo");
     t.escribir("Nada de lo que escribas se ejecuta en tu ordenador.", "t-suave");
+    if (DIFICIL) t.escribir("Modo difícil: sin pistas ni objetivos. Si te equivocas, no te dirá qué tienes que escribir.", "t-aviso");
     t.escribir([["Escribe ", ""], ["help", "t-cmd"], [" para ver los comandos, o ", ""], ["cat orden_trabajo.txt", "t-cmd"], [" para leer el encargo.", ""]]);
     t.escribir("");
 
@@ -1002,7 +1389,7 @@
     capa.className = "rt-capa";
     capa.innerHTML =
       '<section class="rt-panel rt-final" role="dialog" aria-modal="true" aria-labelledby="rt-final-titulo">' +
-      '<p class="rt-antetitulo"><b>Misión</b> · ' + esc(M.titulo) + "</p>" +
+      '<p class="rt-antetitulo"><b>Misión</b> · ' + esc(M.titulo) + (DIFICIL ? " · Modo difícil" : "") + "</p>" +
       '<h2 id="rt-final-titulo">' + (ev.total >= 70 ? "¡Datos rescatados" : ev.total >= 40 ? "Rescate a medias" : "Rescate fallido") + (nombre ? ", " + esc(nombre) : "") + "!</h2>" +
       '<p class="rt-total"><b>' + ev.total + "</b>/100</p>" +
       '<ul class="rt-desglose">' +
@@ -1010,9 +1397,10 @@
       "<li><span>Método</span><b>" + ev.ptsMetodo + "/30</b></li>" +
       "<li><span>Riesgos evitados</span><b>" + ev.ptsRiesgo + "/20</b></li>" +
       "<li><span>Informe</span><b>" + ev.ptsInforme + "/10</b></li>" +
-      (ev.descuento ? "<li><span>Pistas y privacidad</span><b>−" + ev.descuento + "</b></li>" : "") +
+      (ev.descuento ? "<li><span>" + (DIFICIL ? "Privacidad" : "Pistas y privacidad") + "</span><b>−" + ev.descuento + "</b></li>" : "") +
       "</ul>" +
       '<h3>Método</h3><ul class="rt-lista">' + ev.metodo.map(([txt, ok]) => '<li class="' + (ok ? "ok" : "mal") + '">' + (ok ? "✓ " : "✗ ") + esc(txt) + "</li>").join("") + "</ul>" +
+      (E.respuestas.length ? '<h3>Informe</h3><ul class="rt-lista">' + M.preguntas.map(([q, ops], i) => '<li class="' + (E.respuestas[i] ? "ok" : "mal") + '">' + (E.respuestas[i] ? "✓ " : "✗ ") + esc(q) + (E.respuestas[i] ? "" : " Era: " + esc(ops[0]) + ".") + "</li>").join("") + "</ul>" : "") +
       (E.riesgos.length ? '<h3>Riesgos asumidos</h3><ul class="rt-lista">' + E.riesgos.map((r) => '<li class="mal">−' + r.puntos + " · " + esc(r.texto) + "</li>").join("") + "</ul>" : '<p class="rt-bien">No asumiste ningún riesgo innecesario.</p>') +
       (E.privacidad ? '<p class="rt-aviso">Abriste ' + E.privacidad + (E.privacidad === 1 ? " archivo personal" : " archivos personales") + " del cliente. Para comprobar una recuperación basta con verify.</p>" : "") +
       '<h3>Así se resolvía</h3><p>' + esc(M.solucion) + "</p>" +
