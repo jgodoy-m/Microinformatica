@@ -77,6 +77,17 @@ code { font-family: var(--mono); font-size: .9em; color: var(--neon-2); }
 .rt-terminal-demo span { color: var(--verde); }
 .rt-terminal-demo em { font-style: normal; color: var(--suave); }
 .rt-aviso-sim { font-size: 14px; color: var(--suave); padding-left: 12px; border-left: 3px solid var(--neon); }
+.rt-modo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.rt-modo button {
+  display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 10px 14px; cursor: pointer;
+  border: 1px solid var(--borde-suave); border-radius: 12px; background: transparent; color: var(--suave); font: inherit;
+}
+.rt-modo button b { font-family: var(--titulo); font-size: 20px; font-weight: 600; color: var(--texto); }
+.rt-modo button span { font-size: 13.5px; }
+.rt-modo button:hover { border-color: var(--borde); }
+.rt-modo button[aria-checked="true"] { border-color: var(--neon); background: rgba(56, 189, 248, .12); box-shadow: var(--brillo); }
+.rt-modo button[data-modo="dificil"][aria-checked="true"] { border-color: var(--ambar); background: rgba(251, 191, 36, .1); box-shadow: none; }
+.rt-modo button[data-modo="dificil"][aria-checked="true"] b { color: var(--ambar); }
 .rt-h2 { font-size: 24px; color: var(--neon-2); font-weight: 500; margin-top: 6px; }
 .rt-misiones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .rt-mision {
@@ -208,6 +219,7 @@ code { font-family: var(--mono); font-size: .9em; color: var(--neon-2); }
   .rt-teclas { display: flex; }
   .rt-final { padding: 22px 18px; }
   .rt-desglose { grid-template-columns: 1fr; }
+  .rt-modo { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

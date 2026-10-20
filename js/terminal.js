@@ -84,6 +84,8 @@
       set cwd(v) { cwd = v; },
       raiz: cfg.raiz || dir(),
       comandos,
+      /* Modo difícil: los errores no sugieren comandos ni enseñan ejemplos. */
+      sinAyudas: !!cfg.sinAyudas,
 
       ruta: (r) => normalizar(r || ".", cwd),
       nodo: (r) => buscar(t.raiz, normalizar(r || ".", cwd)),
@@ -156,13 +158,14 @@
         t.escribir(nombre + " — " + c.resumen, "t-titulo");
         if (c.uso) t.escribir("Uso: " + c.uso, "t-uso");
         if (c.detalle) [].concat(c.detalle).forEach((l) => t.escribir(l));
-        if (c.ejemplos) {
+        if (c.ejemplos && !t.sinAyudas) {
           t.escribir("Ejemplos:", "t-suave");
           c.ejemplos.forEach((e) => t.escribir("  " + e, "t-ejemplo"));
         }
         return true;
       },
       usoIncorrecto(nombre, motivo) {
+        if (t.sinAyudas) return t.escribir(nombre + ": sintaxis incorrecta.", "t-aviso");
         if (motivo) t.escribir(motivo, "t-aviso");
         const c = comandos[nombre];
         if (c && c.uso) t.escribir("Uso: " + c.uso, "t-uso");
@@ -198,6 +201,7 @@
         const cerca = Object.keys(comandos).filter((k) => !comandos[k].oculto)
           .map((k) => [k, distancia(clave, k)]).sort((a, b) => a[1] - b[1])[0];
         t.escribir("«" + nombre + "»: comando no encontrado.", "t-error");
+        if (t.sinAyudas) return;
         if (cerca && cerca[1] <= 2) t.escribir("¿Querías decir «" + cerca[0] + "»? Escribe help " + cerca[0] + " para ver cómo se usa.", "t-suave");
         else t.escribir("Escribe help para ver los comandos disponibles.", "t-suave");
         return;
@@ -292,7 +296,7 @@
           t.escribir(titulo, "t-titulo");
           nombres.filter((n) => t.comandos[n]).forEach((n) => t.escribir([["  " + n.padEnd(10), "t-cmd"], [t.comandos[n].resumen, ""]]));
         });
-        t.escribir("Escribe help <comando> para ver ejemplos. Tab completa, ↑ y ↓ repiten comandos.", "t-suave");
+        t.escribir(t.sinAyudas ? "help <comando> muestra cómo se usa. Tab completa, ↑ y ↓ repiten comandos." : "Escribe help <comando> para ver ejemplos. Tab completa, ↑ y ↓ repiten comandos.", "t-suave");
       }
     });
     t.registrar("clear", { resumen: "Limpia la pantalla.", uso: "clear", alias: ["cls"], ejecutar() { t.limpiar(); } });
@@ -337,7 +341,7 @@
         const ruta = t.ruta(args[0]);
         const n = Terminal.buscar(t.raiz, ruta);
         if (!n) return t.escribir("cat: " + args[0] + ": no existe.", "t-error");
-        if (n.tipo === "dir") return t.escribir("cat: " + args[0] + ": es una carpeta. Usa ls para ver lo que contiene.", "t-error");
+        if (n.tipo === "dir") return t.escribir("cat: " + args[0] + ": es una carpeta." + (t.sinAyudas ? "" : " Usa ls para ver lo que contiene."), "t-error");
         if (alLeer && alLeer(ruta, n) === false) return;
         const c = typeof n.contenido === "function" ? n.contenido() : n.contenido;
         [].concat(c).forEach((l) => (Array.isArray(l) ? t.escribir(l[0], l[1]) : t.escribir(l)));
