@@ -206,7 +206,7 @@
         else t.escribir("Escribe help para ver los comandos disponibles.", "t-suave");
         return;
       }
-      if (args.includes("--ayuda") || args.includes("--help") || args.includes("-h")) { t.ayuda(Object.keys(comandos).find((k) => comandos[k] === c)); return; }
+      if (args.includes("--ayuda") || args.includes("--help") || (args.includes("-h") && !c.usaH)) { t.ayuda(Object.keys(comandos).find((k) => comandos[k] === c)); return; }
       t.ocupar(true);
       try {
         await c.ejecutar(args, limpia);
