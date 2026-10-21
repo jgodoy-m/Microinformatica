@@ -292,9 +292,10 @@
           return;
         }
         const lista = grupos || [["Comandos", Object.keys(t.comandos)]];
+        const ancho = Math.max(10, ...lista.flatMap(([, nombres]) => nombres.map((n) => n.length + 2)));
         lista.forEach(([titulo, nombres]) => {
           t.escribir(titulo, "t-titulo");
-          nombres.filter((n) => t.comandos[n]).forEach((n) => t.escribir([["  " + n.padEnd(10), "t-cmd"], [t.comandos[n].resumen, ""]]));
+          nombres.filter((n) => t.comandos[n]).forEach((n) => t.escribir([["  " + n.padEnd(ancho), "t-cmd"], [t.comandos[n].resumen, ""]]));
         });
         t.escribir(t.sinAyudas ? "help <comando> muestra cómo se usa. Tab completa, ↑ y ↓ repiten comandos." : "Escribe help <comando> para ver ejemplos. Tab completa, ↑ y ↓ repiten comandos.", "t-suave");
       }
