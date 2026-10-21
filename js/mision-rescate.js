@@ -181,7 +181,22 @@
         "Encargo: sacar sus documentos al disco del taller (/mnt/taller) para pasarlos a su portátil nuevo."
       ],
       disco: { modelo: "Samsung PM991 512GB NVMe", tam: "476,9G", tipo: "SSD", salud: "bueno", smart: [0, 0, 0], fs: "bitlocker", etiqueta: "OS", copia: "nunca",
-        claveId: "8F3A2C71", clave: "403953-118206-520751-296043-610984-037224-705342-148819" },
+        claveId: "8F3A2C71", clave: "403953-118206-520751-296043-610984-037224-705342-148819",
+        claves: [
+          "Claves de recuperación de BitLocker · Cuenta Microsoft de la cliente (impreso por ella)",
+          "",
+          "Dispositivo: NURIA-PORTATIL (portátil viejo)",
+          "  Id. de clave: 8F3A2C71",
+          "  Clave: 403953-118206-520751-296043-610984-037224-705342-148819",
+          "",
+          "Dispositivo: NURIA-TABLET",
+          "  Id. de clave: 2D9B6E04",
+          "  Clave: 158312-660231-047795-392876-201410-583097-614185-270006",
+          "",
+          "Dispositivo: NURIA-PORTATIL (unidad USB «Trabajo»)",
+          "  Id. de clave: 8F3A9D15",
+          "  Clave: 712085-300421-659813-024497-118250-466378-090244-537711"
+        ] },
       grupos: [
         { id: "docs", carpeta: "Users/Nuria/Documentos", n: 780, peso: 4, estado: "visible", muestras: ["proyecto_fin_master.docx", "facturas/", "declaracion_2025.pdf"] },
         { id: "fotos", carpeta: "Users/Nuria/Imagenes", n: 2140, peso: 3, estado: "visible", muestras: ["2026_erasmus/", "familia/"] },
@@ -298,6 +313,353 @@
         ["¿Qué le dices a la cliente?", ["Que va a un laboratorio con sala limpia y que no lo vuelva a encender", "Que lo meta en el congelador y lo pruebe otra vez", "Que lo formatee para que deje de hacer ruido"]]
       ],
       solucion: "Clics después de un golpe son un fallo físico (cabezales). El técnico no lo vuelve a encender: lo apaga, lo etiqueta y lo deriva a un laboratorio profesional."
+    },
+    {
+      id: "restablecer", sesion: "S17", desde: "2026-10-20", equipo: "PC-024", modo: "copiarAntes",
+      titulo: "Antes de restablecer",
+      resumen: "La reparación automática ha fallado dos veces. Se va a restablecer el equipo con «Quitar todo».",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1024 · Equipo PC-024",
+        "Cliente: Pilar (autoriza el acceso a sus datos para recuperarlos).",
+        "Avería: tras un pantallazo azul, Windows entra siempre en «Preparando reparación automática» y dice «No se pudo reparar el equipo».",
+        "El SrtTrail.txt nombra un archivo del sistema dañado. Se ha decidido Restablecer este equipo con «Quitar todo».",
+        "«Quitar todo» borra sus documentos, y no tiene ninguna copia.",
+        "Encargo: copiar sus datos al disco del taller (/mnt/taller) antes de restablecer."
+      ],
+      disco: { modelo: "Kingston NV2 1TB NVMe", tam: "931,5G", tipo: "SSD", salud: "bueno", smart: [0, 0, 0], fs: "ntfs", etiqueta: "Windows", copia: "nunca" },
+      grupos: [
+        { id: "docs", carpeta: "Users/Pilar/Documentos", n: 640, peso: 4, estado: "visible", muestras: ["contabilidad_tienda.xlsx", "pedidos_2026/", "contrato_local.pdf"] },
+        { id: "fotos", carpeta: "Users/Pilar/Imagenes", n: 1830, peso: 3, estado: "visible", muestras: ["escaparate_navidad/", "familia_2026/"] },
+        { id: "escritorio", carpeta: "Users/Pilar/Escritorio", n: 22, peso: 2, estado: "visible", muestras: ["tarifas_proveedores.pdf", "pendientes.txt"] },
+        { id: "sistema", carpeta: "Windows", n: 4100, peso: 0, estado: "visible", muestras: ["System32/", "Logs/"] }
+      ],
+      objetivos: { identificar: "Identificar los discos", salud: "Comprobar la salud del disco", proteger: "Montar el disco sin escribir en él", recuperar: "Copiar los datos al disco del taller", verificar: "Verificar la copia", informe: "Entregar el informe" },
+      pistas: {
+        identificar: "Empieza por saber qué discos hay: lsblk.",
+        salud: "Antes de nada, mira si el disco está sano: disk smart sdb.",
+        proteger: "Monta la partición en solo lectura: mount -r sdb1 /mnt/cliente.",
+        recuperar: "Los archivos se ven: cópialos con backup /mnt/cliente /mnt/taller/pilar.",
+        verificar: "Comprueba la copia antes de restablecer: verify /mnt/taller/pilar.",
+        informe: "Con la copia verificada ya se podría restablecer. Escribe informe."
+      },
+      preguntas: [
+        ["¿Por qué se copian los datos antes de Restablecer este equipo?", ["Porque con «Quitar todo» se borran también los documentos", "Porque Restablecer no funciona si el disco tiene archivos", "Porque así Windows se reinstala más rápido"]],
+        ["La reparación automática ya ha fallado dos veces. ¿Qué toca hacer?", ["No lanzarla una tercera vez: leer el SrtTrail.txt, que dice qué ha encontrado", "Repetirla hasta que funcione", "Desconectar el SSD y volver a probar"]]
+      ],
+      solucion: "Avería lógica de Windows con el disco sano. Antes de Restablecer con «Quitar todo», se monta en solo lectura, se copian los datos a otro disco y se verifica la copia."
+    },
+    {
+      id: "pantallazo", sesion: "S17", desde: "2026-10-20", equipo: "PC-025", modo: "clon",
+      titulo: "El pantallazo que avisaba",
+      resumen: "CRITICAL_PROCESS_DIED cada día. Alguien quiere pasar CHKDSK /r, pero el disco tiene sectores pendientes.",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1025 · Equipo PC-025",
+        "Cliente: Tomás (autoriza el acceso a sus datos para recuperarlos).",
+        "Avería: pantallazo azul CRITICAL_PROCESS_DIED varias veces al día, y cada vez tarda más en arrancar.",
+        "Un compañero ha dejado una nota: «Pasar chkdsk /r y sfc /scannow». El disco se ha conectado al equipo de rescate.",
+        "Su última copia es de hace un mes. Lo urgente: las fotos de su estudio de fotografía.",
+        "Encargo: salvar todo lo posible en el disco del taller (/mnt/taller)."
+      ],
+      disco: { modelo: "WD Blue 1TB", tam: "931,5G", tipo: "HDD", salud: "precaucion", smart: [96, 63, 8], fs: "ntfs", etiqueta: "Windows", copia: "hace un mes" },
+      grupos: [
+        { id: "estudio", carpeta: "Estudio", n: 2600, peso: 4, estado: "visible", danados: 31, muestras: ["sesion_boda_garcia/", "book_marina/", "presupuestos.xlsx"] },
+        { id: "docs", carpeta: "Documentos", n: 410, peso: 3, estado: "visible", danados: 9, muestras: ["facturas_2026/", "modelo_130.pdf"] },
+        { id: "escritorio", carpeta: "Escritorio", n: 35, peso: 1, estado: "visible", danados: 2, muestras: ["ideas_web.txt"] }
+      ],
+      objetivos: { identificar: "Identificar los discos", salud: "Comprobar la salud del disco", proteger: "Clonar el disco antes de tocarlo", recuperar: "Recuperar los archivos a otro disco", verificar: "Verificar lo recuperado", informe: "Entregar el informe" },
+      pistas: {
+        identificar: "Empieza por saber qué discos hay: lsblk.",
+        salud: "Antes de reparar nada, mira el S.M.A.R.T.: disk smart sdb.",
+        proteger: "Hay sectores pendientes: nada de CHKDSK /r. Clona primero: ddrescue -n sdb /mnt/taller/tomas.img rescate.map",
+        recuperar: "Recupera desde la imagen: recover /mnt/taller/tomas.img --destino /mnt/taller/tomas",
+        verificar: "Comprueba lo recuperado: verify /mnt/taller/tomas.",
+        informe: "Cuando lo tengas todo, escribe informe."
+      },
+      preguntas: [
+        ["CRITICAL_PROCESS_DIED: ¿por qué se mira el S.M.A.R.T. antes de pasar SFC?", ["Porque ese pantallazo también lo provoca un disco que falla, y entonces primero van los datos", "Porque SFC no funciona en discos duros", "Porque el S.M.A.R.T. repara los archivos del sistema"]],
+        ["¿Qué habría pasado con el chkdsk /r de la nota?", ["Horas de lecturas forzadas sobre un disco que se muere, y más archivos perdidos", "Habría reparado los sectores y recuperado todo", "Nada: CHKDSK no lee el disco"]]
+      ],
+      solucion: "El pantallazo era el síntoma de un disco que falla. Se mira el S.M.A.R.T., se clona con ddrescue sin insistir en lo dañado y se recupera desde la imagen. SFC y CHKDSK, después y en otro disco."
+    },
+    {
+      id: "eventos", sesion: "S18", desde: "2026-10-21", equipo: "PC-026", modo: "clon",
+      titulo: "Lo que decía el Visor de eventos",
+      resumen: "El registro Sistema está lleno de eventos 7 de «disk». El equipo se congela al guardar.",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1026 · Equipo PC-026",
+        "Cliente: Elena (autoriza el acceso a sus datos para recuperarlos).",
+        "Avería: el equipo se congela unos segundos al abrir o guardar archivos.",
+        "En el Visor de eventos hay decenas de eventos 7 (origen disk): «El dispositivo tiene un bloque defectuoso».",
+        "Su última copia es de hace 20 días. Lo urgente: la tesis doctoral.",
+        "Encargo: salvar todo lo posible en el disco del taller (/mnt/taller)."
+      ],
+      disco: { modelo: "Seagate BarraCuda 2TB", tam: "1,8T", tipo: "HDD", salud: "precaucion", smart: [340, 188, 41], fs: "ntfs", etiqueta: "DATOS", copia: "hace 20 días" },
+      grupos: [
+        { id: "tesis", carpeta: "Tesis", n: 260, peso: 4, estado: "visible", danados: 18, muestras: ["tesis_v14.docx", "bibliografia.bib", "datos_encuestas.xlsx"] },
+        { id: "articulos", carpeta: "Articulos", n: 1150, peso: 2, estado: "visible", danados: 70, muestras: ["revision_2025/", "congreso_lisboa.pdf"] },
+        { id: "fotos", carpeta: "Fotos", n: 3400, peso: 2, estado: "visible", danados: 160, muestras: ["2026_erasmus/", "familia/"] }
+      ],
+      objetivos: { identificar: "Identificar los discos", salud: "Comprobar la salud del disco", proteger: "Clonar el disco antes de tocarlo", recuperar: "Recuperar los archivos a otro disco", verificar: "Verificar lo recuperado", informe: "Entregar el informe" },
+      pistas: {
+        identificar: "Empieza por saber qué discos hay: lsblk.",
+        salud: "El evento 7 pide mirar el S.M.A.R.T.: disk smart sdb.",
+        proteger: "Con sectores pendientes, clona primero: ddrescue -n sdb /mnt/taller/elena.img rescate.map, y luego reintenta con -r3.",
+        recuperar: "Recupera desde la imagen: recover /mnt/taller/elena.img --destino /mnt/taller/elena",
+        verificar: "Comprueba lo recuperado: verify /mnt/taller/elena.",
+        informe: "Cuando lo tengas todo, escribe informe."
+      },
+      preguntas: [
+        ["¿Qué significa el evento 7 de origen «disk»?", ["Un bloque defectuoso en el disco: se mira el S.M.A.R.T. y se copian los datos", "Que un servicio no pudo iniciarse", "Que el equipo se apagó sin cerrar Windows"]],
+        ["¿Para qué sirve el archivo de mapa de ddrescue?", ["Guarda lo ya copiado: la segunda pasada solo reintenta lo que falló", "Guarda la lista de archivos del cliente", "Repara los sectores dañados"]]
+      ],
+      solucion: "El Visor de eventos ya lo decía: bloques defectuosos. Se confirma con el S.M.A.R.T., se clona con ddrescue -n, se reintenta con -r3 y el mismo mapa, y se recupera desde la imagen."
+    },
+    {
+      id: "drivers", sesion: "S18", desde: "2026-10-21", equipo: "PC-027", modo: "copiarAntes",
+      titulo: "Reinstalar sin perder nada",
+      resumen: "Windows está tan dañado que hay que reinstalar. Antes, sus proyectos de vídeo.",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1027 · Equipo PC-027",
+        "Cliente: Raúl, editor de vídeo (autoriza el acceso a sus datos para recuperarlos).",
+        "Avería: errores 7000 y 7034 de servicios en cada arranque y programas que se cierran. Se reinstalará Windows en el mismo disco.",
+        "El equipo lleva una capturadora y una tarjeta de sonido de estudio: sus drivers ya se han exportado con dism /export-driver.",
+        "Antes de reinstalar hay que salvar sus proyectos. No tiene ninguna copia.",
+        "Encargo: copiar sus datos al disco del taller (/mnt/taller) y dejar el disco listo para reinstalar."
+      ],
+      disco: { modelo: "Samsung 870 EVO 2TB", tam: "1,8T", tipo: "SSD", salud: "bueno", smart: [0, 0, 0], fs: "ntfs", etiqueta: "Windows", copia: "nunca" },
+      grupos: [
+        { id: "proyectos", carpeta: "Users/Raul/Proyectos", n: 380, peso: 4, estado: "visible", muestras: ["anuncio_panaderia.prproj", "boda_laura_y_dani/", "videoclip_banda/"] },
+        { id: "docs", carpeta: "Users/Raul/Documentos", n: 210, peso: 3, estado: "visible", muestras: ["facturas_2026/", "contratos_clientes/"] },
+        { id: "drivers", carpeta: "Drivers_exportados", n: 46, peso: 2, estado: "visible", muestras: ["oem12.inf", "oem14.inf", "capturadora/"] },
+        { id: "sistema", carpeta: "Windows", n: 4100, peso: 0, estado: "visible", muestras: ["System32/"] }
+      ],
+      objetivos: { identificar: "Identificar los discos", salud: "Comprobar la salud del disco", proteger: "Montar el disco sin escribir en él", recuperar: "Copiar los datos al disco del taller", verificar: "Verificar la copia", informe: "Entregar el informe" },
+      pistas: {
+        identificar: "Empieza por saber qué discos hay: lsblk.",
+        salud: "Antes de nada, mira si el disco está sano: disk smart sdb.",
+        proteger: "Monta la partición en solo lectura: mount -r sdb1 /mnt/cliente.",
+        recuperar: "Copia los proyectos, los documentos y los drivers exportados: backup /mnt/cliente /mnt/taller/raul.",
+        verificar: "Comprueba la copia antes de reinstalar: verify /mnt/taller/raul.",
+        informe: "Con la copia verificada ya se podría reinstalar. Escribe informe."
+      },
+      preguntas: [
+        ["¿Por qué se copia también la carpeta de drivers exportados?", ["Para reinstalarlos después con pnputil /add-driver sin tener que buscarlos", "Porque Windows no se instala sin ellos", "Porque los drivers son datos personales del cliente"]],
+        ["Antes de reinstalar, ¿dónde se guarda la copia?", ["En otro disco: el de Windows se va a formatear", "En una partición D: del mismo disco", "En el escritorio del cliente"]]
+      ],
+      solucion: "Disco sano y Windows dañado. Se monta en solo lectura, se copian los proyectos, los documentos y los drivers exportados a otro disco, se verifica y entonces se reinstala."
+    },
+    {
+      id: "infectado", sesion: "S19", desde: "2026-10-22", equipo: "PC-028", modo: "copiarAntes",
+      titulo: "El equipo infectado",
+      resumen: "Un troyano que vuelve tras limpiar. Se reinstala desde cero: antes, solo los datos.",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1028 · Equipo PC-028",
+        "Cliente: Sofía (autoriza el acceso a sus datos para recuperarlos).",
+        "Avería: un troyano vuelve después de limpiar con Defender sin conexión y con una segunda opinión. Se reinstalará Windows desde cero.",
+        "El equipo ya está aislado de la red. Su disco está conectado al equipo de rescate.",
+        "En Descargas hay instaladores y un «crack» de un programa: el sospechoso de la infección.",
+        "Encargo: copiar sus datos al disco del taller (/mnt/taller) antes de reinstalar. Solo datos."
+      ],
+      disco: { modelo: "Crucial P3 500GB NVMe", tam: "465,8G", tipo: "SSD", salud: "bueno", smart: [0, 0, 0], fs: "ntfs", etiqueta: "Windows", copia: "nunca" },
+      grupos: [
+        { id: "docs", carpeta: "Users/Sofia/Documentos", n: 720, peso: 4, estado: "visible", muestras: ["oposiciones_temario/", "nominas_2026.pdf"] },
+        { id: "fotos", carpeta: "Users/Sofia/Imagenes", n: 2950, peso: 3, estado: "visible", muestras: ["2026_mallorca/", "peques/"] },
+        { id: "descargas", carpeta: "Users/Sofia/Descargas", n: 64, peso: 0, estado: "visible", muestras: ["PhotoEditor_Pro_crack.exe", "setup_conversor.exe"] },
+        { id: "sistema", carpeta: "Windows", n: 4100, peso: 0, estado: "visible", muestras: ["System32/"] }
+      ],
+      objetivos: { identificar: "Identificar los discos", salud: "Comprobar la salud del disco", proteger: "Montar el disco sin escribir en él", recuperar: "Copiar solo los datos al disco del taller", verificar: "Verificar la copia", informe: "Entregar el informe" },
+      pistas: {
+        identificar: "Empieza por saber qué discos hay: lsblk.",
+        salud: "Mira si el disco está sano: disk smart sdb.",
+        proteger: "Monta la partición en solo lectura: mount -r sdb1 /mnt/cliente.",
+        recuperar: "backup copia los documentos y las fotos, no los ejecutables: backup /mnt/cliente /mnt/taller/sofia.",
+        verificar: "Comprueba la copia: verify /mnt/taller/sofia.",
+        informe: "Cuando lo tengas todo, escribe informe."
+      },
+      preguntas: [
+        ["Antes de reinstalar un equipo infectado, ¿qué se copia?", ["Solo datos: documentos, fotos y correo. Nada de .exe ni instaladores", "Todo el disco, para no dejarse nada", "Solo la carpeta Descargas, que es lo último que usó"]],
+        ["¿Por qué se reinstala desde cero y no se vuelve a un punto de restauración?", ["Porque el malware puede estar también en el punto de restauración", "Porque los puntos de restauración borran los documentos", "Porque es más rápido"]]
+      ],
+      solucion: "La amenaza volvía tras limpiar: se reinstala desde un medio limpio. Antes se copian solo los datos (nada de ejecutables), en solo lectura y a otro disco, y se analizan en un equipo limpio antes de abrirlos."
+    },
+    {
+      id: "ransomware", sesion: "S19", desde: "2026-10-22", equipo: "PC-029", modo: "sinEscribir",
+      titulo: "Los originales del ransomware",
+      resumen: "Todo terminado en .lockbit. El ransomware borró los originales después de cifrarlos.",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1029 · Equipo PC-029",
+        "Cliente: Manuel, de una gestoría (autoriza el acceso a sus datos para recuperarlos).",
+        "Avería: todos los documentos terminan en .lockbit y hay un README.txt en cada carpeta pidiendo 3.000 €.",
+        "El equipo se aisló al momento y no se ha vuelto a encender. El disco duro (HDD) está en el equipo de rescate.",
+        "Esta variante cifra una copia y borra el original: los originales podrían seguir en el disco como archivos borrados.",
+        "Encargo: recuperar los originales al disco del taller (/mnt/taller). No hay copia de seguridad."
+      ],
+      disco: { modelo: "Toshiba P300 2TB", tam: "1,8T", tipo: "HDD", salud: "bueno", smart: [0, 0, 0], fs: "ntfs", etiqueta: "DATOS", copia: "nunca" },
+      grupos: [
+        { id: "clientes", carpeta: "Gestoria/Clientes", n: 4800, peso: 4, estado: "borrado", muestras: ["renta_2025_lopez.pdf", "nominas_octubre.xlsx"] },
+        { id: "modelos", carpeta: "Gestoria/Modelos", n: 620, peso: 3, estado: "borrado", muestras: ["modelo_303_T3.pdf", "modelo_111.pdf"] },
+        { id: "cifrados", carpeta: "Gestoria/Cifrados", n: 5420, peso: 0, estado: "visible", muestras: ["renta_2025_lopez.pdf.lockbit", "README.txt"] }
+      ],
+      objetivos: { identificar: "Identificar los discos", salud: "Comprobar la salud del disco", proteger: "No escribir en el disco del cliente", recuperar: "Recuperar los originales a otro disco", verificar: "Verificar lo recuperado", informe: "Entregar el informe" },
+      pistas: {
+        identificar: "Empieza por saber qué discos hay: lsblk.",
+        salud: "Mira si el disco está sano: disk smart sdb.",
+        proteger: "Los originales borrados siguen ahí hasta que algo escriba encima. Si montas, en solo lectura.",
+        recuperar: "Recupera lo borrado a otro disco: recover sdb1 --destino /mnt/taller/manuel",
+        verificar: "Comprueba lo recuperado: verify /mnt/taller/manuel.",
+        informe: "Cuando lo tengas todo, escribe informe."
+      },
+      preguntas: [
+        ["¿Qué se hace con los archivos .lockbit?", ["Se guardan: si algún día sale un descifrador en No More Ransom, harán falta", "Se borran para que no vuelvan a infectar", "Se pagan los 3.000 € para recuperarlos"]],
+        ["Y a la gestoría, ¿qué más le dices?", ["Que puede que también se hayan robado datos: se denuncia y se pide ayuda a INCIBE (017)", "Que con recuperar los originales ya no hay nada más que hacer", "Que conecte su copia al equipo infectado para ver si está bien"]]
+      ],
+      solucion: "En un disco duro, los originales que borró el ransomware siguen ahí hasta que se sobrescriben. Sin escribir en él, se recuperan a otro disco. Los .lockbit se guardan por si sale un descifrador, y no se paga."
+    },
+    {
+      id: "mir", sesion: "S20", desde: "2026-10-23", equipo: "PC-030", modo: "sinEscribir",
+      titulo: "La copia que se borró sola",
+      resumen: "El robocopy /MIR de cada noche borró de la copia la carpeta que el cliente borró por error.",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1030 · Equipo PC-030",
+        "Cliente: Lucía (autoriza el acceso a sus datos para recuperarlos).",
+        "Avería: el martes borró sin querer la carpeta de facturas. Su copia nocturna es robocopy D:\\Datos E:\\Copia /MIR.",
+        "El jueves fue a la copia y la carpeta tampoco estaba. Desconectó el disco de copias y lo ha traído.",
+        "El disco de copias está sano. Desde el martes solo se ha escrito en él la copia de cada noche.",
+        "Encargo: recuperar la carpeta del disco de copias al disco del taller (/mnt/taller)."
+      ],
+      disco: { modelo: "WD Elements 2TB", tam: "1,8T", tipo: "HDD", salud: "bueno", smart: [0, 0, 0], fs: "ntfs", etiqueta: "COPIAS", copia: "este disco es la copia" },
+      grupos: [
+        { id: "facturas", carpeta: "Copia/Facturas", n: 940, peso: 4, estado: "borrado", muestras: ["factura_2026_0412.pdf", "resumen_trimestre.xlsx"] },
+        { id: "presupuestos", carpeta: "Copia/Presupuestos", n: 130, peso: 2, estado: "borrado", muestras: ["reforma_cocina.pdf"] },
+        { id: "resto", carpeta: "Copia/Clientes", n: 2100, peso: 0, estado: "visible", muestras: ["fichas/", "contratos/"] }
+      ],
+      objetivos: { identificar: "Identificar los discos", salud: "Comprobar la salud del disco", proteger: "No escribir en el disco de copias", recuperar: "Recuperar lo borrado a otro disco", verificar: "Verificar lo recuperado", informe: "Entregar el informe" },
+      pistas: {
+        identificar: "Empieza por saber qué discos hay: lsblk.",
+        salud: "Mira si el disco está sano: disk smart sdb.",
+        proteger: "/MIR borró la carpeta del disco de copias, pero sigue ahí como borrada. Si montas, en solo lectura.",
+        recuperar: "Recupera lo borrado a otro disco: recover sdb1 --destino /mnt/taller/lucia",
+        verificar: "Comprueba lo recuperado: verify /mnt/taller/lucia.",
+        informe: "Cuando lo tengas todo, escribe informe."
+      },
+      preguntas: [
+        ["¿Por qué la copia tampoco tenía la carpeta?", ["/MIR deja el destino igual que el origen: el borrado se copió a la copia", "Porque el disco de copias está averiado", "Porque robocopy no copia carpetas con muchos archivos"]],
+        ["¿Qué le propones para que no vuelva a pasar?", ["Una copia con versiones, como el Historial de archivos, en un disco que se desconecta", "Seguir con /MIR, pero cada hora", "Una partición D: en el mismo disco"]]
+      ],
+      solucion: "robocopy /MIR es una sincronización: copió también el borrado. El disco de copias está sano y la carpeta sigue ahí como borrada: se recupera sin escribir en él y se cambia la copia por una con versiones."
+    },
+    {
+      id: "contrasena", sesion: "S20", desde: "2026-10-23", equipo: "PC-031", modo: "desbloquear",
+      titulo: "La copia con contraseña",
+      resumen: "El portátil ha muerto. La copia existe, pero está cifrada y nadie recuerda la contraseña.",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1031 · Equipo PC-031",
+        "Cliente: Óscar (autoriza el acceso a sus datos para recuperarlos).",
+        "Avería: su portátil no enciende. Por suerte tenía una copia en un disco externo… cifrado con BitLocker To Go.",
+        "No recuerda la contraseña: nunca había probado a restaurar. En su cuenta Microsoft hay claves de recuperación.",
+        "Las ha impreso todas en clave_recuperacion.txt. Solo una abre este disco.",
+        "Encargo: sacar los datos de la copia al disco del taller (/mnt/taller)."
+      ],
+      disco: { modelo: "Seagate Expansion 1TB", tam: "931,5G", tipo: "HDD", salud: "bueno", smart: [0, 0, 0], fs: "bitlocker", etiqueta: "COPIA", copia: "este disco es la copia",
+        claveId: "4C7E19B2", clave: "250393-617298-084711-439560-702174-338591-156035-921422",
+        claves: [
+          "Claves de recuperación de BitLocker · Cuenta Microsoft del cliente (impreso por él)",
+          "",
+          "Dispositivo: OSCAR-PC (disco del sistema)",
+          "  Id. de clave: 4C7E1A03",
+          "  Clave: 631807-245146-509212-077968-410432-196581-722469-358304",
+          "",
+          "Dispositivo: OSCAR-PC (unidad extraíble «COPIA»)",
+          "  Id. de clave: 4C7E19B2",
+          "  Clave: 250393-617298-084711-439560-702174-338591-156035-921422",
+          "",
+          "Dispositivo: OSCAR-PC (unidad extraíble «FOTOS»)",
+          "  Id. de clave: 9A04E3C7",
+          "  Clave: 480326-095414-713559-262691-034507-581118-649770-217943"
+        ] },
+      grupos: [
+        { id: "docs", carpeta: "Copia/Documentos", n: 860, peso: 4, estado: "visible", muestras: ["declaracion_2025.pdf", "hipoteca/", "trabajo/"] },
+        { id: "fotos", carpeta: "Copia/Imagenes", n: 3900, peso: 3, estado: "visible", muestras: ["2024_nacimiento_ines/", "2026_verano/"] }
+      ],
+      objetivos: { identificar: "Identificar los discos", salud: "Comprobar la salud del disco", proteger: "Desbloquear la copia con la clave correcta", recuperar: "Copiar los datos al disco del taller", verificar: "Verificar la copia", informe: "Entregar el informe" },
+      pistas: {
+        identificar: "Empieza por saber qué discos hay: lsblk.",
+        salud: "Mira si el disco está sano: disk smart sdb.",
+        proteger: "Mira el identificador de la clave con bitlocker status sdb1 y busca el que coincide entero en clave_recuperacion.txt. Luego: bitlocker unlock sdb1 --clave <clave>.",
+        recuperar: "Con el volumen desbloqueado, monta en solo lectura (mount -r sdb1 /mnt/cliente) y copia con backup /mnt/cliente /mnt/taller/oscar.",
+        verificar: "Comprueba la copia: verify /mnt/taller/oscar.",
+        informe: "Cuando lo tengas todo, escribe informe."
+      },
+      preguntas: [
+        ["¿Qué le faltaba a la copia de Óscar para ser fiable?", ["Una prueba de restauración: nunca había comprobado que podía abrirla", "Estar en el mismo disco que el portátil", "Hacerse con robocopy /MIR"]],
+        ["¿Cómo sabes qué clave de recuperación es la buena?", ["Por el Id. de clave que da bitlocker status: tiene que coincidir entero", "Se prueban todas hasta que una funcione", "Es siempre la primera de la lista"]]
+      ],
+      solucion: "La copia existía, pero nunca se había probado y nadie recordaba la contraseña. Con el Id. de clave se elige la clave de recuperación correcta, se desbloquea, se monta en solo lectura y se copian los datos."
+    },
+    {
+      id: "clean", sesion: "S21", desde: "2026-10-26", equipo: "PC-032", modo: "particion",
+      titulo: "El disco equivocado",
+      resumen: "Un diskpart clean en el disco que no era. Ahora todo es espacio no asignado.",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1032 · Equipo PC-032",
+        "Cliente: Beatriz (autoriza el acceso a sus datos para recuperarlos).",
+        "Avería: quiso preparar un pendrive con diskpart, eligió el disco por el número y lanzó clean… sobre su disco de datos.",
+        "Ahora el disco sale entero como espacio no asignado. No ha creado ni formateado nada encima.",
+        "Ahí están las partituras y grabaciones de su escuela de música. No hay copia.",
+        "Encargo: recuperar los datos y dejarlos en el disco del taller (/mnt/taller)."
+      ],
+      disco: { modelo: "WD Red Plus 4TB", tam: "3,6T", tipo: "HDD", salud: "bueno", smart: [0, 0, 0], fs: "ninguna", etiqueta: "MUSICA", copia: "nunca" },
+      grupos: [
+        { id: "partituras", carpeta: "Partituras", n: 1820, peso: 4, estado: "perdido", muestras: ["grado_elemental/", "concierto_navidad.pdf"] },
+        { id: "grabaciones", carpeta: "Grabaciones", n: 640, peso: 3, estado: "perdido", muestras: ["audicion_junio_2026/", "coro_ensayo.wav"] },
+        { id: "gestion", carpeta: "Gestion", n: 190, peso: 2, estado: "perdido", muestras: ["alumnos_2026.xlsx", "recibos/"] }
+      ],
+      objetivos: { identificar: "Identificar los discos", salud: "Comprobar la salud del disco", proteger: "Recuperar la partición sin crear otra", recuperar: "Copiar los datos al disco del taller", verificar: "Verificar lo recuperado", informe: "Entregar el informe" },
+      pistas: {
+        identificar: "Empieza por saber qué discos hay: lsblk. Fíjate en que sdb no tiene particiones.",
+        salud: "Antes de tocar nada, mira si el disco está sano: disk smart sdb.",
+        proteger: "clean solo borra la tabla de particiones: testdisk sdb, búsqueda rápida y comprueba los archivos con P.",
+        recuperar: "Copia los archivos desde TestDisk (C), o escribe la tabla, monta en solo lectura y usa backup /mnt/cliente /mnt/taller/beatriz.",
+        verificar: "Comprueba lo recuperado: verify /mnt/taller/beatriz.",
+        informe: "Cuando lo tengas todo, escribe informe."
+      },
+      preguntas: [
+        ["¿Qué borra diskpart clean?", ["La tabla de particiones: los datos siguen en el disco hasta que se escriba encima", "Todos los datos, sector a sector", "Solo los archivos ocultos"]],
+        ["En TestDisk, ¿por qué se pulsa P antes de Write?", ["Para ver los archivos y confirmar que es la partición buena antes de escribir", "Porque Write no funciona sin P", "Para formatear la partición encontrada"]]
+      ],
+      solucion: "clean solo vacía la tabla de particiones. Con el disco sano, TestDisk encuentra la partición, se comprueban sus archivos con P y se copian a otro disco (o se escribe la tabla y se copia en solo lectura)."
+    },
+    {
+      id: "zumbido", sesion: "S21", desde: "2026-10-26", equipo: "PC-033", modo: "derivar", fisico: true,
+      ruido: "bzzzz… iiiiii… (el motor intenta arrancar y no gira)", sintomaFisico: "zumbaba sin girar",
+      titulo: "El disco que zumba",
+      resumen: "El portátil se cayó encendido. Su disco zumba y chirría, pero no gira.",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1033 · Equipo PC-033",
+        "Cliente: Antonio (autoriza el acceso a sus datos para recuperarlos).",
+        "Avería: el portátil se cayó de la mesa mientras copiaba. Desde entonces no arranca.",
+        "Su disco duro, conectado al equipo de rescate, zumba y chirría unos segundos, pero no se oye girar.",
+        "Tiene ahí los planos de su estudio de arquitectura y las fotos de sus hijos. No hay copia.",
+        "Encargo: salvar sus datos (destino: disco del taller, /mnt/taller)."
+      ],
+      disco: { modelo: "HGST Travelstar 1TB", tam: "931,5G", tipo: "HDD", salud: "malo", smart: null, fs: "ntfs", etiqueta: "ANTONIO", copia: "nunca" },
+      grupos: [
+        { id: "planos", carpeta: "Planos", n: 2200, peso: 4, estado: "visible", muestras: ["vivienda_calle_mayor.dwg", "reforma_colegio/"] },
+        { id: "fotos", carpeta: "Fotos", n: 6800, peso: 3, estado: "visible", muestras: ["2018_nacimiento_pablo/", "2026_playa/"] }
+      ],
+      objetivosOrden: ["identificar", "salud", "derivar", "informe"],
+      objetivos: { identificar: "Identificar los discos", salud: "Diagnosticar el tipo de fallo", derivar: "Decidir qué hacer con el disco", informe: "Entregar el informe" },
+      pistas: {
+        identificar: "Empieza por saber qué discos hay: lsblk.",
+        salud: "Mira qué dice el sistema del disco sin leerlo a fondo: disk status sdb y cat /var/log/kern.log.",
+        derivar: "Zumbido sin giro tras un golpe = motor bloqueado o cabezales pegados. No se intenta leer: derivar sdb.",
+        informe: "Escribe informe."
+      },
+      preguntas: [
+        ["¿Qué indica un disco que zumba y no gira después de una caída?", ["Fallo físico: motor bloqueado o cabezales pegados a los platos", "Un sistema de archivos dañado", "Que le falta alimentación por USB"]],
+        ["¿Qué le dices al cliente?", ["Que no lo vuelva a encender y que va a un laboratorio con sala limpia", "Que lo abramos en el taller para despegar los cabezales", "Que pruebe a darle un golpecito para que arranque"]]
+      ],
+      solucion: "Un disco que zumba sin girar tras un golpe tiene un fallo físico. Cada intento puede rayar los platos: se apaga, se etiqueta y se deriva a un laboratorio profesional."
     }
   ];
 
@@ -333,6 +695,8 @@
   const totalDanados = () => E.grupos.reduce((s, g) => s + g.danados, 0);
   const falla = () => E.disco.salud === "precaucion";
   const fisico = () => !!M.fisico;
+  /* Cómo se nota el fallo físico: cada misión puede tener su ruido. */
+  const sintomaFisico = () => M.sintomaFisico || "hacía clics";
   /* Consejo para el alumno: en modo difícil no se muestra. */
   const consejo = (texto, clase) => { if (!DIFICIL) t.escribir(texto, clase || "t-suave"); };
   /* Error con una parte que explica qué hacer: en modo difícil solo queda el error. */
@@ -494,21 +858,7 @@
         "Equipo de rescate con SystemRescue (Linux en vivo). Terminal simulada: nada de esto se ejecuta en tu ordenador.",
         ...(DIFICIL ? ["Ayuda: help <comando>."] : ["Discos: lsblk o disk list. Salud: disk smart <disco>. Ayuda: help <comando>.",
         "Recuerda: lo recuperado siempre a otro disco. Si el disco falla, primero se clona."])
-      ]), ...(M.disco.clave ? { "clave_recuperacion.txt": archivo(() => [
-        "Claves de recuperación de BitLocker · Cuenta Microsoft de la cliente (impreso por ella)",
-        "",
-        "Dispositivo: NURIA-PORTATIL (portátil viejo)",
-        "  Id. de clave: 8F3A2C71",
-        "  Clave: " + M.disco.clave,
-        "",
-        "Dispositivo: NURIA-TABLET",
-        "  Id. de clave: 2D9B6E04",
-        "  Clave: 158312-660231-047795-392876-201410-583097-614185-270006",
-        "",
-        "Dispositivo: NURIA-PORTATIL (unidad USB «Trabajo»)",
-        "  Id. de clave: 8F3A9D15",
-        "  Clave: 712085-300421-659813-024497-118250-466378-090244-537711"
-      ]) } : {}) }) }),
+      ]), ...(M.disco.clave ? { "clave_recuperacion.txt": archivo(() => M.disco.claves) } : {}) }) }),
       var: dir({ log: dir({ "kern.log": archivo(kernLog) }) }),
       dev: dir(() => {
         const b = () => archivo(["(dispositivo de bloques)"]);
@@ -1165,11 +1515,11 @@
       E.golpes++;
       await t.progreso("Accediendo a sdb", 1600);
       E.grupos.forEach((g) => { g.danados += Math.round((g.n - g.danados) * 0.22); });
-      t.escribir("clac… clac… clac…", "t-error");
+      t.escribir(M.ruido || "clac… clac… clac…", "t-error");
       t.escribir("sdb: error de E/S. El disco no responde, se desconecta y vuelve a conectarse.", "t-error");
-      riesgo("insistir", 12, "Intentaste leer un disco que hacía clics: cada intento raya más los platos.");
+      riesgo("insistir", 12, "Intentaste leer un disco que " + sintomaFisico() + ": cada intento raya más los platos.");
       if (E.golpes > 1) riesgo("insistir2", 8, "Insististe varias veces con un disco con fallo físico.");
-      consejo("Un disco que hace clics no se lee en el taller.", "t-aviso");
+      consejo("Un disco con un fallo físico no se lee en el taller.", "t-aviso");
     };
     TOCAN.forEach((n) => {
       const c = t.comandos[n];
@@ -1248,7 +1598,7 @@
       ["Comprobaste el estado del disco antes de actuar", E.accionAntes.salud !== false && E.hechos.has("salud")]
     ];
     const metodo = M.modo === "derivar" ? antes.concat([
-      ["No insististe con un disco que hacía clics", E.golpes === 0],
+      ["No insististe con un disco que " + sintomaFisico(), E.golpes === 0],
       ["Lo derivaste a un laboratorio", E.derivado]
     ]) : antes.concat([
       [METODO_CLAVE[M.modo][0], METODO_CLAVE[M.modo][1]()],
