@@ -478,6 +478,278 @@
         ["¿Por qué no se conecta la copia del viernes al equipo infectado «para ver si está bien»?", ["Porque el ransomware la cifraría también", "Porque el disco USB es demasiado lento", "Porque Windows no reconoce discos con copias"]]
       ],
       solucion: "Un ransomware lanzado desde un adjunto de Outlook: cifraba Documentos y la unidad Z: del NAS, y borró las instantáneas con vssadmin (un programa de Microsoft usado para el ataque). Se aísla al momento, se detiene el proceso, se identifica la variante en No More Ransom, no se paga, se reinstala desde un medio limpio y se restaura la copia desconectada del viernes."
+    },
+    {
+      id: "dosav", sesion: "S18", desde: "2026-10-21", equipo: "PC-038", usuario: "tomas", tipo: "ninguno",
+      titulo: "Dos antivirus a la vez",
+      resumen: "Va a paso de tortuga desde que «se protegió mejor». No hay ningún virus.",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1038 · Equipo PC-038",
+        "Cliente: Tomás (autoriza la revisión de su equipo).",
+        "Avería: desde la semana pasada tarda casi cuatro minutos en arrancar y al abrir cualquier carpeta se queda pensando.",
+        "Cuenta que, para estar «más protegido», instaló ShieldMax Free y, como seguía lento, también SecureZone Total.",
+        "Encargo: que vaya rápido sin dejarlo desprotegido. No quiere perder la licencia de SecureZone, que la pagó."
+      ],
+      sistema: { sin: [3604], cpu: { 5012: 3.2 } },
+      defender: { activo: false, bloqueado: "Hay otro antivirus registrado en Seguridad de Windows: Microsoft Defender Antivirus se ha desactivado solo." },
+      procesos: [
+        app_(5210, "ShieldMaxSvc.exe", "SYSTEM", 34.8, 410, "C:\\Program Files\\ShieldMax\\ShieldMaxSvc.exe", "ShieldMax Security s.r.o.", { padre: 792, inicio: "08:57", protegido: true, vt: "0/72", cmd: "\"C:\\Program Files\\ShieldMax\\ShieldMaxSvc.exe\" /realtime",
+          nota: ["Protección en tiempo real activa: analiza cada archivo que se abre."] }),
+        app_(5388, "SZEngine.exe", "SYSTEM", 29.1, 520, "C:\\Program Files\\SecureZone\\Total\\SZEngine.exe", "SecureZone Ltd", { padre: 792, inicio: "08:57", protegido: true, vt: "0/72", cmd: "\"C:\\Program Files\\SecureZone\\Total\\SZEngine.exe\" -rtp -heuristic=high",
+          nota: ["Protección en tiempo real activa: analiza cada archivo que se abre… y también los que abre el otro antivirus."] }),
+        app_(5530, "OneDrive.exe", "tomas", 0.4, 60, "C:\\Program Files\\Microsoft OneDrive\\OneDrive.exe", "Microsoft Corporation", { red: [["13.107.42.12:443", "ESTABLISHED"]] }),
+        app_(5870, "firefox.exe", "tomas", 1.3, 350, "C:\\Program Files\\Mozilla Firefox\\firefox.exe", "Mozilla Corporation", { red: [["34.107.243.93:443", "ESTABLISHED"]] })
+      ],
+      inicio: [
+        { n: 1, lugar: "Servicio", nombre: "ShieldMaxService", ruta: "\"C:\\Program Files\\ShieldMax\\ShieldMaxSvc.exe\" /realtime", editor: "ShieldMax Security s.r.o.", lanza: 5210, impacto: "—", programa: 1 },
+        { n: 2, lugar: "Servicio", nombre: "SecureZoneEngine", ruta: "\"C:\\Program Files\\SecureZone\\Total\\SZEngine.exe\" -rtp", editor: "SecureZone Ltd", lanza: 5388, impacto: "—", programa: 2 },
+        { n: 3, lugar: "Run (HKLM)", nombre: "ShieldMaxTray", ruta: "\"C:\\Program Files\\ShieldMax\\smtray.exe\"", editor: "ShieldMax Security s.r.o.", impacto: "Alto", programa: 1 },
+        { n: 4, lugar: "Run (HKLM)", nombre: "SecureZoneUI", ruta: "\"C:\\Program Files\\SecureZone\\Total\\szui.exe\" /minimized", editor: "SecureZone Ltd", impacto: "Alto", programa: 2 },
+        { n: 5, lugar: "Run (HKCU)", nombre: "OneDrive", ruta: "\"C:\\Program Files\\Microsoft OneDrive\\OneDrive.exe\" /background", editor: "Microsoft Corporation", lanza: 5530, microsoft: true, impacto: "Alto" }
+      ],
+      programas: [
+        { n: 1, nombre: "ShieldMax Free Antivirus 9", editor: "ShieldMax Security s.r.o.", fecha: "12/10/2026", av: true, procesos: [5210], inicio: [1, 3] },
+        { n: 2, nombre: "SecureZone Total Security 2026", editor: "SecureZone Ltd", fecha: "15/10/2026", av: true, cliente: true, procesos: [5388], inicio: [2, 4] },
+        { n: 3, nombre: "Mozilla Firefox", editor: "Mozilla Corporation", fecha: "04/03/2025", cliente: true },
+        { n: 4, nombre: "LibreOffice 25.8", editor: "The Document Foundation", fecha: "04/03/2025", cliente: true }
+      ],
+      eventos: [
+        ["21/10/2026 09:02", 100, "Diagnostics-Performance", "Windows se ha iniciado: el arranque ha tardado 214.380 ms (antes de la semana pasada: 38.900 ms)."],
+        ["21/10/2026 09:02", 103, "Diagnostics-Performance", "Este servicio ha retrasado el arranque: ShieldMaxService. Y también: SecureZoneEngine."],
+        ["20/10/2026 18:11", 1002, "Application Hang", "El programa explorer.exe dejó de responder (mientras SZEngine.exe analizaba la carpeta)."],
+        ["15/10/2026 20:30", 15, "SecurityCenter", "Se registró SecureZone Total Security. Estado: activado. Ya había otro antivirus activo: ShieldMax Free."],
+        ["12/10/2026 19:05", 15, "SecurityCenter", "Se registró ShieldMax Free Antivirus. Microsoft Defender Antivirus se desactiva."]
+      ],
+      extra: [["Un solo antivirus en tiempo real", () => E.programas.filter((g) => g.av && g.instalado).length <= 1],
+        ["Sigue habiendo un antivirus en tiempo real", () => E.programas.some((g) => g.av && g.instalado) || E.defender.activo]],
+      objetivosOrden: ["eventos", "investigar", "extra", "comprobar", "informe"],
+      objetivos: { eventos: "Ver qué retrasa el arranque", investigar: "Revisar procesos e inicio", extra: "Dejar un solo antivirus en tiempo real", comprobar: "Reiniciar y comprobar", informe: "Entregar el informe" },
+      pistas: {
+        eventos: "El Visor de eventos guarda cuánto tarda el arranque y quién lo retrasa: eventos (mira el 100 y el 103).",
+        investigar: "Mira qué gasta CPU (tasklist /cpu) y qué arranca solo (autoruns). Revisa los procesos con proceso <PID>.",
+        extra: "Dos antivirus en tiempo real se bloquean entre sí. No se cierran: se desinstala uno (programas, desinstalar <nº>). Tomás quiere quedarse SecureZone, que lo pagó.",
+        comprobar: "Reinicia (reiniciar) y mira con tasklist /cpu que va bien.",
+        informe: "Cuando lo tengas todo, escribe informe. Aquí no había ningún proceso malicioso."
+      },
+      metodo: ["eventos", "persistencia", "investigar", "comprobar"],
+      preguntas: [
+        ["¿Qué le pasaba al equipo?", ["Dos antivirus en tiempo real que se bloqueaban entre sí", "Un criptominero escondido en el antivirus", "Un disco duro que empezaba a fallar"]],
+        ["Si un cliente quiere una «segunda opinión», ¿qué le recomiendas?", ["Un antimalware a demanda, que no se queda vigilando", "Un segundo antivirus en tiempo real", "Desactivar Defender y usar solo el gratuito"]]
+      ],
+      solucion: "No había virus: dos antivirus en tiempo real analizaban cada archivo que abría el otro, y Defender se había apartado solo. Se desinstala uno (el que no pagó), se deja el otro y se comprueba el arranque. La segunda opinión se usa a demanda, nunca como segundo antivirus residente."
+    },
+    {
+      id: "susto", sesion: "S19", desde: "2026-10-22", equipo: "PC-039", usuario: "carmen", tipo: "pup",
+      titulo: "1.847 problemas graves",
+      resumen: "Un «limpiador» asusta con errores y pide 39 € para arreglarlos.",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1039 · Equipo PC-039",
+        "Clienta: Carmen (autoriza la revisión de su equipo).",
+        "Avería: cada vez que enciende sale «¡PELIGRO! 1.847 problemas graves. Repárelos ahora por 39,95 €».",
+        "Lo instaló desde un anuncio que decía que su equipo estaba infectado. Ella no ha pagado.",
+        "Encargo: quitar el programa y lo que haya traído con él."
+      ],
+      procesos: [
+        app_(5870, "msedge.exe", "carmen", 1.1, 290, "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe", "Microsoft Corporation", { red: [["13.107.21.200:443", "ESTABLISHED"]] }),
+        app_(6230, "PCFixUltimate.exe", "carmen", 4.6, 140, "C:\\Program Files (x86)\\PCFix Ultimate\\PCFixUltimate.exe", "Optimal Soft Group LLC",
+          { amenaza: "pup", cmd: "\"C:\\Program Files (x86)\\PCFix Ultimate\\PCFixUltimate.exe\" /autoscan /alert", vt: "11/72 · PUP.Optional.PCFixUltimate", red: [["185.199.110.153:443", "ESTABLISHED"]], detecta: { kvrt: true },
+            nota: ["Muestra una alerta a pantalla completa con «1.847 problemas» que en realidad son archivos temporales y cookies."] }),
+        app_(6402, "PCFixNotifier.exe", "carmen", 0.8, 32, "C:\\Users\\carmen\\AppData\\Local\\PCFix\\PCFixNotifier.exe", null,
+          { firmado: false, amenaza: "pup", inicio: "09:00", cmd: "\"C:\\Users\\carmen\\AppData\\Local\\PCFix\\PCFixNotifier.exe\" --nag 30", vt: "9/72 · PUP.Optional.PCFixUltimate", detecta: { kvrt: true },
+            nota: ["Cada 30 minutos abre otra vez la alerta. No se va al desinstalar el programa."] })
+      ],
+      inicio: [
+        { n: 1, lugar: "Run (HKCU)", nombre: "PCFixUltimate", ruta: "\"C:\\Program Files (x86)\\PCFix Ultimate\\PCFixUltimate.exe\" /autoscan /alert", editor: "Optimal Soft Group LLC", lanza: 6230, mala: true, impacto: "Alto", programa: 1 },
+        { n: 2, lugar: "Tarea programada", nombre: "PCFixNotifier_Logon", ruta: "\"C:\\Users\\carmen\\AppData\\Local\\PCFix\\PCFixNotifier.exe\" --nag 30", editor: "", firmado: false, lanza: 6402, mala: true, impacto: "—", detecta: { kvrt: true } },
+        { n: 3, lugar: "Run (HKCU)", nombre: "MicrosoftEdgeAutoLaunch", ruta: "\"C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe\" --no-startup-window", editor: "Microsoft Corporation", lanza: 5870, impacto: "Bajo" }
+      ],
+      programas: [
+        { n: 1, nombre: "PCFix Ultimate 2026", editor: "Optimal Soft Group LLC", fecha: "19/10/2026", pup: true, detectaKvrt: true, procesos: [6230], inicio: [1] },
+        { n: 2, nombre: "Microsoft 365", editor: "Microsoft Corporation", fecha: "02/02/2026", cliente: true },
+        { n: 3, nombre: "Zoom Workplace", editor: "Zoom Communications, Inc.", fecha: "02/02/2026", cliente: true }
+      ],
+      eventos: [
+        ["19/10/2026 17:44", 11707, "MsiInstaller", "Producto: PCFix Ultimate 2026. La instalación se completó correctamente."],
+        ["19/10/2026 17:44", 4698, "Microsoft-Windows-Security-Auditing", "Se creó una tarea programada: \\PCFixNotifier_Logon (usuario carmen)."]
+      ],
+      archivos: [["C:\\Users\\carmen\\Downloads\\PCFixUltimate_Setup.exe", "(ejecutable)"]],
+      objetivosOrden: ["aislar", "investigar", "analizar", "persistencia", "neutralizar", "comprobar", "informe"],
+      objetivos: { aislar: "Aislar el equipo de la red", investigar: "Revisar los procesos sospechosos", analizar: "Pasar una segunda opinión", persistencia: "Quitar el programa y lo que deja", neutralizar: "Que no quede nada en marcha", comprobar: "Reiniciar y comprobar", informe: "Entregar el informe" },
+      pistas: {
+        aislar: "Se sigue el protocolo aunque parezca solo un programa pesado: red off.",
+        investigar: "Hay dos procesos de PCFix. Míralos con tasklist /v y proceso <PID>: uno no está en Archivos de programa.",
+        analizar: "Defender no suele marcar estos «limpiadores». Pasa una segunda opinión: kvrt.",
+        persistencia: "Desinstala PCFix (programas, desinstalar <nº>) y desactiva la tarea que deja detrás (autoruns, desactivar <nº>).",
+        neutralizar: "Si el avisador sigue en marcha, ciérralo por PID: taskkill /pid <PID> /f.",
+        comprobar: "Reinicia (reiniciar) y mira tasklist y autoruns.",
+        informe: "Cuando lo tengas todo, escribe informe."
+      },
+      metodo: ["aislar", "investigar", "offline", "comprobar"],
+      preguntas: [
+        ["¿Qué era PCFix Ultimate?", ["Un programa no deseado (PUP) que asusta para cobrar", "Un ransomware", "Un antivirus legítimo con una licencia caducada"]],
+        ["¿Por qué volvía la alerta aunque se desinstalara el programa?", ["Una tarea programada lanzaba un avisador que no se iba con el desinstalador", "Porque Windows guarda una copia en la Papelera", "Porque Edge lo reinstala solo"]]
+      ],
+      solucion: "Un «limpiador» que asusta (scareware, un PUP): los 1.847 problemas eran temporales y cookies. Se desinstala, se quita su avisador, que dejaba una tarea programada aparte, y se comprueba con una segunda opinión y un reinicio. A la clienta se le explica que ninguna web sabe si su equipo está infectado."
+    },
+    {
+      id: "rat", sesion: "S19", desde: "2026-10-22", equipo: "PC-040", usuario: "jorge", tipo: "rat",
+      titulo: "El ratón que se mueve solo",
+      resumen: "Por la noche el puntero se mueve y se abren ventanas. Hay un servicio sin descripción.",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1040 · Equipo PC-040",
+        "Cliente: Jorge, autónomo (autoriza la revisión de su equipo y el acceso a sus datos).",
+        "Avería: anoche vio cómo el puntero se movía solo y se abría el banco en el navegador. Desenchufó el equipo.",
+        "Su gestor se conecta a veces con AnyDesk para revisarle las facturas; eso es normal y Jorge lo autoriza.",
+        "Hace dos semanas abrió un adjunto «Notificación_DGT.zip».",
+        "Encargo: que el equipo vuelva a ser de fiar y salvar la carpeta Facturas."
+      ],
+      reinstalar: true,
+      procesos: [
+        app_(5530, "AnyDesk.exe", "SYSTEM", 0.3, 28, "C:\\Program Files (x86)\\AnyDesk\\AnyDesk.exe", "philandro Software GmbH", { padre: 792, inicio: "08:57", cmd: "\"C:\\Program Files (x86)\\AnyDesk\\AnyDesk.exe\" --service", red: [["195.181.170.8:443", "ESTABLISHED"]],
+          nota: ["Servicio de escritorio remoto. Sesiones de hoy: ninguna. Última: 14/10 (gestoría García)."] }),
+        app_(5870, "chrome.exe", "jorge", 1.6, 330, "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", "Google LLC", { red: [["142.250.184.4:443", "ESTABLISHED"]] }),
+        app_(6612, "wdhelper.exe", "SYSTEM", 0.7, 18, "C:\\ProgramData\\Microsoft\\Crypto\\wdhelper.exe", null,
+          { firmado: false, amenaza: "rat", padre: 792, inicio: "08:57", cmd: "\"C:\\ProgramData\\Microsoft\\Crypto\\wdhelper.exe\" -svc -h 193.42.33.17 -p 4444", vt: "47/72 · Backdoor:Win32/Remcos", red: [["193.42.33.17:4444", "ESTABLISHED"]],
+            detecta: { offline: true, kvrt: true, rapido: true, completo: true }, firmasNuevas: true,
+            nota: ["Captura la pantalla, mueve el ratón y registra el teclado a petición del servidor."] })
+      ],
+      inicio: [
+        { n: 1, lugar: "Servicio", nombre: "WinDefendHelper", ruta: "\"C:\\ProgramData\\Microsoft\\Crypto\\wdhelper.exe\" -svc", editor: "", firmado: false, lanza: 6612, mala: true, impacto: "—", nota: "Servicio sin descripción. Se hace llamar «Windows Defender Helper», pero Defender no tiene ningún servicio así." },
+        { n: 2, lugar: "Servicio", nombre: "AnyDesk", ruta: "\"C:\\Program Files (x86)\\AnyDesk\\AnyDesk.exe\" --service", editor: "philandro Software GmbH", lanza: 5530, impacto: "—", cliente: true },
+        { n: 3, lugar: "Run (HKCU)", nombre: "GoogleChromeAutoLaunch", ruta: "\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --no-startup-window", editor: "Google LLC", lanza: 5870, impacto: "Bajo" }
+      ],
+      programas: [
+        { n: 1, nombre: "AnyDesk", editor: "philandro Software GmbH", fecha: "10/01/2026", cliente: true },
+        { n: 2, nombre: "Google Chrome", editor: "Google LLC", fecha: "10/01/2026", cliente: true },
+        { n: 3, nombre: "FacturaDirecta Escritorio", editor: "FacturaDirecta SL", fecha: "10/01/2026", cliente: true }
+      ],
+      defender: { firmasDias: 9 },
+      eventos: [
+        ["07/10/2026 11:20", 7045, "Service Control Manager", "Se instaló un servicio en el sistema: WinDefendHelper (C:\\ProgramData\\Microsoft\\Crypto\\wdhelper.exe), inicio automático."],
+        ["07/10/2026 11:19", 4688, "Microsoft-Windows-Security-Auditing", "Nuevo proceso: C:\\Users\\jorge\\AppData\\Local\\Temp\\Notificacion_DGT\\Notificacion_DGT.pdf.js (wscript.exe)."],
+        ["14/10/2026 10:02", 4624, "Microsoft-Windows-Security-Auditing", "Inicio de sesión remoto (AnyDesk) desde la gestoría García."]
+      ],
+      datos: ["Documents/Facturas/", "Documents/Facturas/2026_T3.xlsx", "Documents/Contratos/"],
+      extra: [["Equipo reinstalado desde un medio limpio", () => E.reinstalado]],
+      objetivosOrden: ["aislar", "investigar", "copiar", "analizar", "reinstalar", "contrasenas", "informe"],
+      objetivos: { aislar: "Aislar el equipo de la red", investigar: "Encontrar al intruso", copiar: "Copiar los datos del cliente", analizar: "Analizar con firmas al día o sin conexión", reinstalar: "Decidir: limpiar o reinstalar", contrasenas: "Cambiar las contraseñas de forma segura", informe: "Entregar el informe" },
+      pistas: {
+        aislar: "Alguien controla el equipo desde fuera: red off antes que nada.",
+        investigar: "Hay dos programas de control remoto. Uno es el del gestor. Compara rutas, firmas y conexiones: tasklist /v, netstat -ano, proceso <PID>, sc query.",
+        copiar: "Antes de decidir, salva las facturas: copiar datos (solo datos).",
+        analizar: "Las firmas tienen 9 días: defender actualizar y defender offline (o kvrt).",
+        reinstalar: "Con un control remoto no se sabe qué más dejó el atacante: se reinstala desde un medio limpio. reinstalar.",
+        contrasenas: "Si veía la pantalla y el teclado, el banco y el correo ya no son secretos: contrasenas, desde otro equipo.",
+        informe: "Cuando lo tengas todo, escribe informe."
+      },
+      metodo: ["aislar", "copiar", "offline", "contrasenas"],
+      preguntas: [
+        ["¿Qué era wdhelper.exe?", ["Un troyano de control remoto (puerta trasera)", "El servicio de AnyDesk que usa el gestor", "Un componente de Windows Defender"]],
+        ["¿Por qué se reinstala en vez de quitar solo el servicio?", ["Con un control remoto no se sabe qué más dejó el atacante", "Porque los servicios no se pueden desactivar", "Porque AnyDesk no funciona tras limpiar"]]
+      ],
+      solucion: "Un troyano de control remoto que llegó en un adjunto falso de la DGT y se instaló como servicio con nombre de Defender, en ProgramData, sin firma y conectado al puerto 4444. AnyDesk era legítimo (lo usa el gestor). Se aísla, se copian solo los datos, se analiza con firmas al día, se reinstala porque un control remoto deja la duda de qué más hizo, y las contraseñas se cambian desde otro equipo."
+    },
+    {
+      id: "limpiador", sesion: "S20", desde: "2026-10-23", equipo: "PC-041", usuario: "irene", tipo: "pup",
+      titulo: "Los puntos de restauración que desaparecen",
+      resumen: "Quiso volver a un punto de restauración y no queda ninguno. Cada noche se borran.",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1041 · Equipo PC-041",
+        "Clienta: Irene (autoriza la revisión de su equipo).",
+        "Avería: tras una actualización de la impresora quiso volver a un punto de restauración y no hay ninguno. La Protección del sistema está activada.",
+        "Hace un mes instaló «CleanBoost Pro» para «liberar espacio». Dice que le ahorra 20 GB cada noche.",
+        "Encargo: averiguar qué borra los puntos de restauración y que no vuelva a pasar."
+      ],
+      procesos: [
+        app_(5530, "OneDrive.exe", "irene", 0.3, 58, "C:\\Program Files\\Microsoft OneDrive\\OneDrive.exe", "Microsoft Corporation", { red: [["13.107.42.12:443", "ESTABLISHED"]] }),
+        app_(6080, "CleanBoost.exe", "irene", 2.4, 120, "C:\\Program Files\\CleanBoost Pro\\CleanBoost.exe", "Brightstar Utilities Ltd",
+          { amenaza: "pup", cmd: "\"C:\\Program Files\\CleanBoost Pro\\CleanBoost.exe\" /tray /deepclean=nightly", vt: "8/72 · PUP.Optional.CleanBoost", red: [["104.18.6.112:443", "ESTABLISHED"]], detecta: { kvrt: true },
+            nota: ["Su «limpieza profunda» incluye «Eliminar copias de seguridad del sistema innecesarias»."] })
+      ],
+      inicio: [
+        { n: 1, lugar: "Run (HKCU)", nombre: "CleanBoostTray", ruta: "\"C:\\Program Files\\CleanBoost Pro\\CleanBoost.exe\" /tray", editor: "Brightstar Utilities Ltd", lanza: 6080, mala: true, impacto: "Medio", programa: 1 },
+        { n: 2, lugar: "Tarea programada", nombre: "CleanBoost_DeepClean_Nightly", ruta: "C:\\Windows\\System32\\vssadmin.exe delete shadows /for=C: /all /quiet", editor: "Microsoft Windows", mala: true, impacto: "—", nota: "Todas las noches a las 03:00. El programa (vssadmin) es de Windows; lo que hace con él, no: borra todas las instantáneas." },
+        { n: 3, lugar: "Tarea programada", nombre: "HP Printer Firmware Update", ruta: "\"C:\\Program Files\\HP\\HP Smart\\hpfwupd.exe\" /check", editor: "HP Inc.", impacto: "—", cliente: true },
+        { n: 4, lugar: "Run (HKCU)", nombre: "OneDrive", ruta: "\"C:\\Program Files\\Microsoft OneDrive\\OneDrive.exe\" /background", editor: "Microsoft Corporation", lanza: 5530, microsoft: true, impacto: "Alto" }
+      ],
+      programas: [
+        { n: 1, nombre: "CleanBoost Pro 5", editor: "Brightstar Utilities Ltd", fecha: "22/09/2026", pup: true, detectaKvrt: true, procesos: [6080], inicio: [1] },
+        { n: 2, nombre: "HP Smart", editor: "HP Inc.", fecha: "18/10/2026", cliente: true },
+        { n: 3, nombre: "Microsoft 365", editor: "Microsoft Corporation", fecha: "05/05/2025", cliente: true }
+      ],
+      eventos: [
+        ["21/10/2026 03:00", 8224, "VSS", "Se eliminaron 3 instantáneas del volumen C: (vssadmin delete shadows, tarea CleanBoost_DeepClean_Nightly)."],
+        ["20/10/2026 03:00", 8224, "VSS", "Se eliminaron 2 instantáneas del volumen C: (vssadmin delete shadows, tarea CleanBoost_DeepClean_Nightly)."],
+        ["18/10/2026 16:20", 8194, "System Restore", "Se creó el punto de restauración «Instalado HP Smart»."],
+        ["22/09/2026 18:02", 11707, "MsiInstaller", "Producto: CleanBoost Pro 5. La instalación se completó correctamente."]
+      ],
+      objetivosOrden: ["eventos", "investigar", "persistencia", "neutralizar", "comprobar", "informe"],
+      objetivos: { eventos: "Averiguar quién borra los puntos", investigar: "Revisar el proceso sospechoso", persistencia: "Quitar el programa y su tarea nocturna", neutralizar: "Que no quede nada en marcha", comprobar: "Reiniciar y comprobar", informe: "Entregar el informe" },
+      pistas: {
+        eventos: "Los puntos de restauración son instantáneas (VSS). Busca en eventos el 8224: dice cuándo se borraron y quién.",
+        investigar: "Mira el proceso del «limpiador» con tasklist /v y proceso <PID>.",
+        persistencia: "Desinstala CleanBoost (programas, desinstalar <nº>). La tarea nocturna no es suya para el desinstalador: desactívala en autoruns (desactivar <nº>). La de HP es de la impresora y se queda.",
+        neutralizar: "Comprueba con tasklist que CleanBoost.exe ya no está.",
+        comprobar: "Reinicia (reiniciar) y revisa schtasks.",
+        informe: "Cuando lo tengas todo, escribe informe."
+      },
+      metodo: ["eventos", "persistencia", "investigar", "desinstalar"],
+      preguntas: [
+        ["¿Qué borraba los puntos de restauración?", ["Una tarea del «limpiador» que lanzaba vssadmin delete shadows cada noche", "Windows Update al instalar el driver de la impresora", "Un ransomware"]],
+        ["¿Qué le recomiendas a Irene, además de quitar el limpiador?", ["Un punto de restauración no es una copia: una copia de sus datos en un disco externo", "Ampliar el espacio de Protección del sistema al 50 %", "Instalar otro limpiador más fiable"]]
+      ],
+      solucion: "Un «optimizador» (PUP) que, para presumir de espacio liberado, borraba cada noche todas las instantáneas con vssadmin, un programa legítimo de Windows. El desinstalador no se llevaba la tarea. Se desinstala, se desactiva la tarea, se crea un punto nuevo y se le recuerda que un punto de restauración no sustituye a una copia de sus datos."
+    },
+    {
+      id: "pendrive", sesion: "S21", desde: "2026-10-26", equipo: "PC-042", usuario: "sergio", tipo: "gusano",
+      titulo: "El pendrive de los accesos directos",
+      resumen: "Las carpetas del pendrive se han convertido en accesos directos y el TFG ha desaparecido.",
+      orden: [
+        "ORDEN DE TRABAJO 2026-1042 · Equipo PC-042",
+        "Cliente: Sergio, estudiante (autoriza la revisión de su equipo y de su pendrive).",
+        "Avería: al conectar su pendrive (E:) en el ordenador de la biblioteca y luego en casa, sus carpetas han pasado a ser accesos directos de 1 KB.",
+        "Hizo doble clic en uno y no se abrió nada. El TFG solo lo tiene ahí. El pendrive está conectado a este equipo.",
+        "Encargo: limpiar el equipo y recuperar lo que hay en el pendrive sin perderlo."
+      ],
+      usb: { carpetas: ["TFG_Sergio", "Apuntes_3º", "Fotos_viaje"], lnk: ["TFG_Sergio.lnk", "Apuntes_3º.lnk", "Fotos_viaje.lnk"] },
+      procesos: [
+        app_(5870, "chrome.exe", "sergio", 1.4, 300, "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", "Google LLC", { red: [["142.250.184.4:443", "ESTABLISHED"]] }),
+        proc(6344, "wscript.exe", "sergio", 3.8, 14, SYS32 + "wscript.exe", { base: false, amenaza: "gusano", padre: 4420, inicio: "09:00", cmd: "\"C:\\Windows\\System32\\wscript.exe\" //B \"C:\\Users\\sergio\\AppData\\Roaming\\WindowsServices\\helper.vbs\"",
+          payload: "C:\\Users\\sergio\\AppData\\Roaming\\WindowsServices\\helper.vbs", vt: "39/72 · Worm:VBS/Jenxcus", red: [["91.92.240.12:8080", "ESTABLISHED"]], detecta: { rapido: true, completo: true, offline: true, kvrt: true },
+          nota: ["Cada pocos segundos busca unidades USB, oculta las carpetas, crea accesos directos con su nombre y se copia dentro."] })
+      ],
+      inicio: [
+        { n: 1, lugar: "Run (HKCU)", nombre: "helper", ruta: "wscript.exe //B \"C:\\Users\\sergio\\AppData\\Roaming\\WindowsServices\\helper.vbs\"", editor: "Microsoft Windows", archivo: "C:\\Users\\sergio\\AppData\\Roaming\\WindowsServices\\helper.vbs", lanza: 6344, mala: true, impacto: "Bajo", nota: "wscript.exe es de Windows; el script que ejecuta, en AppData, no." },
+        { n: 2, lugar: "Carpeta Inicio", nombre: "helper.lnk", ruta: "C:\\Users\\sergio\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\helper.lnk → helper.vbs", editor: "", firmado: false, archivo: "C:\\Users\\sergio\\AppData\\Roaming\\WindowsServices\\helper.vbs", lanza: 6344, mala: true, impacto: "Bajo" },
+        { n: 3, lugar: "Run (HKCU)", nombre: "GoogleChromeAutoLaunch", ruta: "\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --no-startup-window", editor: "Google LLC", lanza: 5870, impacto: "Bajo" }
+      ],
+      programas: [
+        { n: 1, nombre: "Google Chrome", editor: "Google LLC", fecha: "01/09/2025", cliente: true },
+        { n: 2, nombre: "Microsoft 365 Educación", editor: "Microsoft Corporation", fecha: "01/09/2025", cliente: true }
+      ],
+      eventos: [
+        ["20/10/2026 18:42", 4688, "Microsoft-Windows-Security-Auditing", "Nuevo proceso: wscript.exe //B E:\\TFG_Sergio.lnk → E:\\WindowsServices\\helper.vbs (doble clic en el pendrive)."],
+        ["20/10/2026 18:42", 4657, "Microsoft-Windows-Security-Auditing", "Se modificó el registro: HKCU\\...\\CurrentVersion\\Run\\helper."]
+      ],
+      extra: [["Carpetas del pendrive visibles otra vez", () => !E.usbOculto && !E.usbPerdido], ["Accesos directos y copia del gusano borrados del pendrive", () => !E.usbLnk && !E.usbScript && !E.usbPerdido]],
+      objetivosOrden: ["aislar", "investigar", "neutralizar", "persistencia", "analizar", "extra", "informe"],
+      objetivos: { aislar: "Aislar el equipo de la red", investigar: "Encontrar qué toca el pendrive", neutralizar: "Detener el proceso", persistencia: "Quitar lo que lo vuelve a arrancar", analizar: "Analizar el equipo", extra: "Recuperar las carpetas del pendrive", informe: "Entregar el informe" },
+      pistas: {
+        aislar: "Un gusano también se propaga por la red: red off.",
+        investigar: "Mira dir E: (y dir E: /a para lo oculto). Luego busca en tasklist /v quién ejecuta scripts y míralo con proceso <PID>.",
+        neutralizar: "Cierra el wscript.exe del script por su PID: taskkill /pid <PID> /f.",
+        persistencia: "Arranca por dos sitios: autoruns, y desactivar <nº> en los dos.",
+        analizar: "Pasa un análisis: defender rapido (o kvrt). Pondrá el script en cuarentena.",
+        extra: "Con el equipo limpio: attrib -h -s -r /s /d E:\\*.* para mostrar las carpetas, y del E:\\*.lnk para borrar los accesos directos falsos. Nunca formatees el pendrive.",
+        informe: "Cuando lo tengas todo, escribe informe."
+      },
+      metodo: ["aislar", "investigar", "persistencia", "comprobar"],
+      preguntas: [
+        ["¿Qué era helper.vbs?", ["Un gusano que se propaga por USB", "Un ransomware que cifró el TFG", "Un archivo de Windows dañado"]],
+        ["¿Por qué no se formatea el pendrive para quitar el virus?", ["Porque las carpetas solo estaban ocultas: se recuperan con attrib", "Porque los pendrives no se pueden formatear", "Porque formatear contagia al equipo"]]
+      ],
+      solucion: "Un gusano en VBScript: ocultaba las carpetas del pendrive y ponía accesos directos con su nombre que lo ejecutaban. Corría con wscript.exe (legítimo) desde AppData y arrancaba por la clave Run y la carpeta Inicio. Se aísla, se cierra por PID, se desactivan las dos entradas, el antivirus pone el script en cuarentena, y con el equipo limpio se muestran las carpetas con attrib y se borran los .lnk. Los datos nunca se perdieron."
+
     }
   ];
 
@@ -524,6 +796,10 @@
       cifLocal: m.ransom ? Math.round(m.ransom.local * 0.1) : 0,
       cifNas: m.ransom ? Math.round(m.ransom.nas * 0.04) : 0,
       cifTrasAviso: false,
+      usbOculto: !!m.usb,
+      usbLnk: !!m.usb,
+      usbScript: !!m.usb,
+      usbPerdido: false,
       pistas: 0,
       respuestas: [],
       pids: null,
@@ -586,6 +862,7 @@
     }
     if (M.rootkit) l.push(["Rootkit en el arranque", () => E.reinstalado]);
     if (M.ransom) l.push(["Datos restaurados desde la copia", () => E.restaurado && !E.copiaPerdida]);
+    (M.extra || []).forEach((x) => l.push(x));
     return l;
   };
   const limpio = () => objetivosLimpiar().every(([, ok]) => ok());
@@ -649,6 +926,7 @@
         }
       }
     }
+    if (M.usb && !E.usbPerdido && vivos().some((p) => p.amenaza === "gusano")) { E.usbOculto = true; E.usbLnk = true; E.usbScript = true; }
     const espia = vivos().find((p) => p.amenaza === "spyware");
     if (espia && E.red && !E.reinstalado) E.enviado += 3;
   };
@@ -705,7 +983,7 @@
     Terminal.basicos(t, {
       grupos: [
         ["Investigar", ["tasklist", "proceso", "netstat", "autoruns", "schtasks", "reg", "sc", "eventos", "programas", "virustotal", "navegador", "dir", "type"]],
-        ["Responder", ["red", "taskkill", "desactivar", "activar", "desinstalar", "defender", "kvrt", "copiar", "contrasenas", "reiniciar", "reinstalar", "restaurar", "nomoreransom"]],
+        ["Responder", ["red", "taskkill", "desactivar", "activar", "desinstalar", "defender", "kvrt", "copiar", "contrasenas", "reiniciar", "reinstalar", "restaurar", "nomoreransom", "attrib", "del"]],
         ["Terminar", ["pista", "informe"]],
         ["Terminal", ["help", "clear", "history", "cd", "pwd"]]
       ]
@@ -714,10 +992,27 @@
     const ls = t.comandos.ls, cat = t.comandos.cat, cd = t.comandos.cd;
     delete t.comandos.ls; delete t.comandos.cat;
     const conRutas = (f) => (args, l) => f(args.map((a) => (/^[a-z]:|\\/i.test(a) ? aRuta(a) : a)), l);
-    t.registrar("dir", Object.assign({}, ls, { resumen: "Lista los archivos y carpetas.", uso: "dir [carpeta]", ejemplos: ["dir", "dir Downloads", "dir C:\\ProgramData"], alias: ["ls"], ejecutar: conRutas((a, l) => {
+    const dirNormal = conRutas((a, l) => {
       if (/^[d-z]:/i.test(a[0] || "")) return t.escribir("dir: la unidad " + a[0].slice(0, 2).toUpperCase() + " no está disponible en este equipo.", "t-error");
       return ls.ejecutar(a.filter((x) => !/^\/[a-z]$/i.test(x)), l);
-    }) }));
+    });
+    const dirUsb = (todo) => {
+      const u = M.usb;
+      t.escribir("Directorio de E:\\ (pendrive de " + M.usuario + ")", "t-titulo");
+      if (E.usbPerdido) return t.escribir("(vacío: unidad formateada)", "t-error");
+      const l = [];
+      u.carpetas.forEach((c) => { if (!E.usbOculto) l.push([c + "\\", "t-dir"]); else if (todo) l.push([c + "\\  <oculta, sistema>", "t-suave"]); });
+      if (E.usbLnk) u.lnk.forEach((c) => l.push([c + "  (acceso directo, 1 KB)", "t-aviso"]));
+      if (E.usbScript && (todo || !E.usbOculto)) l.push(["WindowsServices\\" + (E.usbOculto ? "  <oculta, sistema>" : ""), "t-error"]);
+      l.forEach(([txt, c]) => t.escribir(txt, c));
+      if (!todo && E.usbOculto) consejo("dir /a muestra también lo oculto.");
+      hecho("verUsb");
+    };
+    t.registrar("dir", Object.assign({}, ls, { resumen: "Lista los archivos y carpetas (dir /a muestra también lo oculto).", uso: "dir [/a] [carpeta]", ejemplos: ["dir", "dir Downloads", "dir C:\\ProgramData"].concat(M.usb ? ["dir E: /a"] : []), alias: ["ls"], ejecutar: (args, l) => {
+      const destino = args.find((x) => !/^\/[a-z]+$/i.test(x)) || "";
+      if (M.usb && /^e:/i.test(destino)) return dirUsb(args.some((x) => /^\/a/i.test(x)));
+      return dirNormal(args, l);
+    } }));
     t.registrar("type", Object.assign({}, cat, { resumen: "Muestra el contenido de un archivo de texto.", uso: "type <archivo>", ejemplos: ["type orden_trabajo.txt", "type C:\\Windows\\System32\\drivers\\etc\\hosts"], alias: ["cat"], ejecutar: conRutas(cat.ejecutar) }));
     cd.ejecutar = conRutas(cd.ejecutar);
     cd.ejemplos = ["cd Downloads", "cd ..", "cd C:\\ProgramData"];
@@ -988,7 +1283,10 @@
         (g.inicio || []).forEach((n) => { const e = E.inicio.find((x) => x.n === n); if (e) e.eliminado = true; });
         if (g.directivas && E.nav) { E.nav.directivas = false; t.escribir("Se han eliminado las directivas de Chrome que había creado.", "t-ok"); }
         t.escribir("«" + g.nombre + "» desinstalado.", "t-ok");
-        if (!g.pup && !g.neutro) riesgo("prog" + g.n, g.cliente ? 6 : 4, "Desinstalaste «" + g.nombre + "», que era legítimo" + (g.cliente ? " y el cliente usa." : "."));
+        if (g.av && !E.programas.some((x) => x.av && x.instalado)) { E.defender.activo = true; E.defender.bloqueado = ""; t.escribir("Ya no queda ningún antivirus de terceros: Microsoft Defender vuelve a activarse solo.", "t-ok"); }
+        if (g.av && E.programas.some((x) => x.av && x.instalado)) consejo("Queda un solo antivirus en tiempo real.");
+        if (g.av && g.cliente) riesgo("prog" + g.n, 4, "Desinstalaste «" + g.nombre + "», el antivirus que el cliente había pagado y quería conservar.");
+        if (!g.pup && !g.neutro && !g.av) riesgo("prog" + g.n, g.cliente ? 6 : 4, "Desinstalaste «" + g.nombre + "», que era legítimo" + (g.cliente ? " y el cliente usa." : "."));
         const resto = E.inicio.find((e) => e.reinstala === g.n && entradaViva(e));
         if (resto) consejo("Ojo: la desinstalación no siempre lo quita todo. Revisa autoruns.", "t-aviso");
       }
@@ -1037,15 +1335,16 @@
       await t.progreso(nombres[tipo], tipo === "completo" ? 2600 : tipo === "offline" ? 2200 : 1600);
       const firmas = tipo === "kvrt" || firmasOk();
       const hallados = [];
-      E.procesos.filter((p) => p.amenaza && p.amenaza !== "opcional" && !E.quitados.has(ruta(p.ruta)) && !E.reinstalado).forEach((p) => {
+      E.procesos.filter((p) => p.amenaza && p.amenaza !== "opcional" && !E.quitados.has(ruta(p.payload || p.ruta)) && !E.reinstalado).forEach((p) => {
         const d = p.detecta || {};
         const ve = tipo === "completo" ? (d.completo || d.rapido) : d[tipo];
         if (!ve || (p.firmasNuevas && !firmas)) return;
         if (programaDe(p) && !programaDe(p).instalado) return;
         hallados.push(p.vt ? p.vt.split("· ")[1] : p.nombre);
-        E.quitados.add(ruta(p.ruta));
+        E.quitados.add(ruta(p.payload || p.ruta));
         E.muertos.add(p.pid);
-        t.escribir("Amenaza: " + (p.vt ? p.vt.split("· ")[1] : "Malware") + " · " + p.ruta + " → en cuarentena", "t-error");
+        t.escribir("Amenaza: " + (p.vt ? p.vt.split("· ")[1] : "Malware") + " · " + (p.payload || p.ruta) + " → en cuarentena", "t-error");
+        if (M.usb && E.usbScript && !E.usbPerdido) { E.usbScript = false; t.escribir("Amenaza: " + (p.vt ? p.vt.split("· ")[1] : "Malware") + " · E:\\WindowsServices\\helper.vbs → en cuarentena", "t-error"); }
       });
       E.inicio.filter((e) => e.mala && e.detecta && entradaViva(e) && !e.roto && !E.quitados.has(ruta(archivoDe(e)))).forEach((e) => {
         if (!e.detecta[tipo]) return;
@@ -1065,7 +1364,7 @@
       if (!hallados.length) t.escribir("No se han encontrado amenazas.", "t-ok");
       E.historialDef.push([nombres[tipo], hallados.length ? hallados.join(", ") : "ninguna"]);
       if (tipo === "offline" || tipo === "kvrt") hecho("analizar");
-      if (tipo !== "kvrt" && !firmas && E.procesos.some((p) => p.firmasNuevas && p.amenaza && !E.quitados.has(ruta(p.ruta)))) consejo("Las firmas de Defender tienen " + E.defender.firmasDias + " días: un antivirus con firmas viejas no ve las amenazas nuevas.", "t-aviso");
+      if (tipo !== "kvrt" && !firmas && E.procesos.some((p) => p.firmasNuevas && p.amenaza && !E.quitados.has(ruta(p.payload || p.ruta)))) consejo("Las firmas de Defender tienen " + E.defender.firmasDias + " días: un antivirus con firmas viejas no ve las amenazas nuevas.", "t-aviso");
       if (tipo === "rapido" && !hallados.length && E.programas.some((g) => g.detectaKvrt && g.instalado)) consejo("Defender no lo detecta todo: los PUP se le escapan a menudo. Una segunda opinión a demanda ayuda.");
       if (tipo === "offline") await reiniciar("Volviendo a Windows");
     };
@@ -1102,6 +1401,7 @@
         if (sub === "activar") {
           if (d.activo || E.reinstalado) return t.escribir("La protección en tiempo real ya está activada.", "t-suave");
           if (M.rootkit) return t.escribir("Se activa… y a los pocos segundos vuelve a desactivarse sola.", "t-error");
+          if (E.programas.some((g) => g.av && g.instalado)) return t.escribir("No se puede: hay otro antivirus en tiempo real registrado. Defender solo se activa cuando no queda ninguno.", "t-aviso");
           if (vivos().some((p) => p.amenaza === "spyware") || E.inicio.some((e) => e.mala && entradaViva(e) && archivoDisponible(e, true))) return t.escribir("Se activa… y al momento la directiva la vuelve a desactivar. Algo sigue en marcha.", "t-error");
           d.activo = true; d.bloqueado = "";
           t.escribir("Directiva eliminada. Protección en tiempo real y protección contra alteraciones activadas.", "t-ok");
@@ -1200,8 +1500,8 @@
         const i = await t.elegir("¿Desde dónde se cambian?", ["Desde este equipo, ahora mismo", "Desde otro equipo limpio o el móvil del cliente, con verificación en dos pasos"]);
         if (i === -1) return t.escribir("No se ha cambiado nada.", "t-suave");
         if (i === 0) {
-          const espia = M.tipo === "spyware" || M.tipo === "rootkit";
-          if (espia && !E.reinstalado && (vivos().some((p) => p.amenaza === "spyware") || M.rootkit || !limpio())) {
+          const espia = M.tipo === "spyware" || M.tipo === "rootkit" || M.tipo === "rat";
+          if (espia && !E.reinstalado && (vivos().some((p) => p.amenaza === "spyware" || p.amenaza === "rat") || M.rootkit || !limpio())) {
             riesgo("passInfectado", 10, "Cambiaste las contraseñas desde el equipo infectado: el atacante recibe también las nuevas.");
             t.escribir("Contraseñas cambiadas… y registradas por el espía.", "t-error");
           } else t.escribir("Contraseñas cambiadas desde este equipo.", "t-aviso");
@@ -1293,6 +1593,53 @@
       }
     });
 
+    if (M.usb) {
+      const gusanoActivo = () => amenazas().some((p) => p.amenaza === "gusano" && (vivo(p) || volveria(p, true)));
+      t.registrar("attrib", {
+        resumen: "Cambia los atributos de archivos y carpetas (oculto, sistema, solo lectura).",
+        usaH: true,
+        uso: "attrib -h -s -r /s /d E:\\*.*",
+        detalle: ["-h quita «oculto», -s quita «sistema», -r quita «solo lectura».", "/s y /d lo aplican a todas las subcarpetas y a las carpetas."],
+        ejemplos: ["attrib -h -s -r /s /d E:\\*.*"],
+        ejecutar(args) {
+          const a = args.map((x) => x.toLowerCase());
+          if (!a.some((x) => /^e:/.test(x))) return t.usoIncorrecto("attrib", "En este caso se trabaja sobre el pendrive (E:).");
+          if (!a.includes("-h") || !a.includes("-s")) return fallo("attrib: las carpetas siguen ocultas.", "Hay que quitar a la vez los atributos oculto (-h) y sistema (-s).");
+          if (E.usbPerdido) return t.escribir("attrib: la unidad está vacía.", "t-error");
+          accion();
+          if (gusanoActivo()) { E.usbOculto = true; return t.escribir("Las carpetas aparecen… y a los pocos segundos el gusano las vuelve a ocultar. Primero hay que limpiar el equipo.", "t-error"); }
+          E.usbOculto = false;
+          t.escribir("Atributos quitados: " + M.usb.carpetas.join(", ") + " vuelven a verse en E:\\.", "t-ok");
+        }
+      });
+      t.registrar("del", {
+        resumen: "Borra archivos (en este caso, los accesos directos falsos del pendrive).",
+        uso: "del E:\\*.lnk",
+        ejemplos: ["del E:\\*.lnk"],
+        alias: ["erase", "rm"],
+        ejecutar(args) {
+          const x = (args.find((y) => !y.startsWith("/")) || "").toLowerCase();
+          if (!/^e:\\?(\*|[^\\]+)\.lnk$/.test(x)) return fallo("del: en este simulador solo se borran los accesos directos del pendrive.", "Ejemplo: del E:\\*.lnk");
+          accion();
+          if (gusanoActivo()) { E.usbLnk = true; return t.escribir("Borrados… y el gusano los vuelve a crear al momento. Primero hay que limpiar el equipo.", "t-error"); }
+          E.usbLnk = false;
+          t.escribir("Accesos directos falsos borrados de E:\\.", "t-ok");
+          if (E.usbScript) consejo("En E:\\WindowsServices sigue la copia del gusano: un análisis del antivirus la pone en cuarentena.", "t-aviso");
+        }
+      });
+      t.registrar("format", {
+        resumen: "Formatea una unidad.", oculto: true,
+        async ejecutar(args) {
+          if (!/^e:/i.test(args[0] || "")) return t.escribir("format: en este caso solo hay el pendrive (E:).", "t-aviso");
+          const s = (await t.preguntar("Se borrará todo lo que hay en E:. ¿Continuar? (s/n)")).trim().toLowerCase();
+          if (s !== "s" && s !== "si" && s !== "sí") return t.escribir("No se ha formateado.", "t-suave");
+          E.usbPerdido = true; E.usbOculto = false; E.usbLnk = false; E.usbScript = false;
+          riesgo("format", 15, "Formateaste el pendrive: el TFG solo estaba oculto y se ha perdido.");
+          t.escribir("E: formateada. El TFG de Sergio se ha perdido.", "t-error");
+        }
+      });
+    }
+
     t.registrar("pista", {
       resumen: "Da una pista sobre el siguiente paso (resta " + COSTE_PISTA + " puntos).",
       uso: "pista",
@@ -1341,9 +1688,10 @@
   const objetivoHecho = (k) => {
     if (k === "investigar") {
       const req = amenazas();
-      return req.length ? req.every((p) => E.vistos.has(p.pid)) : E.hechos.has("verRed") && E.hechos.has("verInicio");
+      return req.length ? req.every((p) => E.vistos.has(p.pid)) : (E.hechos.has("verRed") || E.hechos.has("verProcesos")) && E.hechos.has("verInicio");
     }
     if (k === "eventos") return E.hechos.has("verEventos");
+    if (k === "extra") return (M.extra || []).every(([, ok]) => ok());
     if (k === "neutralizar") {
       if (E.nav) return E.reinstalado || !E.nav.buscador && E.nav.extensiones.every((x) => !x.mala || x.quitada) && !directivasActivas();
       return !amenazas().some(vivo);
