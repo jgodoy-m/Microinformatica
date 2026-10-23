@@ -1,0 +1,91 @@
+/* Simulacro de examen de la UF0864 (examen-uf0864.html). Usa los colores de css/uf0864.css,
+   así que sigue el tema claro/oscuro y el modo Halloween del resto de la UF. */
+
+:root { --mal: #E0868E; }
+html[data-theme="light"] { --mal: #A3414A; }
+html[data-halloween="on"] { --mal: #FF6B7A; }
+
+.examen { min-width: 0; }
+.examen-panel { padding: 22px 24px 24px; }
+.examen-titulo { margin: 0 0 16px; font-size: 19px; font-weight: 600; }
+
+.examen-grupo { margin: 0 0 18px; padding: 0; border: 0; }
+.examen-grupo legend { margin-bottom: 10px; padding: 0; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+
+/* Sesiones */
+.sesiones-examen { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.sesion-examen { position: relative; display: block; cursor: pointer; }
+.sesion-examen input { position: absolute; top: 14px; right: 14px; width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+.sesion-examen > span { display: flex; flex-direction: column; gap: 2px; height: 100%; padding: 12px 40px 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-2); }
+.sesion-examen b { color: var(--accent); font: 700 14px/1.2 ui-monospace, "SFMono-Regular", Menlo, monospace; }
+.sesion-examen span span { font-size: 14px; line-height: 1.35; }
+.sesion-examen small { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; color: var(--muted); font-size: 12px; }
+.sesion-examen small svg { width: 14px; height: 14px; }
+.sesion-examen input:checked + span { border-color: var(--accent); background: var(--accent-soft); }
+.sesion-examen input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.sesion-examen.bloqueada { cursor: default; opacity: .65; }
+.sesion-examen.bloqueada > span { border-style: dashed; }
+
+/* Número de preguntas */
+.opciones-n { display: flex; flex-wrap: wrap; gap: 8px; }
+.opciones-n label { position: relative; }
+.opciones-n input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.opciones-n span { display: inline-flex; align-items: center; min-height: 40px; padding: 0 18px; border: 1px solid var(--border); border-radius: 999px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.opciones-n input:checked + span { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
+.opciones-n input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.examen-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-top: 20px; }
+.examen-acciones.derecha { justify-content: flex-end; }
+.examen-acciones .boton { min-height: 40px; }
+.examen-acciones .boton:disabled { opacity: .45; cursor: default; }
+.examen-total { margin: 0; color: var(--muted); font-size: 14px; }
+
+/* Pregunta */
+.examen-progreso { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; color: var(--muted); font-size: 14px; }
+.examen-barra { height: 6px; margin-bottom: 20px; border-radius: 999px; background: var(--border-soft); overflow: hidden; }
+.examen-barra b { display: block; width: 0; height: 100%; background: var(--accent); transition: width .3s; }
+.examen-fuente { display: inline-block; margin-bottom: 10px; padding: 3px 8px; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .03em; }
+.examen-pregunta { margin: 0 0 16px; font-size: 19px; font-weight: 600; line-height: 1.4; }
+
+.examen-opcion { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; margin-bottom: 8px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 15px; text-align: left; cursor: pointer; }
+.examen-opcion:hover:not(:disabled) { border-color: var(--accent); }
+.examen-opcion .letra { flex: none; display: inline-grid; place-items: center; width: 28px; height: 28px; border: 1px solid currentColor; border-radius: 6px; font-size: 13px; font-weight: 700; }
+.examen-opcion[aria-pressed="true"] { border: 2px solid var(--accent); background: var(--accent-soft); }
+.examen-opcion.correcta { border: 2px solid var(--ok); }
+.examen-opcion.correcta .letra { border-color: var(--ok); background: var(--ok); color: var(--accent-ink); }
+.examen-opcion.fallo { border: 2px solid var(--mal); }
+.examen-opcion.fallo .letra { border-color: var(--mal); background: var(--mal); color: var(--accent-ink); }
+.examen-opcion:disabled { cursor: default; }
+
+.examen-feedback { margin-top: 14px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-2); }
+.examen-feedback.ok { border-color: var(--ok); }
+.examen-feedback.mal { border-color: var(--mal); }
+.examen-feedback strong { display: block; margin-bottom: 4px; }
+.examen-feedback.ok strong { color: var(--ok); }
+.examen-feedback.mal strong { color: var(--mal); }
+.examen-feedback p { margin: 0 0 8px; font-size: 14px; }
+.examen-feedback a,
+.examen-revision a { color: var(--accent); font-size: 14px; font-weight: 600; }
+
+/* Resultado */
+.examen-nota { margin: 0; font-size: 44px; font-weight: 700; line-height: 1; letter-spacing: -.02em; }
+.examen-nota small { margin-left: 10px; color: var(--muted); font-size: 18px; font-weight: 600; }
+.examen-veredicto { display: inline-block; margin: 14px 0 0; padding: 4px 12px; border: 2px solid currentColor; border-radius: 999px; font-weight: 700; }
+.examen-veredicto.ok { color: var(--ok); }
+.examen-veredicto.mal { color: var(--mal); }
+.examen-mensaje { margin: 12px 0 0; color: var(--muted); }
+.examen-revision { display: grid; gap: 10px; margin: 20px 0 0; padding: 0; list-style: none; }
+.examen-revision li { padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-2); }
+.examen-revision li.ok { border-color: var(--ok); }
+.examen-revision li.mal { border-color: var(--mal); }
+.examen-revision .examen-fuente { margin-bottom: 6px; }
+.examen-revision .p { margin: 0 0 6px; font-weight: 600; }
+.examen-revision .r { margin: 0 0 6px; color: var(--muted); font-size: 14px; }
+.examen-revision .r b { color: var(--text); }
+
+@media (max-width: 640px) {
+  .examen-panel { padding: 18px 16px 20px; }
+  .examen-pregunta { font-size: 17px; }
+  .examen-acciones.derecha { flex-direction: column-reverse; align-items: stretch; }
+  .examen-acciones .boton { justify-content: center; }
+}
