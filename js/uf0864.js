@@ -333,7 +333,22 @@
       guardarDatos();
       actualizar();
     },
-    nombre: () => datos.actual
+    /* Para el simulacro: lo marca como hecho y guarda la mejor nota. */
+    examenHecho(aciertos, total) {
+      const p = progreso();
+      if (!p.examen.includes("simulacro")) p.examen.push("simulacro");
+      p.notas = Object.assign({}, p.notas);
+      const previa = p.notas.simulacro;
+      if (!previa || aciertos / total > previa[0] / previa[1]) p.notas.simulacro = [aciertos, total];
+      datos.perfiles[datos.actual] = p;
+      guardarDatos();
+      actualizar();
+    },
+    nombre: () => datos.actual,
+    /* Sesiones del temario con su fecha de apertura, para filtrar contenidos por sesión. */
+    sesiones: () => TEMAS.flatMap((t) => t.sesiones).sort((a, b) => a.codigo.localeCompare(b.codigo)),
+    disponible,
+    fechaLegible
   };
 
   /* Al volver con el botón Atrás desde unos apuntes, la página puede salir de la caché. */
