@@ -365,6 +365,10 @@
   const app = document.getElementById("dc");
   if (!app) return;
 
+  /* Dentro del escape room (escape-uf0864.html) llega ?escape=S15,S16: un caso de cada sesión, y la nota vuelve a la sala. */
+  const ESCAPE = (new URLSearchParams(location.search).get("escape") || "").split(",").filter(Boolean);
+  const avisarSala = (datos) => { if (window.parent !== window) window.parent.postMessage(Object.assign({ tipo: "escape-reto", juego: "diagnostico" }, datos), location.origin); };
+
   /* ---------- Estado de la partida ---------- */
   let partida = [], indice = 0, total = 0, aciertos = 0, resumen = [];
   let caso = null, restante = 0, reloj = null, pausado = false;
@@ -600,6 +604,7 @@
   /* ---------- Final ---------- */
   const final = () => {
     pararReloj();
+    if (ESCAPE.length) return finalEscape();
     if (window.UF0864) window.UF0864.practicaHecha("diagnostico-contrarreloj", aciertos, partida.length);
     const nombre = window.UF0864 && window.UF0864.nombre();
     const maximo = partida.length * 100;
@@ -623,6 +628,20 @@
     app.querySelector("[data-otra]").addEventListener("click", empezar);
   };
 
+  const finalEscape = () => {
+    const maximo = partida.length * 100;
+    avisarSala({ id: partida.map((c) => c.titulo).join(" + "), total, maximo });
+    pintar(
+      '<section class="dc-panel dc-final">' +
+      "<h2>Reto terminado</h2>" +
+      "<p>Has conseguido <b>" + total + " de " + maximo + " puntos</b> y " + aciertos + " de " + partida.length + " causas encontradas.</p>" +
+      '<ul class="dc-repaso">' + resumen.map((r) =>
+        '<li class="' + (r.bien ? "ok" : "mal") + '">' + svg(r.bien ? "check" : "reloj") + "<span><b>" + esc(r.caso.titulo) + "</b><small>" + r.puntos + "/100 · " + r.metodo + "</small></span></li>").join("") +
+      "</ul>" +
+      "<p>Sigue en la sala: el candado ya está a la vista.</p>" +
+      "</section>");
+  };
+
   /* ---------- Pausa ---------- */
   const capaPausa = document.createElement("div");
   capaPausa.className = "dc-capa";
@@ -631,7 +650,7 @@
     '<div class="dc-panel dc-pausa" role="dialog" aria-modal="true" aria-labelledby="dc-pausa-titulo">' +
     '<h2 id="dc-pausa-titulo">Juego en pausa</h2><p>El reloj está parado.</p>' +
     '<div class="dc-final-acciones"><button type="button" class="dc-boton" data-reanudar>' + svg("play") + "Reanudar</button>" +
-    '<a class="dc-boton dc-secundario" href="software.html">Salir del juego</a></div></div>';
+    (ESCAPE.length ? "" : '<a class="dc-boton dc-secundario" href="software.html">Salir del juego</a>') + "</div></div>";
   document.body.appendChild(capaPausa);
 
   const pausar = () => {
@@ -650,5 +669,9 @@
   /* Si se cambia de pestaña, el reloj se para solo. */
   document.addEventListener("visibilitychange", () => { if (document.hidden && reloj && !pausado) pausar(); });
 
-  portada();
+  if (ESCAPE.length) {
+    partida = ESCAPE.map((ses) => mezclar(CASOS.filter((c) => c.sesion === ses))[0]).filter(Boolean);
+    indice = 0; total = 0; aciertos = 0; resumen = [];
+    if (partida.length) nuevoCaso(); else portada();
+  } else portada();
 })();

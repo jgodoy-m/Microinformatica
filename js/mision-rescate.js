@@ -10,7 +10,11 @@
   if (!app || !window.Terminal) return;
   const { esc, opciones, dir, archivo } = Terminal;
 
-  const PREVIA = new URLSearchParams(location.search).has("profe");
+  const PARAMS = new URLSearchParams(location.search);
+  const PREVIA = PARAMS.has("profe");
+  /* Dentro del escape room (escape-uf0864.html) el reto llega por ?escape=<id> y la nota vuelve a la sala. */
+  const ESCAPE = PARAMS.get("escape");
+  const avisarSala = (datos) => { if (window.parent !== window) window.parent.postMessage(Object.assign({ tipo: "escape-reto", juego: "rescate" }, datos), location.origin); };
   const abierta = (m) => {
     if (PREVIA || !m.desde) return true;
     const [y, mes, d] = m.desde.split("-").map(Number);
@@ -1685,7 +1689,7 @@
       '<header class="rt-barra">' +
       '<div class="rt-titulo">' + ICONO_ESCUDO + "<div><h1>Operación: rescatar los archivos</h1><p>Terminal de recuperación · Equipo " + esc(m.equipo) + " · " + esc(m.titulo) + (DIFICIL ? " · Modo difícil" : "") + "</p></div></div>" +
       '<span class="rt-riesgo activo" data-riesgo role="status">Riesgo activo</span>' +
-      '<a class="rt-cerrar rt-cerrar-barra" href="rescate.html' + (PREVIA ? "?profe" : "") + '" aria-label="Salir de la misión">' + ICONO_CERRAR + "</a>" +
+      (ESCAPE ? "" : '<a class="rt-cerrar rt-cerrar-barra" href="rescate.html' + (PREVIA ? "?profe" : "") + '" aria-label="Salir de la misión">' + ICONO_CERRAR + "</a>") +
       "</header>" +
       '<div class="rt-cuerpo">' +
       '<div class="rt-ventana">' +
@@ -1733,7 +1737,8 @@
 
   const terminar = () => {
     const ev = evaluar();
-    if (window.UF0864) window.UF0864.practicaHecha("rescate-archivos", Math.round(ev.total / 10), 10);
+    if (ESCAPE) avisarSala({ id: M.id, total: ev.total, maximo: 100 });
+    else if (window.UF0864) window.UF0864.practicaHecha("rescate-archivos", Math.round(ev.total / 10), 10);
     const nombre = window.UF0864 && window.UF0864.nombre();
     const capa = document.createElement("div");
     capa.className = "rt-capa";
@@ -1754,12 +1759,15 @@
       (E.riesgos.length ? '<h3>Riesgos asumidos</h3><ul class="rt-lista">' + E.riesgos.map((r) => '<li class="mal">−' + r.puntos + " · " + esc(r.texto) + "</li>").join("") + "</ul>" : '<p class="rt-bien">No asumiste ningún riesgo innecesario.</p>') +
       (E.privacidad ? '<p class="rt-aviso">Abriste ' + E.privacidad + (E.privacidad === 1 ? " archivo personal" : " archivos personales") + " del cliente. Para comprobar una recuperación basta con verify.</p>" : "") +
       '<h3>Así se resolvía</h3><p>' + esc(M.solucion) + "</p>" +
-      '<div class="rt-acciones"><a class="rt-boton" href="software.html">Volver al mapa</a><button type="button" class="rt-boton rt-secundario" data-otra>Otra misión</button></div>' +
+      (ESCAPE ? '<p class="rt-bien">Reto terminado. Sigue en la sala: el candado ya está a la vista.</p>'
+        : '<div class="rt-acciones"><a class="rt-boton" href="software.html">Volver al mapa</a><button type="button" class="rt-boton rt-secundario" data-otra>Otra misión</button></div>') +
       "</section>";
     document.body.appendChild(capa);
+    if (ESCAPE) return;
     capa.querySelector("[data-otra]").addEventListener("click", () => { capa.remove(); portada(); });
     capa.querySelector("a.rt-boton").focus();
   };
 
-  portada();
+  const reto = ESCAPE && MISIONES.find((m) => m.id === ESCAPE);
+  if (reto) { DIFICIL = false; empezar(reto); } else portada();
 })();
