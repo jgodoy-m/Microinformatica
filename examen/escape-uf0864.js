@@ -9,6 +9,7 @@ window.ESCAPE_UF0864 = {
   modos: {
     ensayo: {
       nombre: "Ensayo del escape room",
+      corto: "ensayo",
       desde: "2026-10-26",
       minutos: 90,
       clave: "",
@@ -68,6 +69,22 @@ window.ESCAPE_UF0864 = {
           criterios: ["Síntoma y diagnóstico", "Acciones en orden, con herramientas", "Estado de entrega y recomendación"]
         }
       }
+    },
+    /* El examen: las salas, los casos y las preguntas van cifrados en examen/escape-examen.json y solo se
+       leen con la clave que dice el profesor al empezar. Aquí solo queda lo que se ve en la portada. */
+    examen: {
+      nombre: "Examen de la UF0864",
+      corto: "examen",
+      fecha: "Miércoles 28 de octubre, de 10:00 a 13:00",
+      desde: "2026-10-28T09:45",
+      hasta: "2026-10-28T13:30",
+      minutos: 180,
+      nSalas: 4,
+      final: true,
+      test: 8,
+      abrir: 5,
+      soluciones: false,
+      cifrado: "examen/escape-examen.json"
     }
   }
 };

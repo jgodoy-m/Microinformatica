@@ -11,14 +11,12 @@
 
   const app = document.getElementById("escape");
   const CFG = window.ESCAPE_UF0864;
-  const BANCO = window.BANCO_UF0864 || [];
+  /* Banco del modo en curso: el del simulacro en el ensayo, el descifrado en el examen. */
+  let BANCO = window.BANCO_UF0864 || [];
   if (!app || !CFG) return;
 
   const PROFE = new URLSearchParams(location.search).has("profe");
   const UF = window.UF0864;
-  const TEST_POR_SALA = 5;
-  const APROBAR_CANDADO = 3;
-  const PUNTOS_TEST = 0.2;
   const PUNTOS_CORTA = 0.4;
   const SAL = "uf0864·taller-cerrado";
   const JUEGOS = {
@@ -38,9 +36,10 @@
     return a;
   };
   const azar = (lista) => lista[Math.floor(Math.random() * lista.length)];
-  const fechaDe = (iso) => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); };
-  const abierto = (modo) => PROFE || !modo.desde || new Date() >= fechaDe(modo.desde);
-  const fechaLegible = (iso) => fechaDe(iso).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+  /* Fechas «2026-10-28» o con hora, «2026-10-28T09:45», siempre en hora local. */
+  const fechaDe = (iso) => { const [y, m, d, h, mi] = iso.split(/[-T:]/).map(Number); return new Date(y, m - 1, d, h || 0, mi || 0); };
+  const abierto = (modo) => PROFE || ((!modo.desde || new Date() >= fechaDe(modo.desde)) && (!modo.hasta || new Date() <= fechaDe(modo.hasta)));
+  const fechaLegible = (iso) => fechaDe(iso).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }) + (iso.includes("T") ? " a las " + iso.slice(11, 16) : "");
   const mmss = (s) => { s = Math.max(0, Math.round(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ":" + String(m).padStart(2, "0") : String(m).padStart(2, "0")) + ":" + String(x).padStart(2, "0"); };
   const coma = (n) => (Math.round(n * 100) / 100).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const leer = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
@@ -70,11 +69,14 @@
   let reloj = null;
   const salvar = () => { if (S) guardar(clave(S.modo), S); };
 
-  /* Cinco preguntas repartidas entre las sesiones de la sala, sin repetir en todo el intento. */
+  /* Las preguntas del modo (M.test) repartidas entre las sesiones de la sala, sin repetir en todo el intento. */
+  const nTest = () => M.test || 5;
+  const abrirCon = () => M.abrir || 3;
+  const ptsTest = () => 4 / (M.salas.length * nTest());
   const elegirTest = (sesiones, usadas) => {
     const grupos = sesiones.map((s) => mezclar(BANCO.map((p, i) => i).filter((i) => BANCO[i].fuente === s && !usadas.has(i))));
     const elegidas = [];
-    for (let r = 0; elegidas.length < TEST_POR_SALA && grupos.some((g) => g.length); r++) {
+    for (let r = 0; elegidas.length < nTest() && grupos.some((g) => g.length); r++) {
       const g = grupos[r % grupos.length];
       if (g.length) elegidas.push(g.shift());
     }
@@ -82,19 +84,19 @@
     return elegidas.map((i) => ({ i, orden: mezclar(BANCO[i].opciones.map((_, k) => k)), r1: null, r2: null }));
   };
 
-  const nuevoIntento = (id, nombre) => {
+  const nuevoIntento = (id, nombre, modo) => {
     const usadas = new Set();
-    const modo = CFG.modos[id];
     return {
       modo: id, nombre, inicio: Date.now(), sala: 0, fase: "intro", salidas: 0, reinicios: 0, entregado: null,
       salas: modo.salas.map((s) => ({
-        reto: { juego: s.reto.juego, caso: s.reto.juego === "diagnostico" ? s.reto.casos : azar(s.reto.casos), total: null, maximo: null, titulo: "" },
+        reto: { juego: s.reto.juego, caso: s.reto.juego === "diagnostico" ? s.reto.casos.map((g) => (Array.isArray(g) ? azar(g) : g)) : azar(s.reto.casos), total: null, maximo: null, titulo: "" },
         test: elegirTest(s.sesiones, usadas),
         corta: "",
+        cortaV: Array.isArray(s.corta) ? Math.floor(Math.random() * s.corta.length) : 0,
         digito: Math.floor(Math.random() * 10),
         forzado: false
       })),
-      final: { corta: "", codigo: false }
+      final: { corta: "", codigo: false, cortaV: modo.final && Array.isArray(modo.final.corta) ? Math.floor(Math.random() * modo.final.corta.length) : 0 }
     };
   };
 
@@ -103,9 +105,11 @@
   /* ---------- Puntuación ---------- */
   const puntosReto = (s) => (s.reto.total == null ? 0 : s.reto.total / s.reto.maximo);
   const aciertosTest = (s) => s.test.filter((q) => q.r1 === BANCO[q.i].correcta).length;
-  const notaAuto = () => S.salas.reduce((n, s) => n + puntosReto(s) + aciertosTest(s) * PUNTOS_TEST, 0);
-  const maxAuto = () => S.salas.length * (1 + TEST_POR_SALA * PUNTOS_TEST);
-  const preguntasCortas = () => M.salas.map((s) => s.corta).concat(M.final ? [M.final.corta] : []);
+  const notaAuto = () => S.salas.reduce((n, s) => n + puntosReto(s) + aciertosTest(s) * ptsTest(), 0);
+  const maxAuto = () => S.salas.length * (1 + nTest() * ptsTest());
+  /* Una sala puede traer varias versiones de su pregunta corta: cada alumno tiene la suya. */
+  const version = (c, v) => (Array.isArray(c) ? c[v || 0] : c);
+  const preguntasCortas = () => M.salas.map((c, i) => version(c.corta, S.salas[i].cortaV)).concat(M.final ? [version(M.final.corta, S.final.cortaV)] : []);
   const respuestasCortas = () => S.salas.map((s) => s.corta).concat(M.final ? [S.final.corta] : []);
 
   /* ---------- Pantalla de inicio ---------- */
@@ -121,12 +125,11 @@
       return '<label class="er-modo' + (ok ? "" : " cerrado") + '">' +
         '<input type="radio" name="modo" value="' + id + '"' + (ok ? "" : " disabled") + ">" +
         "<span><b>" + esc(m.nombre) + "</b>" +
-        "<small>" + m.salas.length + " salas" + (m.final ? " y la puerta final" : "") + " · " + (m.minutos >= 120 ? m.minutos / 60 + " horas" : m.minutos + " minutos") + "</small>" +
-        (ok ? (enCurso ? '<em class="er-encurso">Tienes uno empezado: el reloj sigue corriendo</em>' : curso && curso.entregado ? "<em>Ya lo entregaste. Puedes repetirlo.</em>" : "")
-          : '<em class="er-candado">' + svg("candado") + "Se abre el " + esc(fechaLegible(m.desde)) + "</em>") +
+        "<small>" + (m.fecha ? esc(m.fecha) + " · " : "") + (m.nSalas || m.salas.length) + " salas" + (m.final ? " y la puerta final" : "") + " · " + (m.minutos >= 120 ? m.minutos / 60 + " horas" : m.minutos + " minutos") + "</small>" +
+        (ok ? (enCurso ? '<em class="er-encurso">Tienes uno empezado: el reloj sigue corriendo</em>' : curso && curso.entregado ? "<em>Ya lo entregaste. " + (m.cifrado && !PROFE ? "Entra con la clave para volver a descargar tu hoja." : "Puedes repetirlo.") + "</em>" : "")
+          : '<em class="er-candado">' + svg("candado") + (m.hasta && new Date() > fechaDe(m.hasta) ? "Cerrado" : "Se abre el " + esc(fechaLegible(m.desde))) + "</em>") +
         "</span></label>";
     });
-    tarjetas.push('<div class="er-modo cerrado"><span><b>Examen de la UF0864</b><small>Miércoles 28 de octubre · 3 horas</small><em class="er-candado">' + svg("candado") + "Se abre el día del examen</em></span></div>");
     app.innerHTML =
       '<section class="rt-panel er-portada">' +
       '<a class="rt-cerrar" href="software.html" aria-label="Volver a la UF0864"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></a>' +
@@ -135,8 +138,8 @@
       '<p class="rt-lema">Cuatro equipos averiados. <span>Una puerta con candado.</span></p>' +
       "<p>Eres el técnico de guardia y te has quedado encerrado en el taller. Cada equipo que repares te da un dígito del código de la puerta. En cada sala juegas un reto y después abres su candado con preguntas de la sesión.</p>" +
       '<ul class="er-reglas">' +
-      "<li>" + svg("llave") + "<span><b>Candado</b>5 preguntas tipo test y 1 de respuesta corta. Con 3 aciertos se abre. Si no, tienes un segundo intento con las falladas, y si vuelves a fallar la puerta se abre igual: nadie se queda atascado.</span></li>" +
-      "<li>" + svg("check") + "<span><b>Nota sobre 10</b>Test 4 puntos (0,2 cada pregunta, solo cuenta el primer intento), retos 4 puntos (1 por sala) y respuesta corta 2 puntos, que corrige el profesor.</span></li>" +
+      "<li>" + svg("llave") + "<span><b>Candado</b>Preguntas tipo test y 1 de respuesta corta. " + Object.values(CFG.modos).map((m) => "En el " + m.corto + ", " + (m.test || 5) + " preguntas y se abre con " + (m.abrir || 3) + " aciertos.").join(" ") + " Si no, tienes un segundo intento con las falladas, y si vuelves a fallar la puerta se abre igual: nadie se queda atascado.</span></li>" +
+      "<li>" + svg("check") + "<span><b>Nota sobre 10</b>Test 4 puntos (solo cuenta el primer intento), retos 4 puntos (1 por sala) y respuesta corta 2 puntos, que corrige el profesor.</span></li>" +
       "<li>" + svg("reloj") + "<span><b>Tiempo</b>El reloj no se para. Si recargas la página sigues donde estabas, pero el reto que estuvieras jugando vuelve a empezar. Al acabar el tiempo se entrega solo.</span></li>" +
       "</ul>" +
       '<form class="er-form" data-form>' +
@@ -156,22 +159,36 @@
     const campoClave = app.querySelector("[data-campo-clave]");
     const verClave = () => {
       const r = form.querySelector("input[name=modo]:checked");
-      campoClave.hidden = !(r && CFG.modos[r.value].clave && !PROFE);
+      campoClave.hidden = !(r && CFG.modos[r.value].cifrado);
     };
     radios.forEach((r) => r.addEventListener("change", verClave));
     verClave();
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const r = form.querySelector("input[name=modo]:checked");
       if (!r) return;
-      const id = r.value, modo = CFG.modos[id];
+      const id = r.value;
+      let modo = CFG.modos[id];
       const nom = form.nombre.value.trim();
-      if (modo.clave && !PROFE && form.clave.value.trim().toUpperCase() !== modo.clave.toUpperCase()) return inicio("La clave no es correcta. Pídesela al profesor.");
       let curso = leer(clave(id));
-      if (curso && !curso.entregado) {
-        curso.reinicios += curso.fase === "reto" && curso.salas[curso.sala] && curso.salas[curso.sala].reto.total == null ? 1 : 0;
-      } else curso = nuevoIntento(id, nom);
-      if (nom && nom !== curso.nombre && !curso.entregado) curso.nombre = curso.nombre || nom;
+      // El examen se hace una sola vez: si ya está entregado, se vuelve a la hoja en vez de empezar otro.
+      const enCurso = curso && (!curso.entregado || (modo.cifrado && !PROFE));
+      BANCO = window.BANCO_UF0864 || [];
+      window.ESCAPE_EXTRA = null;
+      if (modo.cifrado) {
+        const boton = form.querySelector("button[type=submit]");
+        boton.disabled = true;
+        const palabra = form.clave.value.trim().toUpperCase() || (enCurso && curso.clave) || "";
+        const contenido = palabra && await descifrar(modo.cifrado, palabra);
+        if (!contenido) return inicio("La clave no es correcta. Pídesela al profesor.");
+        modo = Object.assign({}, modo, contenido.modo);
+        BANCO = contenido.banco;
+        window.ESCAPE_EXTRA = contenido.extra;
+        M = modo;
+        if (enCurso) curso.clave = palabra;
+        else { curso = nuevoIntento(id, nom, modo); curso.clave = palabra; }
+      } else if (!enCurso) { M = modo; curso = nuevoIntento(id, nom, modo); }
+      if (enCurso) curso.reinicios += curso.fase === "reto" && curso.salas[curso.sala] && curso.salas[curso.sala].reto.total == null ? 1 : 0;
       S = curso; M = modo;
       salvar();
       jugar();
@@ -183,6 +200,23 @@
       guardar(clave(b.dataset.borrar), null);
       inicio();
     }));
+  };
+
+  /* ---------- Contenido cifrado ----------
+     El examen se publica cifrado (AES-GCM con una clave derivada por PBKDF2 de la palabra que dice el
+     profesor), así que nadie puede leer las preguntas ni los casos antes de la hora. Al descifrarlo sale
+     el código de un objeto: { modo, banco, extra }. */
+  const b64 = (t) => Uint8Array.from(atob(t), (c) => c.charCodeAt(0));
+  const descifrar = async (ruta, palabra) => {
+    try {
+      const sobre = await (await fetch(ruta, { cache: "no-store" })).json();
+      const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(palabra), "PBKDF2", false, ["deriveKey"]);
+      const llave = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64(sobre.salt), iterations: sobre.iter, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+      const claro = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(sobre.iv) }, llave, b64(sobre.datos));
+      return new Function("return (" + new TextDecoder().decode(claro) + ");")();
+    } catch (e) {
+      return null;
+    }
   };
 
   /* ---------- Reloj ---------- */
@@ -291,9 +325,9 @@
       '<form class="er-caja er-candado" data-candado-form>' + cabeceraSala(cfg) +
       '<p class="er-candado-titulo">' + svg("candado") + (segundo
         ? "Segundo intento: el candado no se abrió. Vuelve a responder las " + pendientes.length + " preguntas falladas. Este intento no suma puntos, pero la puerta se abrirá en cualquier caso."
-        : "Candado de la sala: responde las " + s.test.length + " preguntas. Se abre con " + APROBAR_CANDADO + " aciertos.") + "</p>" +
+        : "Candado de la sala: responde las " + s.test.length + " preguntas. Se abre con " + abrirCon() + " aciertos.") + "</p>" +
       pendientes.map((q) => preguntaHTML(q, s.test.indexOf(q) + 1, segundo ? "r2" : "r1", false)).join("") +
-      (segundo ? "" : '<fieldset class="er-pregunta er-corta"><legend><span class="er-fuente">Respuesta corta</span>' + esc(cfg.corta.pregunta) + "</legend>" +
+      (segundo ? "" : '<fieldset class="er-pregunta er-corta"><legend><span class="er-fuente">Respuesta corta</span>' + esc(version(cfg.corta, s.cortaV).pregunta) + "</legend>" +
         '<textarea name="corta" rows="5" maxlength="2500" placeholder="Escribe tu respuesta. La corrige el profesor.">' + esc(s.corta) + "</textarea></fieldset>") +
       '<p class="er-aviso" data-aviso role="alert" hidden></p>' +
       '<div class="rt-acciones"><button type="submit" class="rt-boton">' + (segundo ? "Probar otra vez" : "Probar el candado") + " " + svg("llave") + "</button></div></form>", "input[type=radio]");
@@ -309,9 +343,9 @@
       if (!segundo && !s.corta.trim() && !confirm("No has escrito la respuesta corta. ¿Probar el candado igualmente? Luego no podrás volver a esta sala.")) return;
       pendientes.forEach((q) => { q[campo] = Number(form.querySelector('input[name="q' + (s.test.indexOf(q) + 1) + '"]:checked').value); });
       if (segundo) {
-        s.forzado = pendientes.filter((q) => q.r2 === BANCO[q.i].correcta).length + aciertosTest(s) < APROBAR_CANDADO;
+        s.forzado = pendientes.filter((q) => q.r2 === BANCO[q.i].correcta).length + aciertosTest(s) < abrirCon();
         S.fase = "abierta";
-      } else S.fase = aciertosTest(s) >= APROBAR_CANDADO ? "abierta" : "candado2";
+      } else S.fase = aciertosTest(s) >= abrirCon() ? "abierta" : "candado2";
       salvar();
       jugar();
     });
@@ -323,7 +357,7 @@
     pintar(
       '<div class="er-caja er-abierta">' + svg("abierto") +
       "<h2>" + (s.forzado ? "La puerta se abre" : "¡Candado abierto!") + "</h2>" +
-      "<p>" + (s.forzado ? "No has llegado a " + APROBAR_CANDADO + " aciertos, pero nadie se queda encerrado. " : "Has acertado " + aciertosTest(s) + " de " + s.test.length + " a la primera. ") + "Dígito de la sala " + (S.sala + 1) + ":</p>" +
+      "<p>" + (s.forzado ? "No has llegado a " + abrirCon() + " aciertos, pero nadie se queda encerrado. " : "Has acertado " + aciertosTest(s) + " de " + s.test.length + " a la primera. ") + "Dígito de la sala " + (S.sala + 1) + ":</p>" +
       '<p class="er-digito-grande">' + s.digito + "</p>" +
       '<p class="rt-nota">Apúntalo: lo necesitarás en la puerta final. También lo tienes arriba, en el llavero.</p>' +
       '<div class="rt-acciones"><button type="button" class="rt-boton" data-siguiente>' + (ultima ? "Ir a la puerta final" : "Siguiente sala") + " " + svg("flecha") + "</button></div></div>", "[data-siguiente]");
@@ -337,7 +371,7 @@
       '<form class="er-caja er-candado" data-final>' +
       '<p class="er-etiqueta">Puerta final</p><h2>' + esc(f.titulo) + "</h2>" +
       '<p class="er-historia">' + esc(f.historia) + "</p>" +
-      '<fieldset class="er-pregunta er-corta"><legend><span class="er-fuente">Respuesta corta</span>' + esc(f.corta.pregunta) + "</legend>" +
+      '<fieldset class="er-pregunta er-corta"><legend><span class="er-fuente">Respuesta corta</span>' + esc(version(f.corta, S.final.cortaV).pregunta) + "</legend>" +
       '<textarea name="corta" rows="9" maxlength="5000" placeholder="Síntoma, diagnóstico, acciones y estado de entrega.">' + esc(S.final.corta) + "</textarea></fieldset>" +
       '<label class="er-campo er-codigo"><span>Código de la puerta (' + codigo.length + ' dígitos)</span><input name="codigo" inputmode="numeric" autocomplete="off" maxlength="' + codigo.length + '" pattern="[0-9]*"></label>' +
       '<p class="er-aviso" data-aviso role="alert" hidden></p>' +
@@ -366,9 +400,9 @@
       salas: S.salas.map((s, i) => ({
         sala: M.salas[i].titulo, reto: { juego: s.reto.juego, caso: s.reto.titulo || String(s.reto.caso), total: s.reto.total, maximo: s.reto.maximo, puntos: Math.round(puntosReto(s) * 100) / 100 },
         test: s.test.map((q) => { const p = BANCO[q.i]; return { fuente: p.fuente, pregunta: p.pregunta, respuesta: q.r1 == null ? null : p.opciones[q.r1], correcta: p.opciones[p.correcta], ok: q.r1 === p.correcta }; }),
-        puntosTest: Math.round(aciertosTest(s) * PUNTOS_TEST * 100) / 100, puertaForzada: s.forzado
+        puntosTest: Math.round(aciertosTest(s) * ptsTest() * 100) / 100, puertaForzada: s.forzado
       })),
-      cortas: preguntasCortas().map((c, i) => ({ pregunta: c.pregunta, respuesta: respuestasCortas()[i] || "" }))
+      cortas: preguntasCortas().map((c, i) => ({ pregunta: c.pregunta, respuesta: respuestasCortas()[i] || "", modelo: c.modelo, criterios: c.criterios }))
     };
     h.codigo = huella(JSON.stringify(h));
     return h;
@@ -448,12 +482,11 @@
     const ver = (i) => {
       const h = hojas[i];
       const d = app.querySelector("[data-detalle]");
-      const modo = CFG.modos[h.modo];
-      const modelos = modo ? modo.salas.map((s) => s.corta).concat(modo.final ? [modo.final.corta] : []) : [];
+      const modelos = h.cortas;
       const n = notas[h.codigo] || [];
       d.innerHTML = "<h3>" + esc(h.nombre) + "</h3>" +
         h.cortas.map((c, k) => '<div class="er-caja er-corregir"><b>' + (k + 1) + ". " + esc(c.pregunta) + '</b><p class="er-tuya">' + (esc(c.respuesta) || "<i>Sin responder</i>") + "</p>" +
-          (modelos[k] ? "<small><b>Modelo:</b> " + esc(modelos[k].modelo) + "</small><small><b>Se valora:</b> " + modelos[k].criterios.map(esc).join(" · ") + "</small>" : "") +
+          (modelos[k] && modelos[k].modelo ? "<small><b>Modelo:</b> " + esc(modelos[k].modelo) + "</small><small><b>Se valora:</b> " + modelos[k].criterios.map(esc).join(" · ") + "</small>" : "") +
           '<div class="er-puntos" role="radiogroup" aria-label="Puntos">' + [0, PUNTOS_CORTA / 2, PUNTOS_CORTA].map((p) => '<label><input type="radio" name="c' + k + '" value="' + p + '"' + (Number(n[k]) === p && n[k] != null ? " checked" : "") + "><span>" + coma(p) + "</span></label>").join("") + "</div></div>").join("") +
         "<h3>Test</h3><ul class=\"er-revision\">" + h.salas.flatMap((s) => s.test).map((q) => '<li class="' + (q.ok ? "ok" : "mal") + '"><b>' + esc(q.pregunta) + "</b><span>" + (q.ok ? "✓ " : "✗ " + esc(q.respuesta || "sin responder") + " · ") + "Correcta: " + esc(q.correcta) + "</span></li>").join("") + "</ul>";
       d.querySelectorAll("input[type=radio]").forEach((r) => r.addEventListener("change", () => {

@@ -15,6 +15,8 @@
   /* Dentro del escape room (escape-uf0864.html) el reto llega por ?escape=<id> y la nota vuelve a la sala. */
   const ESCAPE = PARAMS.get("escape");
   const avisarSala = (datos) => { if (window.parent !== window) window.parent.postMessage(Object.assign({ tipo: "escape-reto", juego: "rescate" }, datos), location.origin); };
+  /* Casos del examen: el escape room los descifra con la clave del día y los deja en la ventana de la sala. */
+  const EXTRA = (() => { try { return ESCAPE && window.parent !== window && window.parent.ESCAPE_EXTRA || null; } catch (e) { return null; } })();
   const abierta = (m) => {
     if (PREVIA || !m.desde) return true;
     const [y, mes, d] = m.desde.split("-").map(Number);
@@ -1758,7 +1760,7 @@
       (E.respuestas.length ? '<h3>Informe</h3><ul class="rt-lista">' + M.preguntas.map(([q, ops], i) => '<li class="' + (E.respuestas[i] ? "ok" : "mal") + '">' + (E.respuestas[i] ? "✓ " : "✗ ") + esc(q) + (E.respuestas[i] ? "" : " Era: " + esc(ops[0]) + ".") + "</li>").join("") + "</ul>" : "") +
       (E.riesgos.length ? '<h3>Riesgos asumidos</h3><ul class="rt-lista">' + E.riesgos.map((r) => '<li class="mal">−' + r.puntos + " · " + esc(r.texto) + "</li>").join("") + "</ul>" : '<p class="rt-bien">No asumiste ningún riesgo innecesario.</p>') +
       (E.privacidad ? '<p class="rt-aviso">Abriste ' + E.privacidad + (E.privacidad === 1 ? " archivo personal" : " archivos personales") + " del cliente. Para comprobar una recuperación basta con verify.</p>" : "") +
-      '<h3>Así se resolvía</h3><p>' + esc(M.solucion) + "</p>" +
+      (EXTRA ? "" : '<h3>Así se resolvía</h3><p>' + esc(M.solucion) + "</p>") +
       (ESCAPE ? '<p class="rt-bien">Reto terminado. Sigue en la sala: el candado ya está a la vista.</p>'
         : '<div class="rt-acciones"><a class="rt-boton" href="software.html">Volver al mapa</a><button type="button" class="rt-boton rt-secundario" data-otra>Otra misión</button></div>') +
       "</section>";
@@ -1768,6 +1770,6 @@
     capa.querySelector("a.rt-boton").focus();
   };
 
-  const reto = ESCAPE && MISIONES.find((m) => m.id === ESCAPE);
+  const reto = ESCAPE && MISIONES.concat((EXTRA && EXTRA.rescate) || []).find((m) => m.id === ESCAPE);
   if (reto) { DIFICIL = false; empezar(reto); } else portada();
 })();

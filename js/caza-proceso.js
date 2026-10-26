@@ -16,6 +16,8 @@
   /* Dentro del escape room (escape-uf0864.html) el reto llega por ?escape=<id> y la nota vuelve a la sala. */
   const ESCAPE = PARAMS.get("escape");
   const avisarSala = (datos) => { if (window.parent !== window) window.parent.postMessage(Object.assign({ tipo: "escape-reto", juego: "caza" }, datos), location.origin); };
+  /* Casos del examen: el escape room los descifra con la clave del día y los deja en la ventana de la sala. */
+  const EXTRA = (() => { try { return ESCAPE && window.parent !== window && window.parent.ESCAPE_EXTRA || null; } catch (e) { return null; } })();
   const abierta = (m) => {
     if (PREVIA || !m.desde) return true;
     const [y, mes, d] = m.desde.split("-").map(Number);
@@ -1919,7 +1921,7 @@
       '<h3>Amenaza neutralizada</h3><ul class="rt-lista">' + ev.items.map(([txt, ok]) => '<li class="' + (ok ? "ok" : "mal") + '">' + (ok ? "✓ " : "✗ ") + esc(txt) + "</li>").join("") + "</ul>" +
       '<h3>Método</h3><ul class="rt-lista">' + ev.metodo.map(([txt, ok]) => '<li class="' + (ok ? "ok" : "mal") + '">' + (ok ? "✓ " : "✗ ") + esc(txt) + "</li>").join("") + "</ul>" +
       (ev.riesgos.length ? '<h3>Riesgos asumidos</h3><ul class="rt-lista">' + ev.riesgos.map((r) => '<li class="mal">−' + r.puntos + " · " + esc(r.texto) + "</li>").join("") + "</ul>" : '<p class="rt-bien">No asumiste ningún riesgo innecesario.</p>') +
-      '<h3>Así se resolvía</h3><p>' + esc(M.solucion) + "</p>" +
+      (EXTRA ? "" : '<h3>Así se resolvía</h3><p>' + esc(M.solucion) + "</p>") +
       (ESCAPE ? '<p class="rt-bien">Reto terminado. Sigue en la sala: el candado ya está a la vista.</p>'
         : '<div class="rt-acciones"><a class="rt-boton" href="software.html">Volver al mapa</a><button type="button" class="rt-boton rt-secundario" data-otra>Otro equipo</button></div>') +
       "</section>";
@@ -1929,6 +1931,6 @@
     capa.querySelector("a.rt-boton").focus();
   };
 
-  const reto = ESCAPE && ESCENARIOS.find((m) => m.id === ESCAPE);
+  const reto = ESCAPE && ESCENARIOS.concat(EXTRA && EXTRA.caza ? EXTRA.caza({ proc, app_, MS, SYS32 }) : []).find((m) => m.id === ESCAPE);
   if (reto) { DIFICIL = false; empezar(reto); } else portada();
 })();
