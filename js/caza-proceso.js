@@ -16,6 +16,8 @@
   /* Dentro del escape room (escape-uf0864.html) el reto llega por ?escape=<id> y la nota vuelve a la sala. */
   const ESCAPE = PARAMS.get("escape");
   const avisarSala = (datos) => { if (window.parent !== window) window.parent.postMessage(Object.assign({ tipo: "escape-reto", juego: "caza" }, datos), location.origin); };
+  /* Casos del examen: el escape room los descifra con la clave del día y los deja en la ventana de la sala. */
+  const EXTRA = (() => { try { return ESCAPE && window.parent !== window && window.parent.ESCAPE_EXTRA || null; } catch (e) { return null; } })();
   const abierta = (m) => {
     if (PREVIA || !m.desde) return true;
     const [y, mes, d] = m.desde.split("-").map(Number);
@@ -1132,7 +1134,7 @@
         if ((args[0] || "").toLowerCase() !== "query" || !args[1]) return t.usoIncorrecto("reg", "Este simulador solo deja consultar (query) una clave Run.");
         const k = args[1].toUpperCase();
         const hive = k.startsWith("HKCU") ? "HKCU" : k.startsWith("HKLM") ? "HKLM" : null;
-        if (!hive || !/\\RUN$/.test(k)) return fallo("reg: solo se pueden consultar las claves Run.", "Ejemplo: reg query HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run");
+        if (!hive || !/\\RUN$/.test(k)) return fallo("reg: solo se pueden consultar las claves Run.", "Mira help reg.");
         listarInicio((e) => e.lugar === "Run (" + hive + ")", hive + "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", true);
       }
     });
@@ -1623,7 +1625,7 @@
         alias: ["erase", "rm"],
         ejecutar(args) {
           const x = (args.find((y) => !y.startsWith("/")) || "").toLowerCase();
-          if (!/^e:\\?(\*|[^\\]+)\.lnk$/.test(x)) return fallo("del: en este simulador solo se borran los accesos directos del pendrive.", "Ejemplo: del E:\\*.lnk");
+          if (!/^e:\\?(\*|[^\\]+)\.lnk$/.test(x)) return fallo("del: en este simulador solo se borran los accesos directos del pendrive.", "Solo se pueden borrar los accesos directos (.lnk) del pendrive E:.");
           accion();
           if (gusanoActivo()) { E.usbLnk = true; return t.escribir("Borrados… y el gusano los vuelve a crear al momento. Primero hay que limpiar el equipo.", "t-error"); }
           E.usbLnk = false;
@@ -1650,7 +1652,7 @@
       alias: ["hint"],
       oculto: DIFICIL,
       ejecutar() {
-        if (DIFICIL) return t.escribir("Modo difícil: no hay pistas.", "t-aviso");
+        if (DIFICIL) return t.escribir(EXTRA ? "En el examen no hay pistas." : "Modo difícil: no hay pistas.", "t-aviso");
         const siguiente = M.objetivosOrden.find((k) => !objetivoHecho(k));
         if (!siguiente) return t.escribir("No te hace falta: ya está todo. Escribe informe.", "t-suave");
         E.pistas++;
@@ -1774,7 +1776,7 @@
     app.querySelector("[data-barra]").style.width = pct + "%";
     app.querySelector("[data-barra]").parentElement.setAttribute("aria-valuenow", pct);
     const r = app.querySelector("[data-riesgo]");
-    if (DIFICIL) { r.textContent = "Modo difícil"; r.className = "rt-riesgo alto"; return; }
+    if (DIFICIL) { r.textContent = EXTRA ? "Examen" : "Modo difícil"; r.className = "rt-riesgo alto"; return; }
     const activa = amenazas().some(vivo) || (M.rootkit && !E.reinstalado);
     r.textContent = activa ? "Amenaza activa" : pct === 100 ? "Equipo limpio" : "Quedan restos";
     r.className = "rt-riesgo " + (activa ? "alto" : pct === 100 ? "ok" : "activo");
@@ -1826,7 +1828,7 @@
     app.innerHTML =
       '<section class="rt-panel rt-juego">' +
       '<header class="rt-barra">' +
-      '<div class="rt-titulo">' + ICONO_LUPA + "<div><h1>Caza al proceso sospechoso</h1><p>Equipo " + esc(m.equipo) + " · " + esc(m.titulo) + (DIFICIL ? " · Modo difícil" : "") + "</p></div></div>" +
+      '<div class="rt-titulo">' + ICONO_LUPA + "<div><h1>Caza al proceso sospechoso</h1><p>Equipo " + esc(m.equipo) + " · " + esc(m.titulo) + (DIFICIL ? (EXTRA ? " · Examen" : " · Modo difícil") : "") + "</p></div></div>" +
       '<span class="rt-riesgo alto" data-riesgo role="status">Amenaza activa</span>' +
       (ESCAPE ? "" : '<a class="rt-cerrar rt-cerrar-barra" href="caza.html' + (PREVIA ? "?profe" : "") + '" aria-label="Salir del caso">' + ICONO_CERRAR + "</a>") +
       "</header>" +
@@ -1840,7 +1842,7 @@
       "</div>" +
       '<aside class="rt-lateral">' +
       '<section class="rt-caja"><h2>Orden de trabajo</h2><p>' + m.orden.slice(2, 5).map(esc).join("<br>") + '</p><p class="rt-nota">Léela entera con <code>type orden_trabajo.txt</code>.</p></section>' +
-      (DIFICIL ? '<section class="rt-caja"><h2>Modo difícil</h2><p class="rt-nota">Sin objetivos ni pistas. Investiga y decide tú: los errores dicen qué ha fallado, pero no qué tienes que escribir.</p></section>'
+      (DIFICIL ? '<section class="rt-caja"><h2>' + (EXTRA ? "Examen" : "Modo difícil") + '</h2><p class="rt-nota">Sin objetivos ni pistas. Investiga y decide tú: los errores dicen qué ha fallado, pero no qué tienes que escribir.</p></section>'
         : '<section class="rt-caja"><h2>Objetivos</h2><ul class="rt-objetivos" data-objetivos></ul></section>') +
       '<section class="rt-caja"><h2>Estado del equipo</h2><div class="rt-estado" data-estado></div><div class="rt-progreso" role="progressbar" aria-label="Amenaza neutralizada" aria-valuemin="0" aria-valuemax="100"><span data-barra></span></div></section>' +
       "</aside></div></section>";
@@ -1850,7 +1852,7 @@
       entrada: app.querySelector("#cz-comando"),
       formulario: app.querySelector("[data-formulario]"),
       prompt: (cwd) => "PS " + aWin(cwd) + ">",
-      sinAyudas: DIFICIL,
+      sinAyudas: DIFICIL && !EXTRA, /* en el examen, los errores de uso siguen explicando el comando */
       completarExtra: (cmd) => {
         const c = cmd.toLowerCase();
         if (c === "proceso" || c === "virustotal") return vivos().map((p) => String(p.pid));
@@ -1873,7 +1875,7 @@
     t.cwd = "/Users/" + m.usuario;
     t.escribir("Windows PowerShell (simulado) · sesión de administrador del técnico", "t-titulo");
     t.escribir("Nada de lo que escribas se ejecuta en tu ordenador.", "t-suave");
-    if (DIFICIL) t.escribir("Modo difícil: sin pistas ni objetivos. Si te equivocas, no te dirá qué tienes que escribir.", "t-aviso");
+    if (DIFICIL) t.escribir((EXTRA ? "Examen" : "Modo difícil") + ": sin pistas ni objetivos. Si te equivocas, no te dirá qué tienes que escribir.", "t-aviso");
     t.escribir([["Escribe ", ""], ["help", "t-cmd"], [" para ver los comandos, o ", ""], ["type orden_trabajo.txt", "t-cmd"], [" para leer el encargo.", ""]]);
     if (m.ransom) t.escribir("El cifrado está ocurriendo ahora: cada comando que escribes cuenta.", "t-error");
     t.escribir("");
@@ -1900,7 +1902,7 @@
     capa.className = "rt-capa";
     capa.innerHTML =
       '<section class="rt-panel rt-final" role="dialog" aria-modal="true" aria-labelledby="cz-final-titulo">' +
-      '<p class="rt-antetitulo"><b>Caso</b> · ' + esc(M.titulo) + (DIFICIL ? " · Modo difícil" : "") + "</p>" +
+      '<p class="rt-antetitulo"><b>Caso</b> · ' + esc(M.titulo) + (DIFICIL ? (EXTRA ? " · Examen" : " · Modo difícil") : "") + "</p>" +
       '<h2 id="cz-final-titulo">' + (ev.total >= 70 ? "¡Amenaza cazada" + (nombre ? ", " + esc(nombre) : "") + "!" : (ev.total >= 40 ? "Caza a medias" : "Se te escapó la amenaza") + (nombre ? ", " + esc(nombre) : "")) + "</h2>" +
       '<p class="rt-total"><b>' + ev.total + "</b>/100</p>" +
       '<ul class="rt-desglose">' +
@@ -1919,7 +1921,7 @@
       '<h3>Amenaza neutralizada</h3><ul class="rt-lista">' + ev.items.map(([txt, ok]) => '<li class="' + (ok ? "ok" : "mal") + '">' + (ok ? "✓ " : "✗ ") + esc(txt) + "</li>").join("") + "</ul>" +
       '<h3>Método</h3><ul class="rt-lista">' + ev.metodo.map(([txt, ok]) => '<li class="' + (ok ? "ok" : "mal") + '">' + (ok ? "✓ " : "✗ ") + esc(txt) + "</li>").join("") + "</ul>" +
       (ev.riesgos.length ? '<h3>Riesgos asumidos</h3><ul class="rt-lista">' + ev.riesgos.map((r) => '<li class="mal">−' + r.puntos + " · " + esc(r.texto) + "</li>").join("") + "</ul>" : '<p class="rt-bien">No asumiste ningún riesgo innecesario.</p>') +
-      '<h3>Así se resolvía</h3><p>' + esc(M.solucion) + "</p>" +
+      (EXTRA ? "" : '<h3>Así se resolvía</h3><p>' + esc(M.solucion) + "</p>") +
       (ESCAPE ? '<p class="rt-bien">Reto terminado. Sigue en la sala: el candado ya está a la vista.</p>'
         : '<div class="rt-acciones"><a class="rt-boton" href="software.html">Volver al mapa</a><button type="button" class="rt-boton rt-secundario" data-otra>Otro equipo</button></div>') +
       "</section>";
@@ -1929,6 +1931,7 @@
     capa.querySelector("a.rt-boton").focus();
   };
 
-  const reto = ESCAPE && ESCENARIOS.find((m) => m.id === ESCAPE);
-  if (reto) { DIFICIL = false; empezar(reto); } else portada();
+  const reto = ESCAPE && ESCENARIOS.concat(EXTRA && EXTRA.caza ? EXTRA.caza({ proc, app_, MS, SYS32 }) : []).find((m) => m.id === ESCAPE);
+  /* En el examen (casos que llegan de la página del examen) no hay pistas, objetivos ni consejos. */
+  if (reto) { DIFICIL = !!EXTRA; empezar(reto); } else portada();
 })();

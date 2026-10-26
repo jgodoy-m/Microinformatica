@@ -15,6 +15,8 @@
   /* Dentro del escape room (escape-uf0864.html) el reto llega por ?escape=<id> y la nota vuelve a la sala. */
   const ESCAPE = PARAMS.get("escape");
   const avisarSala = (datos) => { if (window.parent !== window) window.parent.postMessage(Object.assign({ tipo: "escape-reto", juego: "rescate" }, datos), location.origin); };
+  /* Casos del examen: el escape room los descifra con la clave del día y los deja en la ventana de la sala. */
+  const EXTRA = (() => { try { return ESCAPE && window.parent !== window && window.parent.ESCAPE_EXTRA || null; } catch (e) { return null; } })();
   const abierta = (m) => {
     if (PREVIA || !m.desde) return true;
     const [y, mes, d] = m.desde.split("-").map(Number);
@@ -871,7 +873,7 @@
         return h;
       }),
       mnt: dir({
-        cliente: Object.assign(dir(carpetaCliente), { nota: () => (E.disco.montado ? "" : DIFICIL ? "(no hay nada montado aquí)" : "(no hay nada montado aquí: usa mount -r sdb1 /mnt/cliente)") }),
+        cliente: Object.assign(dir(carpetaCliente), { nota: () => (E.disco.montado ? "" : "(no hay nada montado aquí)") }),
         taller: Object.assign(dir(carpetaTaller), { nota: "" })
       })
     });
@@ -1050,7 +1052,7 @@
       const r = resolverDisco(origen);
       if (!r) return fallo("No encuentro el disco de origen «" + (origen || "") + "».", "Mira los nombres con lsblk.");
       if (r.disco !== "sdb") return fallo("Ese origen no es el disco que hay que rescatar.", "El origen debe ser el disco del cliente (sdb).");
-      if (!destino) return fallo("Falta el destino.", "Un archivo de imagen en el disco del taller, por ejemplo /mnt/taller/cliente.img.", "t-aviso");
+      if (!destino) return fallo("Falta el destino.", "El destino es un archivo de imagen dentro del disco del taller (/mnt/taller).", "t-aviso");
       const rd = resolverDisco(destino);
       if (rd) return rd.disco === "sdb" ? t.escribir("Origen y destino son el mismo disco: eso destruiría los datos. ddrescue se niega.", "t-error") : fallo("Copiar sobre el disco entero " + rd.disco + " borraría todo lo que tiene.", "Usa un archivo de imagen: /mnt/taller/cliente.img");
       const dd = discoDeRuta(destino);
@@ -1127,11 +1129,11 @@
     };
     const destinoValido = (txt) => {
       if (!txt) { fallo("Falta el destino.", "--destino <carpeta>, en el disco del taller (/mnt/taller/...).", "t-aviso"); return null; }
-      if (resolverDisco(txt)) { fallo("El destino tiene que ser una carpeta, no un disco.", "Por ejemplo: --destino /mnt/taller/rescate", "t-aviso"); return null; }
+      if (resolverDisco(txt)) { fallo("El destino tiene que ser una carpeta, no un disco.", "Indica una carpeta dentro del disco del taller (/mnt/taller).", "t-aviso"); return null; }
       const d = discoDeRuta(txt);
       if (d === "sda") { fallo(t.ruta(txt) + " está en el sistema en vivo, que se borra al apagar.", "Guarda en /mnt/taller.", "t-error"); return null; }
       const ruta = t.ruta(txt);
-      if (d === "sdc" && ruta === "/mnt/taller") { fallo("No se guarda suelto en la raíz del disco del taller.", "Usa una carpeta para este cliente, por ejemplo /mnt/taller/rescate.", "t-aviso"); return null; }
+      if (d === "sdc" && ruta === "/mnt/taller") { fallo("No se guarda suelto en la raíz del disco del taller.", "Usa una carpeta propia para este cliente dentro de /mnt/taller.", "t-aviso"); return null; }
       return { ruta, disco: d };
     };
 
@@ -1220,7 +1222,7 @@
         const origen = origenDe(o.pos[0]);
         if (!origen) return fallo("backup: " + o.pos[0] + ": no es un origen válido.", "El origen debe ser la carpeta montada /mnt/cliente.");
         if (origen.tipo === "imagen") return fallo("backup: " + o.pos[0] + " es una imagen, no una carpeta.", "Para sacar archivos de una imagen usa recover.", "t-aviso");
-        if (origen.tipo === "disco" || !E.disco.montado) return fallo("backup: no hay archivos que copiar en ese origen.", "Monta antes la partición (mount -r sdb1 /mnt/cliente) y copia desde /mnt/cliente.", "t-aviso");
+        if (origen.tipo === "disco" || !E.disco.montado) return fallo("backup: no hay archivos que copiar en ese origen.", "backup copia desde una carpeta montada: primero hay que montar la partición del cliente (help mount).", "t-aviso");
         const destino = destinoValido(o.pos[1]);
         if (!destino) return;
         if (destino.disco === "sdb") return t.escribir("backup: el destino está en el mismo disco. Una copia en el mismo disco no protege nada.", "t-error");
@@ -1417,7 +1419,7 @@
       alias: ["hint"],
       oculto: DIFICIL,
       ejecutar() {
-        if (DIFICIL) return t.escribir("Modo difícil: no hay pistas.", "t-aviso");
+        if (DIFICIL) return t.escribir(EXTRA ? "En el examen no hay pistas." : "Modo difícil: no hay pistas.", "t-aviso");
         const siguiente = objetivosDe(M).find((k) => !objetivoHecho(k));
         if (!siguiente) return t.escribir("No te hace falta: ya está todo. Escribe informe.", "t-suave");
         E.pistas++;
@@ -1635,7 +1637,7 @@
     app.querySelector("[data-barra]").style.width = pct + "%";
     app.querySelector("[data-barra]").parentElement.setAttribute("aria-valuenow", pct);
     const r = app.querySelector("[data-riesgo]");
-    if (DIFICIL) { r.textContent = "Modo difícil"; r.className = "rt-riesgo alto"; return; }
+    if (DIFICIL) { r.textContent = EXTRA ? "Examen" : "Modo difícil"; r.className = "rt-riesgo alto"; return; }
     const riesgoActivo = derivar ? !E.derivado : !E.hechos.has("verificar") && (falla() ? !E.imagen : true);
     r.textContent = E.riesgos.length ? "Riesgos asumidos: " + E.riesgos.length : riesgoActivo ? "Riesgo activo" : "Datos a salvo";
     r.className = "rt-riesgo " + (E.riesgos.length ? "alto" : riesgoActivo ? "activo" : "ok");
@@ -1687,7 +1689,7 @@
     app.innerHTML =
       '<section class="rt-panel rt-juego">' +
       '<header class="rt-barra">' +
-      '<div class="rt-titulo">' + ICONO_ESCUDO + "<div><h1>Operación: rescatar los archivos</h1><p>Terminal de recuperación · Equipo " + esc(m.equipo) + " · " + esc(m.titulo) + (DIFICIL ? " · Modo difícil" : "") + "</p></div></div>" +
+      '<div class="rt-titulo">' + ICONO_ESCUDO + "<div><h1>Operación: rescatar los archivos</h1><p>Terminal de recuperación · Equipo " + esc(m.equipo) + " · " + esc(m.titulo) + (DIFICIL ? (EXTRA ? " · Examen" : " · Modo difícil") : "") + "</p></div></div>" +
       '<span class="rt-riesgo activo" data-riesgo role="status">Riesgo activo</span>' +
       (ESCAPE ? "" : '<a class="rt-cerrar rt-cerrar-barra" href="rescate.html' + (PREVIA ? "?profe" : "") + '" aria-label="Salir de la misión">' + ICONO_CERRAR + "</a>") +
       "</header>" +
@@ -1701,7 +1703,7 @@
       "</div>" +
       '<aside class="rt-lateral">' +
       '<section class="rt-caja"><h2>Orden de trabajo</h2><p>' + m.orden.slice(2, 5).map(esc).join("<br>") + '</p><p class="rt-nota">Léela entera con <code>cat orden_trabajo.txt</code>.</p></section>' +
-      (DIFICIL ? '<section class="rt-caja"><h2>Modo difícil</h2><p class="rt-nota">Sin objetivos ni pistas. Investiga y decide tú: los errores dicen qué ha fallado, pero no qué tienes que escribir.</p></section>'
+      (DIFICIL ? '<section class="rt-caja"><h2>' + (EXTRA ? "Examen" : "Modo difícil") + '</h2><p class="rt-nota">Sin objetivos ni pistas. Investiga y decide tú: los errores dicen qué ha fallado, pero no qué tienes que escribir.</p></section>'
         : '<section class="rt-caja"><h2>Objetivos</h2><ul class="rt-objetivos" data-objetivos></ul></section>') +
       '<section class="rt-caja"><h2>' + (DIFICIL ? "Progreso" : "Estado del disco") + '</h2><div class="rt-estado" data-estado></div><div class="rt-progreso" role="progressbar" aria-label="Archivos rescatados" aria-valuemin="0" aria-valuemax="100"><span data-barra></span></div></section>' +
       "</aside></div></section>";
@@ -1711,7 +1713,7 @@
       entrada: app.querySelector("#rt-comando"),
       formulario: app.querySelector("[data-formulario]"),
       prompt: (cwd) => "rescue@" + m.equipo.toLowerCase() + ":" + (cwd === "/home/rescue" ? "~" : cwd.replace(/^\/home\/rescue/, "~")) + "$",
-      sinAyudas: DIFICIL,
+      sinAyudas: DIFICIL && !EXTRA, /* en el examen, los errores de uso siguen explicando el comando */
       completarExtra: (cmd) => (cmd === "disk" ? ["list", "status", "smart", "sdb"] : cmd === "bitlocker" ? ["status", "unlock", "sdb1"] : ["sdb", "sdb1"]),
       despues: () => { if (!E.terminado) pintarPanel(); }
     });
@@ -1720,7 +1722,7 @@
     t.cwd = "/home/rescue";
     t.escribir("SystemRescue (simulado) · Terminal de recuperación del taller", "t-titulo");
     t.escribir("Nada de lo que escribas se ejecuta en tu ordenador.", "t-suave");
-    if (DIFICIL) t.escribir("Modo difícil: sin pistas ni objetivos. Si te equivocas, no te dirá qué tienes que escribir.", "t-aviso");
+    if (DIFICIL) t.escribir((EXTRA ? "Examen" : "Modo difícil") + ": sin pistas ni objetivos. Si te equivocas, no te dirá qué tienes que escribir.", "t-aviso");
     t.escribir([["Escribe ", ""], ["help", "t-cmd"], [" para ver los comandos, o ", ""], ["cat orden_trabajo.txt", "t-cmd"], [" para leer el encargo.", ""]]);
     t.escribir("");
 
@@ -1744,7 +1746,7 @@
     capa.className = "rt-capa";
     capa.innerHTML =
       '<section class="rt-panel rt-final" role="dialog" aria-modal="true" aria-labelledby="rt-final-titulo">' +
-      '<p class="rt-antetitulo"><b>Misión</b> · ' + esc(M.titulo) + (DIFICIL ? " · Modo difícil" : "") + "</p>" +
+      '<p class="rt-antetitulo"><b>Misión</b> · ' + esc(M.titulo) + (DIFICIL ? (EXTRA ? " · Examen" : " · Modo difícil") : "") + "</p>" +
       '<h2 id="rt-final-titulo">' + (ev.total >= 70 ? "¡Datos rescatados" : ev.total >= 40 ? "Rescate a medias" : "Rescate fallido") + (nombre ? ", " + esc(nombre) : "") + "!</h2>" +
       '<p class="rt-total"><b>' + ev.total + "</b>/100</p>" +
       '<ul class="rt-desglose">' +
@@ -1758,7 +1760,7 @@
       (E.respuestas.length ? '<h3>Informe</h3><ul class="rt-lista">' + M.preguntas.map(([q, ops], i) => '<li class="' + (E.respuestas[i] ? "ok" : "mal") + '">' + (E.respuestas[i] ? "✓ " : "✗ ") + esc(q) + (E.respuestas[i] ? "" : " Era: " + esc(ops[0]) + ".") + "</li>").join("") + "</ul>" : "") +
       (E.riesgos.length ? '<h3>Riesgos asumidos</h3><ul class="rt-lista">' + E.riesgos.map((r) => '<li class="mal">−' + r.puntos + " · " + esc(r.texto) + "</li>").join("") + "</ul>" : '<p class="rt-bien">No asumiste ningún riesgo innecesario.</p>') +
       (E.privacidad ? '<p class="rt-aviso">Abriste ' + E.privacidad + (E.privacidad === 1 ? " archivo personal" : " archivos personales") + " del cliente. Para comprobar una recuperación basta con verify.</p>" : "") +
-      '<h3>Así se resolvía</h3><p>' + esc(M.solucion) + "</p>" +
+      (EXTRA ? "" : '<h3>Así se resolvía</h3><p>' + esc(M.solucion) + "</p>") +
       (ESCAPE ? '<p class="rt-bien">Reto terminado. Sigue en la sala: el candado ya está a la vista.</p>'
         : '<div class="rt-acciones"><a class="rt-boton" href="software.html">Volver al mapa</a><button type="button" class="rt-boton rt-secundario" data-otra>Otra misión</button></div>') +
       "</section>";
@@ -1768,6 +1770,7 @@
     capa.querySelector("a.rt-boton").focus();
   };
 
-  const reto = ESCAPE && MISIONES.find((m) => m.id === ESCAPE);
-  if (reto) { DIFICIL = false; empezar(reto); } else portada();
+  const reto = ESCAPE && MISIONES.concat((EXTRA && EXTRA.rescate) || []).find((m) => m.id === ESCAPE);
+  /* En el examen (casos que llegan de la página del examen) no hay pistas, objetivos ni consejos. */
+  if (reto) { DIFICIL = !!EXTRA; empezar(reto); } else portada();
 })();

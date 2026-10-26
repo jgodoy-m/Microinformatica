@@ -368,6 +368,9 @@
   /* Dentro del escape room (escape-uf0864.html) llega ?escape=S15,S16: un caso de cada sesión, y la nota vuelve a la sala. */
   const ESCAPE = (new URLSearchParams(location.search).get("escape") || "").split(",").filter(Boolean);
   const avisarSala = (datos) => { if (window.parent !== window) window.parent.postMessage(Object.assign({ tipo: "escape-reto", juego: "diagnostico" }, datos), location.origin); };
+  /* Casos del examen: el escape room los descifra con la clave del día y los deja en la ventana de la sala.
+     Cada entrada de ?escape= es el id de un caso o una sesión (entonces sale un caso al azar de esa sesión). */
+  const EXTRA = (() => { try { return ESCAPE.length && window.parent !== window && window.parent.ESCAPE_EXTRA || null; } catch (e) { return null; } })();
 
   /* ---------- Estado de la partida ---------- */
   let partida = [], indice = 0, total = 0, aciertos = 0, resumen = [];
@@ -670,7 +673,8 @@
   document.addEventListener("visibilitychange", () => { if (document.hidden && reloj && !pausado) pausar(); });
 
   if (ESCAPE.length) {
-    partida = ESCAPE.map((ses) => mezclar(CASOS.filter((c) => c.sesion === ses))[0]).filter(Boolean);
+    const todos = CASOS.concat((EXTRA && EXTRA.diagnostico) || []);
+    partida = ESCAPE.map((e) => todos.find((c) => c.id === e) || mezclar(CASOS.filter((c) => c.sesion === e))[0]).filter(Boolean);
     indice = 0; total = 0; aciertos = 0; resumen = [];
     if (partida.length) nuevoCaso(); else portada();
   } else portada();
