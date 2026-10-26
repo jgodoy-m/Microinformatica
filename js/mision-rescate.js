@@ -1419,7 +1419,7 @@
       alias: ["hint"],
       oculto: DIFICIL,
       ejecutar() {
-        if (DIFICIL) return t.escribir("Modo difícil: no hay pistas.", "t-aviso");
+        if (DIFICIL) return t.escribir(EXTRA ? "En el examen no hay pistas." : "Modo difícil: no hay pistas.", "t-aviso");
         const siguiente = objetivosDe(M).find((k) => !objetivoHecho(k));
         if (!siguiente) return t.escribir("No te hace falta: ya está todo. Escribe informe.", "t-suave");
         E.pistas++;
@@ -1637,7 +1637,7 @@
     app.querySelector("[data-barra]").style.width = pct + "%";
     app.querySelector("[data-barra]").parentElement.setAttribute("aria-valuenow", pct);
     const r = app.querySelector("[data-riesgo]");
-    if (DIFICIL) { r.textContent = "Modo difícil"; r.className = "rt-riesgo alto"; return; }
+    if (DIFICIL) { r.textContent = EXTRA ? "Examen" : "Modo difícil"; r.className = "rt-riesgo alto"; return; }
     const riesgoActivo = derivar ? !E.derivado : !E.hechos.has("verificar") && (falla() ? !E.imagen : true);
     r.textContent = E.riesgos.length ? "Riesgos asumidos: " + E.riesgos.length : riesgoActivo ? "Riesgo activo" : "Datos a salvo";
     r.className = "rt-riesgo " + (E.riesgos.length ? "alto" : riesgoActivo ? "activo" : "ok");
@@ -1689,7 +1689,7 @@
     app.innerHTML =
       '<section class="rt-panel rt-juego">' +
       '<header class="rt-barra">' +
-      '<div class="rt-titulo">' + ICONO_ESCUDO + "<div><h1>Operación: rescatar los archivos</h1><p>Terminal de recuperación · Equipo " + esc(m.equipo) + " · " + esc(m.titulo) + (DIFICIL ? " · Modo difícil" : "") + "</p></div></div>" +
+      '<div class="rt-titulo">' + ICONO_ESCUDO + "<div><h1>Operación: rescatar los archivos</h1><p>Terminal de recuperación · Equipo " + esc(m.equipo) + " · " + esc(m.titulo) + (DIFICIL ? (EXTRA ? " · Examen" : " · Modo difícil") : "") + "</p></div></div>" +
       '<span class="rt-riesgo activo" data-riesgo role="status">Riesgo activo</span>' +
       (ESCAPE ? "" : '<a class="rt-cerrar rt-cerrar-barra" href="rescate.html' + (PREVIA ? "?profe" : "") + '" aria-label="Salir de la misión">' + ICONO_CERRAR + "</a>") +
       "</header>" +
@@ -1703,7 +1703,7 @@
       "</div>" +
       '<aside class="rt-lateral">' +
       '<section class="rt-caja"><h2>Orden de trabajo</h2><p>' + m.orden.slice(2, 5).map(esc).join("<br>") + '</p><p class="rt-nota">Léela entera con <code>cat orden_trabajo.txt</code>.</p></section>' +
-      (DIFICIL ? '<section class="rt-caja"><h2>Modo difícil</h2><p class="rt-nota">Sin objetivos ni pistas. Investiga y decide tú: los errores dicen qué ha fallado, pero no qué tienes que escribir.</p></section>'
+      (DIFICIL ? '<section class="rt-caja"><h2>' + (EXTRA ? "Examen" : "Modo difícil") + '</h2><p class="rt-nota">Sin objetivos ni pistas. Investiga y decide tú: los errores dicen qué ha fallado, pero no qué tienes que escribir.</p></section>'
         : '<section class="rt-caja"><h2>Objetivos</h2><ul class="rt-objetivos" data-objetivos></ul></section>') +
       '<section class="rt-caja"><h2>' + (DIFICIL ? "Progreso" : "Estado del disco") + '</h2><div class="rt-estado" data-estado></div><div class="rt-progreso" role="progressbar" aria-label="Archivos rescatados" aria-valuemin="0" aria-valuemax="100"><span data-barra></span></div></section>' +
       "</aside></div></section>";
@@ -1713,7 +1713,7 @@
       entrada: app.querySelector("#rt-comando"),
       formulario: app.querySelector("[data-formulario]"),
       prompt: (cwd) => "rescue@" + m.equipo.toLowerCase() + ":" + (cwd === "/home/rescue" ? "~" : cwd.replace(/^\/home\/rescue/, "~")) + "$",
-      sinAyudas: DIFICIL,
+      sinAyudas: DIFICIL && !EXTRA, /* en el examen, los errores de uso siguen explicando el comando */
       completarExtra: (cmd) => (cmd === "disk" ? ["list", "status", "smart", "sdb"] : cmd === "bitlocker" ? ["status", "unlock", "sdb1"] : ["sdb", "sdb1"]),
       despues: () => { if (!E.terminado) pintarPanel(); }
     });
@@ -1722,7 +1722,7 @@
     t.cwd = "/home/rescue";
     t.escribir("SystemRescue (simulado) · Terminal de recuperación del taller", "t-titulo");
     t.escribir("Nada de lo que escribas se ejecuta en tu ordenador.", "t-suave");
-    if (DIFICIL) t.escribir("Modo difícil: sin pistas ni objetivos. Si te equivocas, no te dirá qué tienes que escribir.", "t-aviso");
+    if (DIFICIL) t.escribir((EXTRA ? "Examen" : "Modo difícil") + ": sin pistas ni objetivos. Si te equivocas, no te dirá qué tienes que escribir.", "t-aviso");
     t.escribir([["Escribe ", ""], ["help", "t-cmd"], [" para ver los comandos, o ", ""], ["cat orden_trabajo.txt", "t-cmd"], [" para leer el encargo.", ""]]);
     t.escribir("");
 
@@ -1746,7 +1746,7 @@
     capa.className = "rt-capa";
     capa.innerHTML =
       '<section class="rt-panel rt-final" role="dialog" aria-modal="true" aria-labelledby="rt-final-titulo">' +
-      '<p class="rt-antetitulo"><b>Misión</b> · ' + esc(M.titulo) + (DIFICIL ? " · Modo difícil" : "") + "</p>" +
+      '<p class="rt-antetitulo"><b>Misión</b> · ' + esc(M.titulo) + (DIFICIL ? (EXTRA ? " · Examen" : " · Modo difícil") : "") + "</p>" +
       '<h2 id="rt-final-titulo">' + (ev.total >= 70 ? "¡Datos rescatados" : ev.total >= 40 ? "Rescate a medias" : "Rescate fallido") + (nombre ? ", " + esc(nombre) : "") + "!</h2>" +
       '<p class="rt-total"><b>' + ev.total + "</b>/100</p>" +
       '<ul class="rt-desglose">' +
@@ -1771,5 +1771,6 @@
   };
 
   const reto = ESCAPE && MISIONES.concat((EXTRA && EXTRA.rescate) || []).find((m) => m.id === ESCAPE);
-  if (reto) { DIFICIL = false; empezar(reto); } else portada();
+  /* En el examen (casos que llegan de la página del examen) no hay pistas, objetivos ni consejos. */
+  if (reto) { DIFICIL = !!EXTRA; empezar(reto); } else portada();
 })();
