@@ -167,9 +167,12 @@
       usoIncorrecto(nombre, motivo) {
         if (t.sinAyudas) return t.escribir(nombre + ": sintaxis incorrecta.", "t-aviso");
         if (motivo) t.escribir(motivo, "t-aviso");
+        /* Se explica qué hace el comando y qué parámetros admite, sin un ejemplo que resuelva el caso. */
         const c = comandos[nombre];
-        if (c && c.uso) t.escribir("Uso: " + c.uso, "t-uso");
-        if (c && c.ejemplos) t.escribir("Ejemplo: " + c.ejemplos[0], "t-ejemplo");
+        if (!c) return;
+        if (c.resumen) t.escribir(nombre + " — " + c.resumen, "t-titulo");
+        if (c.uso) t.escribir("Uso: " + c.uso, "t-uso");
+        if (c.detalle) [].concat(c.detalle).forEach((l) => t.escribir(l));
       },
 
       ocupar(v) { ocupado = v; formulario.classList.toggle("ocupado", v); entrada.disabled = v; if (!v) entrada.focus({ preventScroll: true }); },

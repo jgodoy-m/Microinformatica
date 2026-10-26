@@ -1134,7 +1134,7 @@
         if ((args[0] || "").toLowerCase() !== "query" || !args[1]) return t.usoIncorrecto("reg", "Este simulador solo deja consultar (query) una clave Run.");
         const k = args[1].toUpperCase();
         const hive = k.startsWith("HKCU") ? "HKCU" : k.startsWith("HKLM") ? "HKLM" : null;
-        if (!hive || !/\\RUN$/.test(k)) return fallo("reg: solo se pueden consultar las claves Run.", "Ejemplo: reg query HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run");
+        if (!hive || !/\\RUN$/.test(k)) return fallo("reg: solo se pueden consultar las claves Run.", "Mira help reg.");
         listarInicio((e) => e.lugar === "Run (" + hive + ")", hive + "\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", true);
       }
     });
@@ -1625,7 +1625,7 @@
         alias: ["erase", "rm"],
         ejecutar(args) {
           const x = (args.find((y) => !y.startsWith("/")) || "").toLowerCase();
-          if (!/^e:\\?(\*|[^\\]+)\.lnk$/.test(x)) return fallo("del: en este simulador solo se borran los accesos directos del pendrive.", "Ejemplo: del E:\\*.lnk");
+          if (!/^e:\\?(\*|[^\\]+)\.lnk$/.test(x)) return fallo("del: en este simulador solo se borran los accesos directos del pendrive.", "Solo se pueden borrar los accesos directos (.lnk) del pendrive E:.");
           accion();
           if (gusanoActivo()) { E.usbLnk = true; return t.escribir("Borrados… y el gusano los vuelve a crear al momento. Primero hay que limpiar el equipo.", "t-error"); }
           E.usbLnk = false;

@@ -873,7 +873,7 @@
         return h;
       }),
       mnt: dir({
-        cliente: Object.assign(dir(carpetaCliente), { nota: () => (E.disco.montado ? "" : DIFICIL ? "(no hay nada montado aquí)" : "(no hay nada montado aquí: usa mount -r sdb1 /mnt/cliente)") }),
+        cliente: Object.assign(dir(carpetaCliente), { nota: () => (E.disco.montado ? "" : "(no hay nada montado aquí)") }),
         taller: Object.assign(dir(carpetaTaller), { nota: "" })
       })
     });
@@ -1052,7 +1052,7 @@
       const r = resolverDisco(origen);
       if (!r) return fallo("No encuentro el disco de origen «" + (origen || "") + "».", "Mira los nombres con lsblk.");
       if (r.disco !== "sdb") return fallo("Ese origen no es el disco que hay que rescatar.", "El origen debe ser el disco del cliente (sdb).");
-      if (!destino) return fallo("Falta el destino.", "Un archivo de imagen en el disco del taller, por ejemplo /mnt/taller/cliente.img.", "t-aviso");
+      if (!destino) return fallo("Falta el destino.", "El destino es un archivo de imagen dentro del disco del taller (/mnt/taller).", "t-aviso");
       const rd = resolverDisco(destino);
       if (rd) return rd.disco === "sdb" ? t.escribir("Origen y destino son el mismo disco: eso destruiría los datos. ddrescue se niega.", "t-error") : fallo("Copiar sobre el disco entero " + rd.disco + " borraría todo lo que tiene.", "Usa un archivo de imagen: /mnt/taller/cliente.img");
       const dd = discoDeRuta(destino);
@@ -1129,11 +1129,11 @@
     };
     const destinoValido = (txt) => {
       if (!txt) { fallo("Falta el destino.", "--destino <carpeta>, en el disco del taller (/mnt/taller/...).", "t-aviso"); return null; }
-      if (resolverDisco(txt)) { fallo("El destino tiene que ser una carpeta, no un disco.", "Por ejemplo: --destino /mnt/taller/rescate", "t-aviso"); return null; }
+      if (resolverDisco(txt)) { fallo("El destino tiene que ser una carpeta, no un disco.", "Indica una carpeta dentro del disco del taller (/mnt/taller).", "t-aviso"); return null; }
       const d = discoDeRuta(txt);
       if (d === "sda") { fallo(t.ruta(txt) + " está en el sistema en vivo, que se borra al apagar.", "Guarda en /mnt/taller.", "t-error"); return null; }
       const ruta = t.ruta(txt);
-      if (d === "sdc" && ruta === "/mnt/taller") { fallo("No se guarda suelto en la raíz del disco del taller.", "Usa una carpeta para este cliente, por ejemplo /mnt/taller/rescate.", "t-aviso"); return null; }
+      if (d === "sdc" && ruta === "/mnt/taller") { fallo("No se guarda suelto en la raíz del disco del taller.", "Usa una carpeta propia para este cliente dentro de /mnt/taller.", "t-aviso"); return null; }
       return { ruta, disco: d };
     };
 
@@ -1222,7 +1222,7 @@
         const origen = origenDe(o.pos[0]);
         if (!origen) return fallo("backup: " + o.pos[0] + ": no es un origen válido.", "El origen debe ser la carpeta montada /mnt/cliente.");
         if (origen.tipo === "imagen") return fallo("backup: " + o.pos[0] + " es una imagen, no una carpeta.", "Para sacar archivos de una imagen usa recover.", "t-aviso");
-        if (origen.tipo === "disco" || !E.disco.montado) return fallo("backup: no hay archivos que copiar en ese origen.", "Monta antes la partición (mount -r sdb1 /mnt/cliente) y copia desde /mnt/cliente.", "t-aviso");
+        if (origen.tipo === "disco" || !E.disco.montado) return fallo("backup: no hay archivos que copiar en ese origen.", "backup copia desde una carpeta montada: primero hay que montar la partición del cliente (help mount).", "t-aviso");
         const destino = destinoValido(o.pos[1]);
         if (!destino) return;
         if (destino.disco === "sdb") return t.escribir("backup: el destino está en el mismo disco. Una copia en el mismo disco no protege nada.", "t-error");
