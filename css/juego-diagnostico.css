@@ -154,6 +154,8 @@ a { color: var(--neon-2); }
 .dc-zona em.nada { color: var(--suave); }
 .dc-zona.hecha { opacity: .7; }
 .dc-diagnosticar { margin-top: 4px; width: 100%; }
+.dc-diagnosticar:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(.6); }
+.dc-nota-diagnostico { margin: 6px 2px 0; font-size: .82rem; color: var(--suave); }
 
 .dc-centro { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .dc-monitor {

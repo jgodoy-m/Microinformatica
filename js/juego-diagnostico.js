@@ -1,6 +1,6 @@
 /* Minijuego «Diagnóstico contrarreloj» (UF0864).
    Cada caso es un equipo averiado: el alumno elige qué revisar, cada prueba útil desbloquea una
-   pista, y cuando lo tiene claro da su diagnóstico. Puntuación sobre 100 por caso:
+   pista, y solo cuando ha hecho las pruebas pertinentes (todas las que dan pista) puede dar su diagnóstico. Puntuación sobre 100 por caso:
    −5 por prueba innecesaria, −10 por la pista opcional y −20 por diagnóstico equivocado.
    Los casos llevan su sesión y fecha de apertura: el juego crece a medida que se da el temario. */
 (() => {
@@ -472,6 +472,7 @@
     const lista = utiles();
     const encontradas = lista.filter((id) => hechas.includes(id));
     const totalPistas = lista.length + 1;
+    const faltan = lista.length - encontradas.length;
     const huecos = lista.map((id, i) => {
       if (hechas.includes(id)) return '<li class="dc-pista ok">' + svg("check") + "<span>" + esc(caso.pruebas[id].pista) + "<small>Pista " + (encontradas.indexOf(id) + 2) + "/" + totalPistas + "</small></span></li>";
       return '<li class="dc-pista bloqueada">' + svg("candado") + "<span>" + (i === 0 && !encontradas.length ? "Aún no hay más pistas…" : "Bloqueado") + "<small>Realiza más pruebas</small></span></li>";
@@ -488,7 +489,9 @@
         '<button type="button" class="dc-zona' + (hechas.includes(z.id) ? " hecha" : "") + '" data-zona="' + z.id + '">' +
         svg(z.id) + "<span><b>" + z.nombre + "</b><small>" + z.detalle + "</small></span>" +
         (!hechas.includes(z.id) ? '<i aria-hidden="true">›</i>' : caso.pruebas[z.id] ? '<em>Pista</em>' : '<em class="nada">Sin pistas</em>') + "</button>").join("") +
-      '<button type="button" class="dc-boton dc-diagnosticar" data-diagnosticar>' + svg("diana") + "Dar diagnóstico</button>" +
+      /* No se da un diagnóstico hasta haber hecho las pruebas pertinentes (las que dan pista). */
+      '<button type="button" class="dc-boton dc-diagnosticar" data-diagnosticar' + (faltan ? " disabled" : "") + ">" + svg("diana") + "Dar diagnóstico</button>" +
+      (faltan ? '<p class="dc-nota-diagnostico">Antes de diagnosticar, haz las pruebas pertinentes: ' + (faltan === 1 ? "falta 1 pista." : "faltan " + faltan + " pistas.") + "</p>" : "") +
       "</nav>" +
       '<div class="dc-centro">' + monitor() +
       '<div class="dc-informe"><span class="dc-etiqueta">Caso ' + (indice + 1) + " · " + esc(caso.sesion) + "</span><h3>" + esc(caso.titulo) + "</h3>" +
@@ -545,6 +548,7 @@
 
   /* ---------- Diagnóstico ---------- */
   const diagnosticar = () => {
+    if (utiles().some((id) => !hechas.includes(id))) return investigar();
     pintar(
       '<section class="dc-panel dc-juego">' + barra() +
       '<div class="dc-diagnostico">' +
