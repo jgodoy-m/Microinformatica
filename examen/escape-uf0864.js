@@ -70,21 +70,22 @@ window.ESCAPE_UF0864 = {
         }
       }
     },
-    /* El examen: las salas, los casos y las preguntas van cifrados en examen/escape-examen.json y solo se
-       leen con la clave que dice el profesor al empezar. Aquí solo queda lo que se ve en la portada. */
-    examen: {
-      nombre: "Examen de la UF0864",
-      corto: "examen",
-      fecha: "Miércoles 28 de octubre, de 10:00 a 13:00",
-      desde: "2026-10-28T09:45",
-      hasta: "2026-10-28T13:30",
+    /* El examen del 28 de octubre, convertido en examen de repaso: abierto, sin pedir clave (la página la
+       usa sola para descifrar examen/escape-examen.json) y con soluciones al final. Al entrar sale la foto. */
+    repaso: {
+      nombre: "Examen de repaso",
+      corto: "repaso",
+      desde: "2026-10-28",
       minutos: 180,
       nSalas: 4,
       final: true,
       test: 8,
       abrir: 5,
-      soluciones: false,
-      cifrado: "examen/escape-examen.json"
+      soluciones: true,
+      cifrado: "examen/escape-examen.json",
+      claveLibre: "DISCO-7340-NORTE",
+      ajustes: { soluciones: true },
+      foto: "img/escape/repaso.png"
     }
   }
 };
