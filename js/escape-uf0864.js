@@ -1,9 +1,9 @@
 /* Escape room de la UF0864 (escape-uf0864.html). El alumno recorre las salas en orden: en cada una juega
    un reto con uno de los minijuegos (dentro de un iframe, que devuelve su nota con postMessage) y abre
-   un candado de preguntas tipo test y una de respuesta corta. Nadie se queda atascado: si falla el
-   candado dos veces, la puerta se abre igual y esos puntos se pierden.
-   Nota sobre 10: test 4 (0,2 por pregunta, solo el primer intento), retos 4 (1 por sala) y respuesta
-   corta 2, que corrige el profesor. El intento se guarda en este navegador: si se recarga la página,
+   un candado de preguntas tipo test. Nadie se queda atascado: si falla el candado dos veces, la
+   puerta se abre igual y esos puntos se pierden.
+   Nota sobre 10, toda automática: test 5 (solo el primer intento) y retos 5. Sin respuesta corta: los
+   modos pueden traer «corta» en su contenido, pero no se pregunta. El intento se guarda en este navegador: si se recarga la página,
    sigue donde estaba con el reloj corriendo. Al entregar se descarga la hoja de examen, con un código
    que permite al profesor ver si se ha editado. Con ?profe todo está abierto y se pueden corregir hojas. */
 (() => {
@@ -72,7 +72,8 @@
   /* Las preguntas del modo (M.test) repartidas entre las sesiones de la sala, sin repetir en todo el intento. */
   const nTest = () => M.test || 5;
   const abrirCon = () => M.abrir || 3;
-  const ptsTest = () => 4 / (M.salas.length * nTest());
+  const ptsTest = () => 5 / (M.salas.length * nTest());
+  const ptsReto = () => 5 / M.salas.length;
   const elegirTest = (sesiones, usadas) => {
     const grupos = sesiones.map((s) => mezclar(BANCO.map((p, i) => i).filter((i) => BANCO[i].fuente === s && !usadas.has(i))));
     const elegidas = [];
@@ -91,26 +92,20 @@
       salas: modo.salas.map((s) => ({
         reto: { juego: s.reto.juego, caso: s.reto.juego === "diagnostico" ? s.reto.casos.map((g) => (Array.isArray(g) ? azar(g) : g)) : azar(s.reto.casos), total: null, maximo: null, titulo: "" },
         test: elegirTest(s.sesiones, usadas),
-        corta: "",
-        cortaV: Array.isArray(s.corta) ? Math.floor(Math.random() * s.corta.length) : 0,
         digito: Math.floor(Math.random() * 10),
         forzado: false
       })),
-      final: { corta: "", codigo: false, cortaV: modo.final && Array.isArray(modo.final.corta) ? Math.floor(Math.random() * modo.final.corta.length) : 0 }
+      final: { codigo: false }
     };
   };
 
   const restante = () => M.minutos * 60 - (Date.now() - S.inicio) / 1000;
 
   /* ---------- Puntuación ---------- */
-  const puntosReto = (s) => (s.reto.total == null ? 0 : s.reto.total / s.reto.maximo);
+  const puntosReto = (s) => (s.reto.total == null ? 0 : s.reto.total / s.reto.maximo * ptsReto());
   const aciertosTest = (s) => s.test.filter((q) => q.r1 === BANCO[q.i].correcta).length;
   const notaAuto = () => S.salas.reduce((n, s) => n + puntosReto(s) + aciertosTest(s) * ptsTest(), 0);
-  const maxAuto = () => S.salas.length * (1 + nTest() * ptsTest());
-  /* Una sala puede traer varias versiones de su pregunta corta: cada alumno tiene la suya. */
-  const version = (c, v) => (Array.isArray(c) ? c[v || 0] : c);
-  const preguntasCortas = () => M.salas.map((c, i) => version(c.corta, S.salas[i].cortaV)).concat(M.final ? [version(M.final.corta, S.final.cortaV)] : []);
-  const respuestasCortas = () => S.salas.map((s) => s.corta).concat(M.final ? [S.final.corta] : []);
+  const maxAuto = () => S.salas.length * (ptsReto() + nTest() * ptsTest());
 
   /* ---------- Pantalla de inicio ---------- */
   const inicio = (aviso) => {
@@ -138,8 +133,8 @@
       '<p class="rt-lema">Cuatro equipos averiados. <span>Una puerta con candado.</span></p>' +
       "<p>Eres el técnico de guardia y te has quedado encerrado en el taller. Cada equipo que repares te da un dígito del código de la puerta. En cada sala juegas un reto y después abres su candado con preguntas de la sesión.</p>" +
       '<ul class="er-reglas">' +
-      "<li>" + svg("llave") + "<span><b>Candado</b>Preguntas tipo test y 1 de respuesta corta. " + Object.values(CFG.modos).map((m) => "En el " + m.corto + ", " + (m.test || 5) + " preguntas y se abre con " + (m.abrir || 3) + " aciertos.").join(" ") + " Si no, tienes un segundo intento con las falladas, y si vuelves a fallar la puerta se abre igual: nadie se queda atascado.</span></li>" +
-      "<li>" + svg("check") + "<span><b>Nota sobre 10</b>Test 4 puntos (solo cuenta el primer intento), retos 4 puntos (1 por sala) y respuesta corta 2 puntos, que corrige el profesor.</span></li>" +
+      "<li>" + svg("llave") + "<span><b>Candado</b>Preguntas tipo test. " + Object.values(CFG.modos).map((m) => "En el " + m.corto + ", " + (m.test || 5) + " preguntas y se abre con " + (m.abrir || 3) + " aciertos.").join(" ") + " Si no, tienes un segundo intento con las falladas, y si vuelves a fallar la puerta se abre igual: nadie se queda atascado.</span></li>" +
+      "<li>" + svg("check") + "<span><b>Nota sobre 10</b>Test 5 puntos (solo cuenta el primer intento) y retos 5 puntos. La nota sale sola al terminar.</span></li>" +
       "<li>" + svg("reloj") + "<span><b>Tiempo</b>El reloj no se para. Si recargas la página sigues donde estabas, pero el reto que estuvieras jugando vuelve a empezar. Al acabar el tiempo se entrega solo.</span></li>" +
       "</ul>" +
       '<form class="er-form" data-form>' +
@@ -342,20 +337,15 @@
         ? "Segundo intento: el candado no se abrió. Vuelve a responder las " + pendientes.length + " preguntas falladas. Este intento no suma puntos, pero la puerta se abrirá en cualquier caso."
         : "Candado de la sala: responde las " + s.test.length + " preguntas. Se abre con " + abrirCon() + " aciertos.") + "</p>" +
       pendientes.map((q) => preguntaHTML(q, s.test.indexOf(q) + 1, segundo ? "r2" : "r1", false)).join("") +
-      (segundo ? "" : '<fieldset class="er-pregunta er-corta"><legend><span class="er-fuente">Respuesta corta</span>' + esc(version(cfg.corta, s.cortaV).pregunta) + "</legend>" +
-        '<textarea name="corta" rows="5" maxlength="2500" placeholder="Escribe tu respuesta. La corrige el profesor.">' + esc(s.corta) + "</textarea></fieldset>") +
       '<p class="er-aviso" data-aviso role="alert" hidden></p>' +
       '<div class="rt-acciones"><button type="submit" class="rt-boton">' + (segundo ? "Probar otra vez" : "Probar el candado") + " " + svg("llave") + "</button></div></form>", "input[type=radio]");
     const form = app.querySelector("[data-candado-form]");
-    const ta = form.querySelector("textarea");
-    if (ta) ta.addEventListener("input", () => { s.corta = ta.value; salvar(); });
     form.addEventListener("submit", (e) => {
       e.preventDefault();
       const campo = segundo ? "r2" : "r1";
       const faltan = pendientes.filter((q) => !form.querySelector('input[name="q' + (s.test.indexOf(q) + 1) + '"]:checked'));
       const aviso = form.querySelector("[data-aviso]");
       if (faltan.length) { aviso.hidden = false; aviso.textContent = "Te falta responder " + (faltan.length === 1 ? "1 pregunta" : faltan.length + " preguntas") + "."; return; }
-      if (!segundo && !s.corta.trim() && !confirm("No has escrito la respuesta corta. ¿Probar el candado igualmente? Luego no podrás volver a esta sala.")) return;
       pendientes.forEach((q) => { q[campo] = Number(form.querySelector('input[name="q' + (s.test.indexOf(q) + 1) + '"]:checked').value); });
       if (segundo) {
         s.forzado = pendientes.filter((q) => q.r2 === BANCO[q.i].correcta).length + aciertosTest(s) < abrirCon();
@@ -386,14 +376,10 @@
       '<form class="er-caja er-candado" data-final>' +
       '<p class="er-etiqueta">Puerta final</p><h2>' + esc(f.titulo) + "</h2>" +
       '<p class="er-historia">' + esc(f.historia) + "</p>" +
-      '<fieldset class="er-pregunta er-corta"><legend><span class="er-fuente">Respuesta corta</span>' + esc(version(f.corta, S.final.cortaV).pregunta) + "</legend>" +
-      '<textarea name="corta" rows="9" maxlength="5000" placeholder="Síntoma, diagnóstico, acciones y estado de entrega.">' + esc(S.final.corta) + "</textarea></fieldset>" +
       '<label class="er-campo er-codigo"><span>Código de la puerta (' + codigo.length + ' dígitos)</span><input name="codigo" inputmode="numeric" autocomplete="off" maxlength="' + codigo.length + '" pattern="[0-9]*"></label>' +
       '<p class="er-aviso" data-aviso role="alert" hidden></p>' +
-      '<div class="rt-acciones"><button type="submit" class="rt-boton">Abrir la puerta y entregar ' + svg("puerta") + "</button></div></form>", "textarea");
+      '<div class="rt-acciones"><button type="submit" class="rt-boton">Abrir la puerta y entregar ' + svg("puerta") + "</button></div></form>", "input[name=codigo]");
     const form = app.querySelector("[data-final]");
-    const ta = form.querySelector("textarea");
-    ta.addEventListener("input", () => { S.final.corta = ta.value; salvar(); });
     form.addEventListener("submit", (e) => {
       e.preventDefault();
       const aviso = form.querySelector("[data-aviso]");
@@ -417,7 +403,7 @@
         test: s.test.map((q) => { const p = BANCO[q.i]; return { fuente: p.fuente, pregunta: p.pregunta, respuesta: q.r1 == null ? null : p.opciones[q.r1], correcta: p.opciones[p.correcta], ok: q.r1 === p.correcta }; }),
         puntosTest: Math.round(aciertosTest(s) * ptsTest() * 100) / 100, puertaForzada: s.forzado
       })),
-      cortas: preguntasCortas().map((c, i) => ({ pregunta: c.pregunta, respuesta: respuestasCortas()[i] || "", modelo: c.modelo, criterios: c.criterios }))
+      cortas: []
     };
     h.codigo = huella(JSON.stringify(h));
     return h;
@@ -452,15 +438,13 @@
       '<h3>Corrección del test</h3><ol class="er-revision">' + S.salas.flatMap((s) => s.test).map((q) => {
         const p = BANCO[q.i], ok = q.r1 === p.correcta;
         return '<li class="' + (ok ? "ok" : "mal") + '"><b>' + esc(p.pregunta) + "</b><span>" + (ok ? "✓ " : "✗ Respondiste: " + esc(q.r1 == null ? "nada" : p.opciones[q.r1]) + ". ") + "Correcta: " + esc(p.opciones[p.correcta]) + "</span><small>" + esc(p.explica) + "</small></li>";
-      }).join("") + "</ol>" +
-      '<h3>Respuestas cortas: compara con la respuesta modelo</h3><ol class="er-revision">' + preguntasCortas().map((c, i) =>
-        "<li><b>" + esc(c.pregunta) + '</b><span class="er-tuya">' + (esc(respuestasCortas()[i]) || "<i>Sin responder</i>") + "</span><small><b>Modelo:</b> " + esc(c.modelo) + "</small><small><b>Se valora:</b> " + c.criterios.map(esc).join(" · ") + "</small></li>").join("") + "</ol>"
+      }).join("") + "</ol>"
       : "";
     app.innerHTML =
       '<section class="rt-panel er-resultado">' +
       '<p class="rt-antetitulo"><b>' + esc(M.nombre) + "</b> · " + esc(S.nombre) + "</p>" +
       "<h2>" + (h.porTiempo ? "Se acabó el tiempo" : "¡Has salido del taller!") + "</h2>" +
-      '<p class="er-nota"><b>' + coma(nota) + "</b> / " + coma(h.maxAuto) + "<small>nota automática · faltan " + coma(preguntasCortas().length * PUNTOS_CORTA) + " puntos de respuesta corta, que corrige el profesor</small></p>" +
+      '<p class="er-nota"><b>' + coma(nota) + "</b> / " + coma(h.maxAuto) + "<small>nota sobre 10</small></p>" +
       '<table class="er-tabla"><thead><tr><th>Sala</th><th>Reto</th><th>Test</th></tr></thead><tbody>' +
       h.salas.map((s, i) => "<tr><td>" + (i + 1) + ". " + esc(s.sala) + (s.puertaForzada ? " <small>(puerta forzada)</small>" : "") + "</td><td>" + coma(s.reto.puntos) + "</td><td>" + coma(s.puntosTest) + "</td></tr>").join("") +
       "</tbody></table>" +
@@ -490,7 +474,7 @@
     const pintarTabla = () => {
       const t = app.querySelector("[data-tabla]");
       t.innerHTML = hojas.length ? '<table class="er-tabla"><thead><tr><th>Alumno</th><th>Modo</th><th>Auto /' + coma(hojas[0].maxAuto) + "</th><th>Cortas</th><th>Nota</th><th>Tiempo</th><th>Salidas</th><th>Hoja</th></tr></thead><tbody>" +
-        hojas.map((h, i) => '<tr><td><button type="button" class="er-enlace" data-ver="' + i + '">' + esc(h.nombre) + "</button></td><td>" + esc(h.modo) + "</td><td>" + coma(h.notaAuto) + "</td><td>" + coma(notaCortas(h)) + " / " + coma(nCortas(h) * PUNTOS_CORTA) + "</td><td><b>" + coma(notaFinal(h)) + "</b></td><td>" + Math.round(h.minutos) + " min" + (h.porTiempo ? " (tiempo)" : "") + "</td><td>" + h.salidas + (h.reinicios ? " · " + h.reinicios + " reinicios" : "") + "</td><td>" + (verificada(h) ? '<span class="er-bien">Correcta</span>' : '<span class="er-mal">Modificada</span>') + "</td></tr>").join("") + "</tbody></table>"
+        hojas.map((h, i) => '<tr><td><button type="button" class="er-enlace" data-ver="' + i + '">' + esc(h.nombre) + "</button></td><td>" + esc(h.modo) + "</td><td>" + coma(h.notaAuto) + "</td><td>" + (nCortas(h) ? coma(notaCortas(h)) + " / " + coma(nCortas(h) * PUNTOS_CORTA) : "—") + "</td><td><b>" + coma(notaFinal(h)) + "</b></td><td>" + Math.round(h.minutos) + " min" + (h.porTiempo ? " (tiempo)" : "") + "</td><td>" + h.salidas + (h.reinicios ? " · " + h.reinicios + " reinicios" : "") + "</td><td>" + (verificada(h) ? '<span class="er-bien">Correcta</span>' : '<span class="er-mal">Modificada</span>') + "</td></tr>").join("") + "</tbody></table>"
         : '<p class="rt-nota">Carga las hojas (.json) que te han entregado los alumnos. Puedes elegir varias a la vez.</p>';
       t.querySelectorAll("[data-ver]").forEach((b) => b.addEventListener("click", () => ver(Number(b.dataset.ver))));
     };
@@ -528,7 +512,7 @@
       '<p class="rt-antetitulo"><b>UF0864</b> · Escape room · Profesor</p><h1>' + svg("check") + "<span>Corregir hojas</span></h1>" +
       '<div class="rt-acciones"><label class="rt-boton">Cargar hojas<input type="file" accept=".json,application/json" multiple data-archivos hidden></label>' +
       '<button type="button" class="rt-boton rt-secundario" data-csv>Exportar notas (CSV)</button><button type="button" class="rt-boton rt-secundario" data-volver>Volver</button></div>' +
-      '<p class="rt-nota">Las notas de respuesta corta se guardan en este navegador. «Modificada» quiere decir que alguien ha editado la hoja después de descargarla.</p>' +
+      '<p class="rt-nota">La nota es automática. Si cargas una hoja antigua con respuesta corta, lo que puntúes se guarda en este navegador. «Modificada» quiere decir que alguien ha editado la hoja después de descargarla.</p>' +
       '<div data-tabla></div><div data-detalle></div></section>';
     app.querySelector("[data-archivos]").addEventListener("change", async (e) => {
       for (const file of e.target.files) {
