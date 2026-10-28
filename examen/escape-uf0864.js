@@ -86,6 +86,20 @@ window.ESCAPE_UF0864 = {
       claveLibre: "DISCO-7340-NORTE",
       ajustes: { soluciones: true },
       foto: "img/escape/repaso.png"
+    },
+    /* El examen nuevo: salas, casos y preguntas cifrados en examen/escape-examen2.json. Está cerrado hasta
+       que lo abra el profesor (quitar «cerrado» y poner la fecha en «desde» y «hasta»). */
+    examen: {
+      nombre: "Examen de la UF0864",
+      corto: "examen",
+      cerrado: true,
+      minutos: 180,
+      nSalas: 4,
+      final: true,
+      test: 8,
+      abrir: 5,
+      soluciones: false,
+      cifrado: "examen/escape-examen2.json"
     }
   }
 };

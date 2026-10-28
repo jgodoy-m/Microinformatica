@@ -854,6 +854,10 @@
     return E.inicio.some((e) => e.lanza === p.pid && entradaViva(e) && archivoDisponible(e, red));
   };
   const directivasActivas = () => !!(E.nav && E.nav.directivas);
+  // Chrome salvo que el caso diga otro navegador (navegador.nombre: "Edge").
+  const navNombre = () => (M.navegador && M.navegador.nombre) || "Chrome";
+  const navUrl = () => navNombre().toLowerCase();
+  const navBuscador = () => navNombre() === "Edge" ? "Bing" : "Google";
   const programaPup = (g) => g.pup;
 
   /* Lo que hay que neutralizar en este escenario, con cómo se comprueba (suponiendo que el cliente vuelve a conectarlo a Internet). */
@@ -864,7 +868,7 @@
     E.programas.filter(programaPup).forEach((g) => l.push(["Programa «" + g.nombre + "»", () => !g.instalado && !reinstalaria(g, true) || E.reinstalado]));
     if (E.nav) {
       E.nav.extensiones.filter((x) => x.mala).forEach((x) => l.push(["Extensión «" + x.nombre + "»", () => E.reinstalado || x.quitada && !(x.forzada && directivasActivas())]));
-      l.push(["Buscador de Chrome", () => E.reinstalado || !E.nav.buscador && !directivasActivas()]);
+      l.push(["Buscador de " + navNombre(), () => E.reinstalado || !E.nav.buscador && !directivasActivas()]);
     }
     if (M.rootkit) l.push(["Rootkit en el arranque", () => E.reinstalado]);
     if (M.ransom) l.push(["Datos restaurados desde la copia", () => E.restaurado && !E.copiaPerdida]);
@@ -1287,7 +1291,7 @@
         g.instalado = false;
         (g.procesos || []).forEach((pid) => E.muertos.add(pid));
         (g.inicio || []).forEach((n) => { const e = E.inicio.find((x) => x.n === n); if (e) e.eliminado = true; });
-        if (g.directivas && E.nav) { E.nav.directivas = false; t.escribir("Se han eliminado las directivas de Chrome que había creado.", "t-ok"); }
+        if (g.directivas && E.nav) { E.nav.directivas = false; t.escribir("Se han eliminado las directivas de " + navNombre() + " que había creado.", "t-ok"); }
         t.escribir("«" + g.nombre + "» desinstalado.", "t-ok");
         if (g.av && !E.programas.some((x) => x.av && x.instalado)) { E.defender.activo = true; E.defender.bloqueado = ""; t.escribir("Ya no queda ningún antivirus de terceros: Microsoft Defender vuelve a activarse solo.", "t-ok"); }
         if (g.av && E.programas.some((x) => x.av && x.instalado)) consejo("Queda un solo antivirus en tiempo real.");
@@ -1431,25 +1435,25 @@
     });
 
     t.registrar("navegador", {
-      resumen: "Revisa Chrome: extensiones, directivas, quitar <nº> y restablecer.",
+      resumen: "Revisa el navegador: extensiones, directivas, quitar <nº> y restablecer.",
       uso: "navegador extensiones | directivas | quitar <nº> | restablecer",
-      detalle: ["directivas = chrome://policy. «Administrado por tu organización» en un equipo de casa: algo ha creado directivas.", "restablecer = chrome://settings/reset: vuelve el buscador y la página de inicio y desactiva las extensiones."],
+      detalle: ["directivas = chrome://policy (en Edge, edge://policy). «Administrado por tu organización» en un equipo de casa: algo ha creado directivas.", "restablecer = chrome://settings/reset (en Edge, edge://settings/reset): vuelve el buscador y la página de inicio y desactiva las extensiones."],
       ejemplos: ["navegador directivas", "navegador quitar 1"],
-      alias: ["chrome"],
+      alias: ["chrome", "edge"],
       ejecutar(args) {
         const sub = (args[0] || "").toLowerCase();
-        if (!E.nav) return t.escribir("En este equipo el navegador está bien: buscador de Google, sin directivas y sin extensiones raras.", "t-suave");
-        if (E.reinstalado) return t.escribir("Chrome recién instalado: sin extensiones ni directivas.", "t-suave");
+        if (!E.nav) return t.escribir("En este equipo el navegador está bien: buscador de " + navBuscador() + ", sin directivas y sin extensiones raras.", "t-suave");
+        if (E.reinstalado) return t.escribir(navNombre() + " recién instalado: sin extensiones ni directivas.", "t-suave");
         const nav = E.nav;
         if (sub === "extensiones" || sub === "") {
-          t.escribir("chrome://extensions · Buscador: " + (nav.buscador ? nav.buscador : "Google") + (directivasActivas() ? " · «Administrado por tu organización»" : ""), "t-titulo");
+          t.escribir(navUrl() + "://extensions · Buscador: " + (nav.buscador ? nav.buscador : navBuscador()) + (directivasActivas() ? " · «Administrado por tu organización»" : ""), "t-titulo");
           nav.extensiones.filter((x) => !x.quitada).forEach((x, i) => t.escribir([[("#" + (nav.extensiones.indexOf(x) + 1)).padEnd(4), "t-suave"], [x.nombre.padEnd(34), x.desactivada ? "t-suave" : "t-cmd"], [x.detalle + (x.desactivada ? " (desactivada)" : ""), "t-suave"]]));
           return;
         }
         if (sub === "directivas") {
           hecho("verDirectivas");
-          if (!directivasActivas()) return t.escribir("chrome://policy: no hay directivas.", "t-ok");
-          t.escribir("chrome://policy · Origen: Plataforma (máquina)", "t-titulo");
+          if (!directivasActivas()) return t.escribir(navUrl() + "://policy: no hay directivas.", "t-ok");
+          t.escribir(navUrl() + "://policy · Origen: Plataforma (máquina)", "t-titulo");
           M.navegador.directivas.forEach((d) => t.escribir("  " + d, "t-aviso"));
           consejo("En un equipo de casa nadie debería imponer directivas: las ha creado un programa. Se quita ese programa.");
           return;
@@ -1458,7 +1462,7 @@
           const x = nav.extensiones[Number(args[1]) - 1];
           if (!x || x.quitada) return t.usoIncorrecto("navegador", "Falta un número de extensión válido (mira navegador extensiones).");
           accion();
-          if (x.forzada && directivasActivas()) return t.escribir("Chrome: «" + x.nombre + "» la instala una directiva (ExtensionInstallForcelist): no se puede quitar. Vuelve en cuanto la borras.", "t-error");
+          if (x.forzada && directivasActivas()) return t.escribir(navNombre() + ": «" + x.nombre + "» la instala una directiva (ExtensionInstallForcelist): no se puede quitar. Vuelve en cuanto la borras.", "t-error");
           x.quitada = true;
           t.escribir("Extensión «" + x.nombre + "» quitada.", "t-ok");
           if (!x.mala) riesgo("ext" + x.id, 3, "Quitaste la extensión «" + x.nombre + "», que era legítima.");
@@ -1467,9 +1471,9 @@
         if (sub === "restablecer") {
           accion();
           nav.extensiones.forEach((x) => { if (!x.forzada || !directivasActivas()) x.desactivada = true; });
-          if (directivasActivas()) return t.escribir("Chrome restablecido… pero las directivas vuelven a imponer el buscador " + nav.buscador + ".", "t-error");
+          if (directivasActivas()) return t.escribir(navNombre() + " restablecido… pero las directivas vuelven a imponer el buscador " + nav.buscador + ".", "t-error");
           nav.buscador = null;
-          t.escribir("Chrome restablecido: buscador de Google y página de inicio por defecto. Las extensiones quedan desactivadas (la clienta puede volver a activar las suyas).", "t-ok");
+          t.escribir(navNombre() + " restablecido: buscador de " + navBuscador() + " y página de inicio por defecto. Las extensiones quedan desactivadas (la clienta puede volver a activar las suyas).", "t-ok");
           return;
         }
         t.usoIncorrecto("navegador", "No conozco la opción «" + args[0] + "».");
