@@ -3,8 +3,8 @@
    - reto: el minijuego que se juega dentro de la sala y los casos entre los que se sortea
      (diagnostico: un caso de cada sesión de la lista; rescate y caza: un id de la lista).
    - sesiones: de dónde salen las preguntas tipo test (examen/banco-uf0864.js, campo fuente).
-   - corta: la pregunta de respuesta corta, con su respuesta modelo y los criterios de corrección.
-   Las preguntas de respuesta corta las corrige el profesor: no suman en la nota automática. */
+   - corta: una pregunta de respuesta corta con su modelo. Ya no se pregunta (el motor la ignora):
+     se deja por si se quiere recuperar. */
 window.ESCAPE_UF0864 = {
   modos: {
     ensayo: {
@@ -51,7 +51,7 @@ window.ESCAPE_UF0864 = {
         {
           titulo: "Los archivos del cliente",
           sesiones: ["S20", "S21"],
-          historia: "Último puesto: una clienta llorando por sus archivos. Rescátalos sin empeorar nada. Lo que hagas aquí lo tendrás que contar en la hoja de incidencia de la puerta final.",
+          historia: "Último puesto: una clienta llorando por sus archivos. Rescátalos sin empeorar nada.",
           reto: { juego: "rescate", casos: ["mir", "contrasena", "borrado", "tarjeta", "clean"] },
           corta: {
             pregunta: "Explica la regla 3-2-1 de las copias de seguridad y por qué una copia en un disco externo siempre conectado no protege del ransomware.",
@@ -62,7 +62,7 @@ window.ESCAPE_UF0864 = {
       ],
       final: {
         titulo: "La puerta del taller",
-        historia: "Con los cuatro equipos reparados, la puerta pide el código. Antes de salir, el jefe de taller quiere la hoja de incidencia del equipo de la clienta.",
+        historia: "Con los cuatro equipos reparados, la puerta pide el código: un dígito por sala, en orden. Ábrela y sal del taller.",
         corta: {
           pregunta: "Redacta la hoja de incidencia del equipo de la sala 4: síntoma que trajo la clienta, diagnóstico, acciones realizadas (en orden) y estado en que se entrega.",
           modelo: "Síntoma tal como lo cuenta la clienta. Diagnóstico: qué le pasaba al disco o a la copia y cómo se comprobó. Acciones en orden: qué se protegió primero (imagen, no escribir en el disco), con qué herramienta se recuperó, adónde se copió y cómo se verificó. Estado de entrega: qué se ha recuperado y qué no, y la recomendación (copias 3-2-1).",
