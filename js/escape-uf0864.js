@@ -38,7 +38,7 @@
   const azar = (lista) => lista[Math.floor(Math.random() * lista.length)];
   /* Fechas «2026-10-28» o con hora, «2026-10-28T09:45», siempre en hora local. */
   const fechaDe = (iso) => { const [y, m, d, h, mi] = iso.split(/[-T:]/).map(Number); return new Date(y, m - 1, d, h || 0, mi || 0); };
-  const abierto = (modo) => PROFE || ((!modo.desde || new Date() >= fechaDe(modo.desde)) && (!modo.hasta || new Date() <= fechaDe(modo.hasta)));
+  const abierto = (modo) => PROFE || (!modo.cerrado && (!modo.desde || new Date() >= fechaDe(modo.desde)) && (!modo.hasta || new Date() <= fechaDe(modo.hasta)));
   const fechaLegible = (iso) => fechaDe(iso).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }) + (iso.includes("T") ? " a las " + iso.slice(11, 16) : "");
   const mmss = (s) => { s = Math.max(0, Math.round(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ":" + String(m).padStart(2, "0") : String(m).padStart(2, "0")) + ":" + String(x).padStart(2, "0"); };
   const coma = (n) => (Math.round(n * 100) / 100).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -126,8 +126,8 @@
         '<input type="radio" name="modo" value="' + id + '"' + (ok ? "" : " disabled") + ">" +
         "<span><b>" + esc(m.nombre) + "</b>" +
         "<small>" + (m.fecha ? esc(m.fecha) + " · " : "") + (m.nSalas || m.salas.length) + " salas" + (m.final ? " y la puerta final" : "") + " · " + (m.minutos >= 120 ? m.minutos / 60 + " horas" : m.minutos + " minutos") + "</small>" +
-        (ok ? (enCurso ? '<em class="er-encurso">Tienes uno empezado: el reloj sigue corriendo</em>' : curso && curso.entregado ? "<em>Ya lo entregaste. " + (m.cifrado && !PROFE ? "Entra con la clave para volver a descargar tu hoja." : "Puedes repetirlo.") + "</em>" : "")
-          : '<em class="er-candado">' + svg("candado") + (m.hasta && new Date() > fechaDe(m.hasta) ? "Cerrado" : "Se abre el " + esc(fechaLegible(m.desde))) + "</em>") +
+        (ok ? (enCurso ? '<em class="er-encurso">Tienes uno empezado: el reloj sigue corriendo</em>' : curso && curso.entregado ? "<em>Ya lo entregaste. " + (m.cifrado && !m.claveLibre && !PROFE ? "Entra con la clave para volver a descargar tu hoja." : "Puedes repetirlo.") + "</em>" : "")
+          : '<em class="er-candado">' + svg("candado") + (m.cerrado || !m.desde ? "Cerrado hasta nuevo aviso" : m.hasta && new Date() > fechaDe(m.hasta) ? "Cerrado" : "Se abre el " + esc(fechaLegible(m.desde))) + "</em>") +
         "</span></label>";
     });
     app.innerHTML =
@@ -159,7 +159,7 @@
     const campoClave = app.querySelector("[data-campo-clave]");
     const verClave = () => {
       const r = form.querySelector("input[name=modo]:checked");
-      campoClave.hidden = !(r && CFG.modos[r.value].cifrado);
+      campoClave.hidden = !(r && CFG.modos[r.value].cifrado && !CFG.modos[r.value].claveLibre);
     };
     radios.forEach((r) => r.addEventListener("change", verClave));
     verClave();
@@ -172,16 +172,16 @@
       const nom = form.nombre.value.trim();
       let curso = leer(clave(id));
       // El examen se hace una sola vez: si ya está entregado, se vuelve a la hoja en vez de empezar otro.
-      const enCurso = curso && (!curso.entregado || (modo.cifrado && !PROFE));
+      const enCurso = curso && (!curso.entregado || (modo.cifrado && !modo.claveLibre && !PROFE));
       BANCO = window.BANCO_UF0864 || [];
       window.ESCAPE_EXTRA = null;
       if (modo.cifrado) {
         const boton = form.querySelector("button[type=submit]");
         boton.disabled = true;
-        const palabra = form.clave.value.trim().toUpperCase() || (enCurso && curso.clave) || "";
+        const palabra = modo.claveLibre || form.clave.value.trim().toUpperCase() || (enCurso && curso.clave) || "";
         const contenido = palabra && await descifrar(modo.cifrado, palabra);
         if (!contenido) return inicio("La clave no es correcta. Pídesela al profesor.");
-        modo = Object.assign({}, modo, contenido.modo);
+        modo = Object.assign({}, modo, contenido.modo, modo.ajustes);
         BANCO = contenido.banco;
         window.ESCAPE_EXTRA = contenido.extra;
         M = modo;
@@ -191,7 +191,8 @@
       if (enCurso) curso.reinicios += curso.fase === "reto" && curso.salas[curso.sala] && curso.salas[curso.sala].reto.total == null ? 1 : 0;
       S = curso; M = modo;
       salvar();
-      jugar();
+      if (modo.foto) foto(modo.foto, jugar);
+      else jugar();
     });
     const corr = app.querySelector("[data-corregir]");
     if (corr) corr.addEventListener("click", corregir);
@@ -200,6 +201,20 @@
       guardar(clave(b.dataset.borrar), null);
       inicio();
     }));
+  };
+
+  /* ---------- Foto al entrar ----------
+     Un modo puede llevar una foto que sale a pantalla completa al abrirlo; se cierra con un clic o una tecla. */
+  const foto = (src, despues) => {
+    const capa = document.createElement("div");
+    capa.className = "er-foto";
+    capa.setAttribute("role", "dialog");
+    capa.setAttribute("aria-label", "Foto de bienvenida. Pulsa para continuar");
+    capa.innerHTML = '<img src="' + esc(src) + '" alt=""><span>Pulsa para entrar</span>';
+    document.body.appendChild(capa);
+    const cerrar = () => { capa.remove(); document.removeEventListener("keydown", cerrar); despues(); };
+    capa.addEventListener("click", cerrar);
+    document.addEventListener("keydown", cerrar);
   };
 
   /* ---------- Contenido cifrado ----------
