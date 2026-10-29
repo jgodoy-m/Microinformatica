@@ -92,7 +92,6 @@ window.ESCAPE_UF0864 = {
     examen: {
       nombre: "Examen de la UF0864",
       corto: "examen",
-      cerrado: true,
       minutos: 180,
       nSalas: 4,
       final: true,
