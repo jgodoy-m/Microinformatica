@@ -101,11 +101,10 @@ window.ESCAPE_UF0864 = {
       cifrado: "examen/escape-examen2.json"
     },
     /* Examen para subir nota: casos nuevos y parte de las preguntas cambiadas, cifrados en
-       examen/escape-examen3.json. Cerrado hasta que lo abra el profesor (quitar «cerrado»). */
+       examen/escape-examen3.json. Abierto desde el 29 de octubre, con clave. */
     subir: {
       nombre: "Examen para subir nota",
       corto: "examen para subir nota",
-      cerrado: true,
       minutos: 180,
       nSalas: 4,
       final: true,
